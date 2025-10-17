@@ -21,7 +21,6 @@
       overflow-x: hidden;
     }
 
-    /* Floating Matrix Effect (Canvas is background) */
     #matrixCanvas {
       position: fixed;
       top: 0;
@@ -33,7 +32,6 @@
       pointer-events: none;
     }
 
-    /* Glassmorphic Box */
     .box {
       position: relative;
       z-index: 1;
@@ -50,7 +48,6 @@
       animation: fadeUp 1s ease-in-out;
     }
 
-    /* Heading with Gradient Neon Text */
     .box h2 {
       font-size: 30px;
       margin-bottom: 25px;
@@ -61,7 +58,6 @@
       letter-spacing: 1px;
     }
 
-    /* Inputs */
     .box input {
       width: 100%;
       padding: 14px;
@@ -80,7 +76,6 @@
       box-shadow: 0 0 12px #00ffe7;
     }
 
-    /* Buttons */
     .box button {
       width: 100%;
       padding: 14px;
@@ -99,7 +94,6 @@
       box-shadow: 0 0 20px rgba(255,255,255,0.4);
     }
 
-    /* Button Colors */
     .primary-btn {
       background: linear-gradient(90deg, #ff416c, #ff4b2b);
       box-shadow: 0 0 12px #ff416c;
@@ -117,7 +111,6 @@
       box-shadow: 0 0 12px #777;
     }
 
-    /* Response Box */
     #responseBox {
       display: none;
       background: rgba(0, 0, 0, 0.35);
@@ -133,7 +126,6 @@
       overflow-y: auto;
     }
 
-    /* Popup Overlay */
     #popupOverlay {
       position: fixed;
       top: 0;
@@ -179,7 +171,6 @@
       box-shadow: 0 0 15px rgba(255,255,255,0.4);
     }
 
-    /* Animations */
     @keyframes fadeIn {
       from { opacity: 0; transform: scale(0.9);}
       to { opacity: 1; transform: scale(1);}
@@ -194,14 +185,21 @@
   <canvas id="matrixCanvas"></canvas> 
   <div class="box"> 
    <h2>NASIR HACKER DB</h2> 
-   <input type="text" id="number" placeholder="Enter phone number or CNIC" required> <button class="primary-btn" onclick="fetchData()">🔎 Get Details</button> 
-   <div id="responseBox"></div> <button id="shareButton" class="whatsapp-btn" onclick="shareWhatsApp()" style="display: none;">📲 Share on WhatsApp</button> <button id="copyButton" class="copy-btn" onclick="copyToClipboard()" style="display: none;">📋 Copy Data</button> <button class="telegram-btn" onclick="window.open('https://t.me/TrustedHacker079', '_blank')">✈️ Join Telegram Channel</button> 
+   <input type="text" id="number" placeholder="Enter phone number or CNIC" required> 
+   <button class="primary-btn" onclick="fetchData()">🔎 Get Details</button> 
+   <div id="responseBox"></div> 
+   <button id="shareButton" class="whatsapp-btn" onclick="shareWhatsApp()" style="display: none;">📲 Share on WhatsApp</button> 
+   <button id="copyButton" class="copy-btn" onclick="copyToClipboard()" style="display: none;">📋 Copy Data</button> 
+   <button class="telegram-btn" onclick="window.open('https://api.whatsapp.com/send?phone=+923206939553', '_blank')">✈️ Join Telegram Channel</button> 
   </div> 
   <div id="popupOverlay"> 
    <div> 
-    <h3>Join our Telegram Channel?</h3> <button class="join-btn" onclick="joinTelegram()">Join Telegram</button> <button class="cancel-btn" onclick="closePopup()">Cancel</button> 
+    <h3>Owner WhatsApp Contact 📞</h3> 
+    <button class="join-btn" onclick="joinTelegram()">Join Telegram</button> 
+    <button class="cancel-btn" onclick="closePopup()">Cancel</button> 
    </div> 
-  </div> <!-- Matrix Animation Script --> 
+  </div> 
+
   <script>
     const canvas = document.getElementById("matrixCanvas");
     const ctx = canvas.getContext("2d");
@@ -217,7 +215,6 @@
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = "#00ff99";
       ctx.font = fontSize + "px monospace";
-
       for (let i = 0; i < drops.length; i++) {
         const text = letters[Math.floor(Math.random() * letters.length)];
         ctx.fillText(text, i * fontSize, drops[i] * fontSize);
@@ -234,7 +231,9 @@
       columns = Math.floor(canvas.width / fontSize);
       drops = Array(columns).fill(1);
     });
-  </script> <!-- Main Logic Script --> 
+  </script> 
+
+  <!-- Updated API and response logic -->
   <script>
     async function fetchData() {
       const number = document.getElementById("number").value.trim();
@@ -259,15 +258,15 @@
         const json = await res.json();
         const apiData = JSON.parse(json.contents);
 
-        if (Array.isArray(apiData) && apiData.length > 0) {
+        if (apiData.success && Array.isArray(apiData.records) && apiData.records.length > 0) {
           let content = "";
-          apiData.forEach((rec, index) => {
+          apiData.records.forEach((rec, index) => {
             content += `Result ${index + 1}:\n`;
-            content += `📞 Mobile: ${rec["Mobile #"] || "Not found"}\n`;
+            content += `📞 Mobile: ${rec["Mobile"] || "Not found"}\n`;
             content += `👤 Name: ${rec["Name"] || "Not found"}\n`;
             content += `🆔 CNIC: ${rec["CNIC"] || "Not found"}\n`;
             content += `📍 Address: ${rec["Address"] || "Not found"}\n`;
-            content += `📶 Operator: ${rec["Operator"] || "Not found"}\n\n`;
+            content += `🌍 Country: ${rec["Country"] || "Not found"}\n\n`;
           });
 
           responseBox.innerText = content.trim();
@@ -302,4 +301,4 @@
     }, 10000);
   </script> 
  </body>
-  </html>
+</html>
