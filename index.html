@@ -103,8 +103,8 @@
       box-shadow: 0 0 12px #25D366;
     }
     .telegram-btn {
-      background: linear-gradient(90deg, #0088cc, #005577);
-      box-shadow: 0 0 12px #0088cc;
+      background: linear-gradient(90deg, #00c6ff, #0072ff);
+      box-shadow: 0 0 12px #00c6ff;
     }
     .copy-btn {
       background: linear-gradient(90deg, #555, #333);
@@ -126,49 +126,108 @@
       overflow-y: auto;
     }
 
+    /* === Futuristic Popup === */
     #popupOverlay {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0,0,0,0.9);
+      background: radial-gradient(circle at center, rgba(0,0,0,0.95), rgba(0,0,0,1));
       display: none;
       justify-content: center;
       align-items: center;
       z-index: 9999;
+      backdrop-filter: blur(8px);
+      overflow: hidden;
     }
+
+    #popupOverlay::before {
+      content: "";
+      position: absolute;
+      width: 200%;
+      height: 200%;
+      background: repeating-radial-gradient(circle, rgba(0,255,255,0.03) 0, transparent 1px);
+      animation: rotateGrid 30s linear infinite;
+    }
+
+    @keyframes rotateGrid {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
     #popupOverlay div {
-      background: rgba(255,255,255,0.1);
-      padding: 30px 25px;
-      border-radius: 15px;
+      position: relative;
+      background: rgba(20, 20, 30, 0.8);
+      padding: 40px 35px;
+      border-radius: 20px;
       text-align: center;
-      max-width: 320px;
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255,255,255,0.25);
-      box-shadow: 0 0 25px rgba(0, 255, 255, 0.2);
-      animation: fadeUp 0.8s ease;
+      max-width: 380px;
+      width: 90%;
+      border: 1px solid rgba(0,255,255,0.4);
+      box-shadow: 0 0 30px rgba(0,255,255,0.3), inset 0 0 25px rgba(0,255,255,0.2);
+      backdrop-filter: blur(15px);
+      animation: popupAppear 1s ease forwards;
+      transform: scale(0.85);
     }
+
+    @keyframes popupAppear {
+      from { opacity: 0; transform: scale(0.7) translateY(30px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
     #popupOverlay h3 {
-      color: #fff;
+      color: #00ffe7;
       margin-bottom: 20px;
-      font-size: 20px;
+      font-size: 22px;
+      text-shadow: 0 0 10px rgba(0,255,255,0.6);
+      letter-spacing: 0.5px;
     }
+
     #popupOverlay button {
       margin: 10px;
-      padding: 12px 20px;
+      padding: 12px 22px;
       border: none;
-      color: white;
-      border-radius: 8px;
-      font-weight: bold;
+      border-radius: 10px;
+      font-weight: 600;
       cursor: pointer;
-      transition: 0.3s ease;
+      transition: 0.25s ease;
+      font-size: 15px;
+      letter-spacing: 0.5px;
     }
-    #popupOverlay .join-btn { background: #25D366; }
-    #popupOverlay .cancel-btn { background: #555; }
+
+    #popupOverlay .join-btn {
+      background: linear-gradient(90deg, #00ffe7, #0072ff);
+      color: #fff;
+      box-shadow: 0 0 15px rgba(0,255,255,0.4);
+    }
+
+    #popupOverlay .cancel-btn {
+      background: linear-gradient(90deg, #444, #111);
+      color: #ccc;
+      box-shadow: 0 0 10px rgba(255,255,255,0.1);
+    }
+
     #popupOverlay button:hover {
       transform: scale(1.05);
-      box-shadow: 0 0 15px rgba(255,255,255,0.4);
+      box-shadow: 0 0 25px rgba(0,255,255,0.6);
+    }
+
+    #popupOverlay div::before {
+      content: "";
+      position: absolute;
+      inset: -3px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, rgba(0,255,255,0.4), rgba(255,0,255,0.4), rgba(0,255,255,0.4));
+      filter: blur(12px);
+      z-index: -1;
+      opacity: 0.8;
+      animation: neonPulse 4s infinite alternate;
+    }
+
+    @keyframes neonPulse {
+      from { opacity: 0.5; filter: blur(10px); }
+      to { opacity: 1; filter: blur(14px); }
     }
 
     @keyframes fadeIn {
@@ -185,23 +244,14 @@
   <canvas id="matrixCanvas"></canvas> 
   <div class="box"> 
    <h2>NASIR HACKER DB</h2> 
-   <input type="text" id="number" placeholder="Enter phone number or CNIC" required> 
-   <button class="primary-btn" onclick="fetchData()">🔎 Get Details</button> 
-   <div id="responseBox"></div> 
-   <button id="shareButton" class="whatsapp-btn" onclick="shareWhatsApp()" style="display: none;">📲 Share on WhatsApp</button> 
-   <button id="copyButton" class="copy-btn" onclick="copyToClipboard()" style="display: none;">📋 Copy Data</button> 
-   <!-- Changed Button -->
-   <button class="telegram-btn" onclick="window.open('https://api.whatsapp.com/send?phone=+923206939553', '_blank')">💬 Owner Contact</button> 
-  </div> 
+   <input type="text" id="number" placeholder="Enter phone number or CNIC" required> <button class="primary-btn" onclick="fetchData()">🔎 Get Details</button> 
+   <div id="responseBox"></div> <button id="shareButton" class="whatsapp-btn" onclick="shareWhatsApp()" style="display: none;">📲 Share on WhatsApp</button> <button id="copyButton" class="copy-btn" onclick="copyToClipboard()" style="display: none;">📋 Copy Data</button> <button class="telegram-btn" onclick="window.open('https://api.whatsapp.com/send?phone=+923206939553', '_blank')">💬 Owner Contact</button> 
+  </div> <!-- New Futuristic Popup --> 
   <div id="popupOverlay"> 
    <div> 
-    <h3>In case of any issue, contact admin</h3> 
-    <!-- Changed Popup Buttons -->
-    <button class="join-btn" onclick="contactAdmin()">💬 Contact Admin</button> 
-    <button class="cancel-btn" onclick="closePopup()">Cancel</button> 
+    <h3>⚙️ In case of any issue, contact admin</h3> <button class="join-btn" onclick="contactAdmin()">💬 Contact Admin</button> <button class="cancel-btn" onclick="closePopup()">Cancel</button> 
    </div> 
   </div> 
-
   <script>
     const canvas = document.getElementById("matrixCanvas");
     const ctx = canvas.getContext("2d");
@@ -234,7 +284,6 @@
       drops = Array(columns).fill(1);
     });
   </script> 
-
   <script>
     async function fetchData() {
       const number = document.getElementById("number").value.trim();
