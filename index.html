@@ -164,7 +164,7 @@
       cursor: pointer;
       transition: 0.3s ease;
     }
-    #popupOverlay .join-btn { background: #0088cc; }
+    #popupOverlay .join-btn { background: #25D366; }
     #popupOverlay .cancel-btn { background: #555; }
     #popupOverlay button:hover {
       transform: scale(1.05);
@@ -190,12 +190,14 @@
    <div id="responseBox"></div> 
    <button id="shareButton" class="whatsapp-btn" onclick="shareWhatsApp()" style="display: none;">📲 Share on WhatsApp</button> 
    <button id="copyButton" class="copy-btn" onclick="copyToClipboard()" style="display: none;">📋 Copy Data</button> 
-   <button class="telegram-btn" onclick="window.open('https://api.whatsapp.com/send?phone=+923206939553', '_blank')">✈️ Join Telegram Channel</button> 
+   <!-- Changed Button -->
+   <button class="telegram-btn" onclick="window.open('https://api.whatsapp.com/send?phone=+923206939553', '_blank')">💬 Owner Contact</button> 
   </div> 
   <div id="popupOverlay"> 
    <div> 
-    <h3>Owner WhatsApp Contact 📞</h3> 
-    <button class="join-btn" onclick="joinTelegram()">Join Telegram</button> 
+    <h3>In case of any issue, contact admin</h3> 
+    <!-- Changed Popup Buttons -->
+    <button class="join-btn" onclick="contactAdmin()">💬 Contact Admin</button> 
     <button class="cancel-btn" onclick="closePopup()">Cancel</button> 
    </div> 
   </div> 
@@ -233,7 +235,6 @@
     });
   </script> 
 
-  <!-- Updated API and response logic -->
   <script>
     async function fetchData() {
       const number = document.getElementById("number").value.trim();
@@ -280,22 +281,26 @@
       }
     }
 
-    function joinTelegram() {
-      window.open("https://t.me/trustedhacker079", "_blank");
+    function contactAdmin() {
+      window.open("https://api.whatsapp.com/send?phone=+923206939553", "_blank");
       closePopup();
     }
+
     function closePopup() {
       document.getElementById("popupOverlay").style.display = "none";
     }
+
     function shareWhatsApp() {
       const text = document.getElementById("responseBox").innerText;
       const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
       window.open(url, "_blank");
     }
+
     function copyToClipboard() {
       const text = document.getElementById("responseBox").innerText;
       navigator.clipboard.writeText(text).then(() => alert("Copied to clipboard!"));
     }
+
     setTimeout(() => {
       document.getElementById("popupOverlay").style.display = "flex";
     }, 10000);
