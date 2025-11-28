@@ -957,7 +957,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-    import { getDatabase, ref, set, get, update, onValue } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+    import { getDatabase, ref, set, get, update } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
@@ -978,91 +978,11 @@
     let userCredits = 0;
     let isUnlimited = false;
 
-    // Single Device Login Variables
-    let currentSessionId = null;
-    let sessionListener = null;
-
     // List of users with unlimited credits
     const unlimitedUsers = [
       "nasirjafarmaibal@gmail.com",
       "owner@nasir.com"
     ];
-
-    // ========== SINGLE DEVICE LOGIN SYSTEM ==========
-    
-    // Generate unique session ID for this device
-    function generateSessionId() {
-      return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    }
-
-    // Update user session in Firebase
-    async function updateUserSession(user) {
-      if (!user) return;
-      
-      currentSessionId = generateSessionId();
-      const sessionData = {
-        sessionId: currentSessionId,
-        lastActive: new Date().toISOString(),
-        userAgent: navigator.userAgent,
-        platform: navigator.platform,
-        loginTime: new Date().toISOString()
-      };
-      
-      try {
-        await set(ref(database, `userSessions/${user.uid}`), sessionData);
-        console.log("✅ Session created for user:", user.email);
-      } catch (error) {
-        console.error("❌ Error updating session:", error);
-      }
-    }
-
-    // Monitor session changes for single device login
-    function monitorUserSession(user) {
-      const sessionRef = ref(database, `userSessions/${user.uid}`);
-      
-      sessionListener = onValue(sessionRef, (snapshot) => {
-        const sessionData = snapshot.val();
-        
-        if (!sessionData) {
-          console.log("Session cleared - user logged out");
-          return;
-        }
-        
-        if (sessionData.sessionId !== currentSessionId) {
-          // Different session detected - logout this device
-          console.log("🚨 Another device logged in. Logging out this device...");
-          
-          // Show alert and logout
-          showAlert("🔐 Your account was logged in from another device. You have been logged out for security.");
-          
-          // Sign out and redirect
-          setTimeout(() => {
-            signOut(auth).then(() => {
-              window.location.href = "/login.html?message=logged_out_another_device";
-            });
-          }, 2000);
-        }
-      }, (error) => {
-        console.error("❌ Error monitoring session:", error);
-      });
-    }
-
-    // Update last active time periodically
-    function startSessionHeartbeat(user) {
-      return setInterval(async () => {
-        if (currentUser && currentSessionId) {
-          try {
-            await update(ref(database, `userSessions/${user.uid}`), {
-              lastActive: new Date().toISOString()
-            });
-          } catch (error) {
-            console.error("Error updating heartbeat:", error);
-          }
-        }
-      }, 30000); // Update every 30 seconds
-    }
-
-    // ========== EXISTING FUNCTIONS (UNCHANGED) ==========
 
     // Search History Functions
     window.saveSearchHistory = async function(query, result, status) {
@@ -1424,7 +1344,7 @@
       }
     }
 
-    // Firebase Auth State Listener with Single Device Login
+    // Firebase Auth State Listener
     onAuthStateChanged(auth, (user) => {
         if (!user) {
             window.location.href = "/login.html"; 
@@ -1432,11 +1352,6 @@
             currentUser = user;
             updateUserInterface(user);
             initializeUserCredits(user);
-            
-            // Initialize single device login system
-            updateUserSession(user);
-            monitorUserSession(user);
-            startSessionHeartbeat(user);
         }
     });
 
@@ -1463,14 +1378,8 @@
         }
     });
 
-    // Logout functionality - clear session on logout
+    // Logout functionality
     document.getElementById('logoutBtn').addEventListener('click', function() {
-        if (currentUser) {
-            // Clear session data on logout
-            set(ref(database, `userSessions/${currentUser.uid}`), null);
-            console.log("✅ Session cleared on logout");
-        }
-        
         signOut(auth).then(() => {
             window.location.href = "/login.html";
         }).catch((error) => {
