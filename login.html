@@ -49,6 +49,7 @@
         margin-top: 12px;
         color: #aaa;
         cursor: pointer;
+        text-decoration: underline;
     }
 </style>
 </head>
@@ -57,18 +58,14 @@
 <div class="container">
     <h2>🔐 Nasir Login</h2>
 
-    <div id="registerBox" style="display:none;">
-        <input type="email" id="regEmail" placeholder="Email">
-        <input type="password" id="regPassword" placeholder="Password">
-        <button onclick="register()">Register</button>
-        <div class="toggle" onclick="toggleForms()">Already have account? Login</div>
-    </div>
-
+    <!-- LOGIN BOX (unchanged) -->
     <div id="loginBox">
         <input type="email" id="loginEmail" placeholder="Email">
         <input type="password" id="loginPassword" placeholder="Password">
         <button onclick="login()">Login</button>
-        <div class="toggle" onclick="toggleForms()">Create new account</div>
+
+        <!-- Now opens register.html -->
+        <div class="toggle" onclick="goRegister()">Create new account</div>
     </div>
 </div>
 
@@ -76,8 +73,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
     import { 
         getAuth, 
-        createUserWithEmailAndPassword,
-        signInWithEmailAndPassword 
+        signInWithEmailAndPassword
     } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -93,26 +89,12 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    function toggleForms() {
-        document.getElementById("loginBox").style.display =
-            document.getElementById("loginBox").style.display === "none" ? "block" : "none";
-
-        document.getElementById("registerBox").style.display =
-            document.getElementById("registerBox").style.display === "none" ? "block" : "none";
+    // NEW: redirect to register.html
+    window.goRegister = function () {
+        window.location.href = "register.html";
     }
 
-    window.register = function () {
-        const email = document.getElementById("regEmail").value;
-        const password = document.getElementById("regPassword").value;
-
-        createUserWithEmailAndPassword(auth, email, password)
-            .then(() => {
-                alert("Account created successfully!");
-                window.location.href = "https://nasir-hacker-database.vercel.app";
-            })
-            .catch((error) => alert(error.message));
-    }
-
+    // LOGIN FUNCTION (unchanged)
     window.login = function () {
         const email = document.getElementById("loginEmail").value;
         const password = document.getElementById("loginPassword").value;
@@ -123,7 +105,6 @@
             })
             .catch((error) => alert("Invalid login: " + error.message));
     }
-
 </script>
 
 </body>
