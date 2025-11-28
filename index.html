@@ -977,7 +977,10 @@
     let currentUser = null;
     let userCredits = 0;
     let isUnlimited = false;
+
+    // Single Device Login Variables
     let currentSessionId = null;
+    let sessionListener = null;
 
     // List of users with unlimited credits
     const unlimitedUsers = [
@@ -985,6 +988,8 @@
       "owner@nasir.com"
     ];
 
+    // ========== SINGLE DEVICE LOGIN SYSTEM ==========
+    
     // Generate unique session ID for this device
     function generateSessionId() {
       return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -999,14 +1004,15 @@
         sessionId: currentSessionId,
         lastActive: new Date().toISOString(),
         userAgent: navigator.userAgent,
-        platform: navigator.platform
+        platform: navigator.platform,
+        loginTime: new Date().toISOString()
       };
       
       try {
         await set(ref(database, `userSessions/${user.uid}`), sessionData);
-        console.log("Session updated for user:", user.email);
+        console.log("✅ Session created for user:", user.email);
       } catch (error) {
-        console.error("Error updating session:", error);
+        console.error("❌ Error updating session:", error);
       }
     }
 
@@ -1014,21 +1020,49 @@
     function monitorUserSession(user) {
       const sessionRef = ref(database, `userSessions/${user.uid}`);
       
-      onValue(sessionRef, (snapshot) => {
+      sessionListener = onValue(sessionRef, (snapshot) => {
         const sessionData = snapshot.val();
         
-        if (sessionData && sessionData.sessionId !== currentSessionId) {
+        if (!sessionData) {
+          console.log("Session cleared - user logged out");
+          return;
+        }
+        
+        if (sessionData.sessionId !== currentSessionId) {
           // Different session detected - logout this device
-          console.log("Another device logged in. Logging out this device...");
-          showAlert("Your account was logged in from another device. You have been logged out.");
-          signOut(auth).then(() => {
-            window.location.href = "/login.html";
-          });
+          console.log("🚨 Another device logged in. Logging out this device...");
+          
+          // Show alert and logout
+          showAlert("🔐 Your account was logged in from another device. You have been logged out for security.");
+          
+          // Sign out and redirect
+          setTimeout(() => {
+            signOut(auth).then(() => {
+              window.location.href = "/login.html?message=logged_out_another_device";
+            });
+          }, 2000);
         }
       }, (error) => {
-        console.error("Error monitoring session:", error);
+        console.error("❌ Error monitoring session:", error);
       });
     }
+
+    // Update last active time periodically
+    function startSessionHeartbeat(user) {
+      return setInterval(async () => {
+        if (currentUser && currentSessionId) {
+          try {
+            await update(ref(database, `userSessions/${user.uid}`), {
+              lastActive: new Date().toISOString()
+            });
+          } catch (error) {
+            console.error("Error updating heartbeat:", error);
+          }
+        }
+      }, 30000); // Update every 30 seconds
+    }
+
+    // ========== EXISTING FUNCTIONS (UNCHANGED) ==========
 
     // Search History Functions
     window.saveSearchHistory = async function(query, result, status) {
@@ -1399,16 +1433,10 @@
             updateUserInterface(user);
             initializeUserCredits(user);
             
-            // Initialize single device login
+            // Initialize single device login system
             updateUserSession(user);
             monitorUserSession(user);
-            
-            // Update session every 30 seconds to keep it active
-            setInterval(() => {
-                if (currentUser) {
-                    updateUserSession(currentUser);
-                }
-            }, 30000);
+            startSessionHeartbeat(user);
         }
     });
 
@@ -1440,6 +1468,7 @@
         if (currentUser) {
             // Clear session data on logout
             set(ref(database, `userSessions/${currentUser.uid}`), null);
+            console.log("✅ Session cleared on logout");
         }
         
         signOut(auth).then(() => {
