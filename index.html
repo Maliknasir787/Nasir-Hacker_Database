@@ -957,7 +957,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-    import { getDatabase, ref, set, get, update } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+    import { getDatabase, ref, set, get, update, onValue } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
@@ -977,12 +977,58 @@
     let currentUser = null;
     let userCredits = 0;
     let isUnlimited = false;
+    let currentSessionId = null;
 
     // List of users with unlimited credits
     const unlimitedUsers = [
       "nasirjafarmaibal@gmail.com",
       "owner@nasir.com"
     ];
+
+    // Generate unique session ID for this device
+    function generateSessionId() {
+      return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    // Update user session in Firebase
+    async function updateUserSession(user) {
+      if (!user) return;
+      
+      currentSessionId = generateSessionId();
+      const sessionData = {
+        sessionId: currentSessionId,
+        lastActive: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+        platform: navigator.platform
+      };
+      
+      try {
+        await set(ref(database, `userSessions/${user.uid}`), sessionData);
+        console.log("Session updated for user:", user.email);
+      } catch (error) {
+        console.error("Error updating session:", error);
+      }
+    }
+
+    // Monitor session changes for single device login
+    function monitorUserSession(user) {
+      const sessionRef = ref(database, `userSessions/${user.uid}`);
+      
+      onValue(sessionRef, (snapshot) => {
+        const sessionData = snapshot.val();
+        
+        if (sessionData && sessionData.sessionId !== currentSessionId) {
+          // Different session detected - logout this device
+          console.log("Another device logged in. Logging out this device...");
+          showAlert("Your account was logged in from another device. You have been logged out.");
+          signOut(auth).then(() => {
+            window.location.href = "/login.html";
+          });
+        }
+      }, (error) => {
+        console.error("Error monitoring session:", error);
+      });
+    }
 
     // Search History Functions
     window.saveSearchHistory = async function(query, result, status) {
@@ -1344,7 +1390,7 @@
       }
     }
 
-    // Firebase Auth State Listener
+    // Firebase Auth State Listener with Single Device Login
     onAuthStateChanged(auth, (user) => {
         if (!user) {
             window.location.href = "/login.html"; 
@@ -1352,6 +1398,17 @@
             currentUser = user;
             updateUserInterface(user);
             initializeUserCredits(user);
+            
+            // Initialize single device login
+            updateUserSession(user);
+            monitorUserSession(user);
+            
+            // Update session every 30 seconds to keep it active
+            setInterval(() => {
+                if (currentUser) {
+                    updateUserSession(currentUser);
+                }
+            }, 30000);
         }
     });
 
@@ -1378,8 +1435,13 @@
         }
     });
 
-    // Logout functionality
+    // Logout functionality - clear session on logout
     document.getElementById('logoutBtn').addEventListener('click', function() {
+        if (currentUser) {
+            // Clear session data on logout
+            set(ref(database, `userSessions/${currentUser.uid}`), null);
+        }
+        
         signOut(auth).then(() => {
             window.location.href = "/login.html";
         }).catch((error) => {
