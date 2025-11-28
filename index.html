@@ -1,3 +1,5 @@
+ 
+
 <!doctype html>
 <html lang="en"> 
  <head> 
@@ -244,7 +246,7 @@
  
  <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
@@ -264,15 +266,6 @@ onAuthStateChanged(auth, (user) => {
         window.location.href = "/login.html"; 
     }
 });
-
-// Make logout function available globally
-window.logout = function() {
-    signOut(auth).then(() => {
-        window.location.href = "/login.html";
-    }).catch((error) => {
-        console.error("Logout error:", error);
-    });
-};
  </script>
  
  <body> 
@@ -336,103 +329,38 @@ window.logout = function() {
         return;
       }
 
-      responseBox.innerHTML = "<p style='color: #FFD700; font-weight: bold;'>⌛ Fetching data... Please wait</p>";
+      responseBox.innerHTML = "<p style='color: #FFD700; font-weight: bold;'>⌛ Fetching...</p>";
       responseBox.style.display = "block";
       shareButton.style.display = "none";
       copyButton.style.display = "none";
+     
 
-      // Try multiple API endpoints and CORS proxies
-      const apiEndpoints = [
-        `https://api.allorigins.win/get?url=${encodeURIComponent(`https://legendxdata.site/Api/simdata.php?phone=${number}`)}`,
-        `https://cors-anywhere.herokuapp.com/https://legendxdata.site/Api/simdata.php?phone=${number}`,
-        `https://thingproxy.freeboard.io/fetch/https://legendxdata.site/Api/simdata.php?phone=${number}`,
-        `https://legendxdata.site/Api/simdata.php?phone=${number}` // Direct call
-      ];
+      const url = `https://api.allorigins.win/get?url=${encodeURIComponent(`https://legendxdata.site/Api/simdata.php?phone=${number}`)}`;
 
-      let success = false;
-      let lastError = '';
+      try {
+        const res = await fetch(url);
+        const json = await res.json();
+        const apiData = JSON.parse(json.contents);
 
-      for (let i = 0; i < apiEndpoints.length && !success; i++) {
-        try {
-          console.log(`Trying API endpoint ${i + 1}: ${apiEndpoints[i]}`);
-          
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-          
-          const res = await fetch(apiEndpoints[i], {
-            method: 'GET',
-            signal: controller.signal,
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json'
-            }
+        if (apiData.success && Array.isArray(apiData.records) && apiData.records.length > 0) {
+          let content = "";
+          apiData.records.forEach((rec, index) => {
+            content += `Result ${index + 1}:\n`;
+            content += `📞 Mobile: ${rec["Mobile"] || "Not found"}\n`;
+            content += `👤 Name: ${rec["Name"] || "Not found"}\n`;
+            content += `🆔 CNIC: ${rec["CNIC"] || "Not found"}\n`;
+            content += `📍 Address: ${rec["Address"] || "Not found"}\n`;
+            content += `🌍 Country: ${rec["Country"] || "Not found"}\n\n`;
           });
-          
-          clearTimeout(timeoutId);
 
-          if (!res.ok) {
-            throw new Error(`HTTP error! status: ${res.status}`);
-          }
-
-          let data;
-          
-          // Handle different response types
-          if (apiEndpoints[i].includes('api.allorigins.win')) {
-            const json = await res.json();
-            data = JSON.parse(json.contents);
-          } else if (apiEndpoints[i].includes('cors-anywhere') || apiEndpoints[i].includes('thingproxy')) {
-            data = await res.json();
-          } else {
-            // Direct API call
-            const text = await res.text();
-            try {
-              data = JSON.parse(text);
-            } catch (e) {
-              throw new Error('Invalid JSON response from API');
-            }
-          }
-
-          if (data && data.success && Array.isArray(data.records) && data.records.length > 0) {
-            let content = "";
-            data.records.forEach((rec, index) => {
-              content += `Result ${index + 1}:\n`;
-              content += `📞 Mobile: ${rec["Mobile"] || "Not found"}\n`;
-              content += `👤 Name: ${rec["Name"] || "Not found"}\n`;
-              content += `🆔 CNIC: ${rec["CNIC"] || "Not found"}\n`;
-              content += `📍 Address: ${rec["Address"] || "Not found"}\n`;
-              content += `🌍 Country: ${rec["Country"] || "Not found"}\n\n`;
-            });
-
-            responseBox.innerText = content.trim();
-            shareButton.style.display = "inline-block";
-            copyButton.style.display = "inline-block";
-            success = true;
-          } else {
-            responseBox.innerHTML = `<p style="color: #FFD700; font-size: 16px; font-weight: bold;">❌ Data not found for: ${number}</p>`;
-            success = true; // Consider this success as we got a valid response
-          }
-          
-        } catch (error) {
-          console.error(`API attempt ${i + 1} failed:`, error);
-          lastError = error.message;
-          
-          if (i === apiEndpoints.length - 1) {
-            // Last attempt failed
-            responseBox.innerHTML = `
-              <p style="color: red; font-size: 16px; font-weight: bold;">
-                ❌ API Error: ${lastError}
-              </p>
-              <p style="color: #FFD700; margin-top: 10px;">
-                Please check your internet connection and try again.
-              </p>
-            `;
-          } else {
-            // Show trying next endpoint message
-            responseBox.innerHTML = `<p style="color: #FFD700; font-weight: bold;">⌛ Trying alternative API endpoint... (${i + 1}/${apiEndpoints.length})</p>`;
-            // Small delay before next attempt
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
+          responseBox.innerText = content.trim();
+          shareButton.style.display = "inline-block";
+          copyButton.style.display = "inline-block";
+        } else {
+          responseBox.innerHTML = `<p style="color: #FFD700; font-size: 16px; font-weight: bold;">❌ Oops! Data not found.</p>`;
         }
+      } catch (e) {
+        responseBox.innerHTML = `<p style="color: red; font-size: 16px; font-weight: bold;">Error fetching data. Please try again later.</p>`;
       }
     }
 
@@ -453,21 +381,9 @@ window.logout = function() {
 
     function copyToClipboard() {
       const text = document.getElementById("responseBox").innerText;
-      navigator.clipboard.writeText(text).then(() => {
-        alert("✅ Data copied to clipboard!");
-      }).catch(err => {
-        alert("❌ Failed to copy: " + err);
-      });
+      navigator.clipboard.writeText(text).then(() => alert("Copied to clipboard!"));
     }
 
-    // Allow Enter key to trigger search
-    document.getElementById('number').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        fetchData();
-      }
-    });
-
-    // Show popup after 10 seconds
     setTimeout(() => {
       document.getElementById("popupOverlay").style.display = "flex";
     }, 10000);
