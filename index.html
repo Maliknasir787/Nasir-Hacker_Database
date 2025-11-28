@@ -905,9 +905,9 @@
       drops = Array(columns).fill(1);
     });
 
-    // Main fetch data function
+    // Main fetch data function - FIXED API CALL
     window.fetchData = async function() {
-      console.log("fetchData function called!"); // Debug log
+      console.log("fetchData function called!");
       
       const number = document.getElementById("number").value.trim();
       const responseBox = document.getElementById("responseBox");
@@ -928,30 +928,45 @@
         return;
       }
 
-      responseBox.innerHTML = "<p style='color: #FFD700; font-weight: bold;'>⌛ Fetching...</p>";
+      responseBox.innerHTML = "<p style='color: #FFD700; font-weight: bold;'>⌛ Fetching data from database...</p>";
       responseBox.style.display = "block";
       shareButton.style.display = "none";
       copyButton.style.display = "none";
      
-      // Primary API (direct)
-      const realApi = `https://legendxdata.site/Api/simdata.php?phone=${encodeURIComponent(number)}`;
+      // Primary API URL
+      const apiUrl = `https://legendxdata.site/Api/simdata.php?phone=${encodeURIComponent(number)}`;
 
       try {
-        // Try direct call first
-        let response = await fetch(realApi);
+        console.log("Making API request to:", apiUrl);
         
-        // If direct call fails, try with CORS proxy
-        if (!response.ok) {
-          const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(realApi)}`;
+        // Try direct fetch first
+        let response;
+        try {
+          response = await fetch(apiUrl);
+          console.log("Direct fetch response status:", response.status);
+        } catch (directError) {
+          console.log("Direct fetch failed, trying CORS proxy:", directError);
+          // If direct fails, try with CORS proxy
+          const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
           response = await fetch(proxyUrl);
         }
 
         if (!response.ok) {
-          throw new Error("Network response was not ok");
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const data = await response.json();
-        console.log("API Response:", data); // Debug log
+        // Parse response based on whether we used proxy or not
+        let data;
+        if (response.url.includes('allorigins.win')) {
+          // Proxy response
+          const proxyData = await response.json();
+          data = JSON.parse(proxyData.contents);
+        } else {
+          // Direct response
+          data = await response.json();
+        }
+
+        console.log("API Response data:", data);
 
         // Handle API response
         let searchStatus = "error";
@@ -979,7 +994,7 @@
             await window.useCredit();
           }
         } else {
-          responseBox.innerHTML = `<p style="color: #FFD700; font-size: 16px; font-weight: bold;">❌ Oops! Data not found.</p>`;
+          responseBox.innerHTML = `<p style="color: #FFD700; font-size: 16px; font-weight: bold;">❌ Oops! Data not found for this number.</p>`;
           searchStatus = "not_found";
         }
         
@@ -988,8 +1003,8 @@
           await window.saveSearchHistory(number, searchStatus, searchResult);
         }
       } catch (error) {
-        console.error("Fetch error:", error);
-        responseBox.innerHTML = `<p style="color: red; font-size: 16px; font-weight: bold;">Error fetching data. Please try again later.</p>`;
+        console.error("Fetch error details:", error);
+        responseBox.innerHTML = `<p style="color: red; font-size: 16px; font-weight: bold;">⚠️ Error: ${error.message}. Please check the number and try again.</p>`;
         
         // Save search history with error status
         if (window.saveSearchHistory) {
@@ -1096,6 +1111,7 @@
                 historyItem.onclick = function() {
                     document.getElementById('number').value = item.query;
                     window.hideError();
+                    document.getElementById('dropdownMenu').classList.remove('show');
                 };
                 
                 const date = new Date(item.timestamp);
