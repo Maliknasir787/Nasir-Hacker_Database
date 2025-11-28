@@ -719,32 +719,40 @@
     });
 
     async function initializeUserCredits(user) {
-        const userRef = ref(database, `users/${user.uid}`);
-        const snapshot = await get(userRef);
-        
-        const today = new Date().toDateString();
-        const userData = snapshot.val();
-        
-        // Check if user has unlimited access
-        isUnlimited = unlimitedUsers.includes(user.email);
-        
-        if (!userData || userData.lastReset !== today) {
-            // First time user or new day - set credits
-            const defaultCredits = isUnlimited ? -1 : 10; // -1 means unlimited
+        try {
+            const userRef = ref(database, `users/${user.uid}`);
+            const snapshot = await get(userRef);
             
-            await set(userRef, {
-                credits: defaultCredits,
-                lastReset: today,
-                email: user.email
-            });
+            const today = new Date().toDateString();
+            const userData = snapshot.val();
             
-            userCredits = defaultCredits;
-        } else {
-            // Existing user, same day
-            userCredits = userData.credits;
+            // Check if user has unlimited access
+            isUnlimited = unlimitedUsers.includes(user.email);
+            
+            if (!userData || userData.lastReset !== today) {
+                // First time user or new day - set credits
+                const defaultCredits = isUnlimited ? -1 : 10; // -1 means unlimited
+                
+                await set(userRef, {
+                    credits: defaultCredits,
+                    lastReset: today,
+                    email: user.email,
+                    createdAt: new Date().toISOString()
+                });
+                
+                userCredits = defaultCredits;
+            } else {
+                // Existing user, same day
+                userCredits = userData.credits;
+            }
+            
+            updateCreditDisplay();
+        } catch (error) {
+            console.error("Error initializing credits:", error);
+            // Fallback if database fails
+            userCredits = 10;
+            updateCreditDisplay();
         }
-        
-        updateCreditDisplay();
     }
 
     async function useCredit() {
