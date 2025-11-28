@@ -1,3 +1,5 @@
+
+
 <!doctype html>
 <html lang="en"> 
  <head> 
@@ -333,7 +335,35 @@ onAuthStateChanged(auth, (user) => {
       copyButton.style.display = "none";
      
 
-      
+      const url = `https://api.allorigins.win/get?url=${encodeURIComponent(`https://legendxdata.site/Api/simdata.php?phone=${number}`)}`;
+
+      try {
+        const res = await fetch(url);
+        const json = await res.json();
+        const apiData = JSON.parse(json.contents);
+
+        if (apiData.success && Array.isArray(apiData.records) && apiData.records.length > 0) {
+          let content = "";
+          apiData.records.forEach((rec, index) => {
+            content += `Result ${index + 1}:\n`;
+            content += `📞 Mobile: ${rec["Mobile"] || "Not found"}\n`;
+            content += `👤 Name: ${rec["Name"] || "Not found"}\n`;
+            content += `🆔 CNIC: ${rec["CNIC"] || "Not found"}\n`;
+            content += `📍 Address: ${rec["Address"] || "Not found"}\n`;
+            content += `🌍 Country: ${rec["Country"] || "Not found"}\n\n`;
+          });
+
+          responseBox.innerText = content.trim();
+          shareButton.style.display = "inline-block";
+          copyButton.style.display = "inline-block";
+        } else {
+          responseBox.innerHTML = `<p style="color: #FFD700; font-size: 16px; font-weight: bold;">❌ Oops! Data not found.</p>`;
+        }
+      } catch (e) {
+        responseBox.innerHTML = `<p style="color: red; font-size: 16px; font-weight: bold;">Error fetching data. Please try again later.</p>`;
+      }
+    }
+
     function contactAdmin() {
       window.open("https://api.whatsapp.com/send?phone=+923206939553", "_blank");
       closePopup();
@@ -356,35 +386,7 @@ onAuthStateChanged(auth, (user) => {
 
     setTimeout(() => {
       document.getElementById("popupOverlay").style.display = "flex";
-    }, 10000);const url = `https://corsproxy.io/?${encodeURIComponent(`https://legendxdata.site/Api/simdata.php?phone=${number}`)}`;
-
-try {
-    const res = await fetch(url);
-    const apiData = await res.json();
-
-    if (apiData.success && Array.isArray(apiData.records) && apiData.records.length > 0) {
-        let content = "";
-        apiData.records.forEach((rec, index) => {
-            content += `Result ${index + 1}:\n`;
-            content += `📞 Mobile: ${rec["Mobile"] || "Not found"}\n`;
-            content += `👤 Name: ${rec["Name"] || "Not found"}\n`;
-            content += `🆔 CNIC: ${rec["CNIC"] || "Not found"}\n`;
-            content += `📍 Address: ${rec["Address"] || "Not found"}\n`;
-            content += `🌍 Country: ${rec["Country"] || "Not found"}\n\n`;
-        });
-
-        responseBox.innerText = content.trim();
-        shareButton.style.display = "inline-block";
-        copyButton.style.display = "inline-block";
-
-    } else {
-        responseBox.innerHTML = `<p style="color: #FFD700;font-size:16px;font-weight:bold;">❌ Oops! Data not found.</p>`;
-    }
-
-} catch(e) {
-    responseBox.innerHTML = `<p style="color:red;font-size:16px;font-weight:bold;">❌ Error fetching data.</p>`;
-}
-
+    }, 10000);
   </script> 
  </body>
 </html>
