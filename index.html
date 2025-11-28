@@ -239,9 +239,7 @@
       backdrop-filter: blur(15px);
       border-radius: var(--border-radius);
       padding: 15px;
-      min-width: 280px;
-      max-height: 70vh;
-      overflow-y: auto;
+      min-width: 200px;
       box-shadow: var(--shadow), var(--glow);
       border: 1px solid rgba(255, 255, 255, 0.1);
       display: none;
@@ -321,115 +319,6 @@
 
     .menu-item.logout:hover {
       background: rgba(244, 67, 54, 0.1);
-    }
-
-    /* History Section in Dropdown */
-    .history-section {
-      margin-top: 10px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      padding-top: 10px;
-    }
-
-    .history-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-      padding: 0 5px;
-    }
-
-    .history-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    .clear-history {
-      background: none;
-      border: none;
-      color: var(--text-secondary);
-      font-size: 12px;
-      cursor: pointer;
-      padding: 4px 8px;
-      border-radius: 4px;
-      transition: var(--transition);
-    }
-
-    .clear-history:hover {
-      color: var(--error);
-      background: rgba(244, 67, 54, 0.1);
-    }
-
-    .history-list {
-      max-height: 200px;
-      overflow-y: auto;
-      border-radius: 8px;
-      background: rgba(0, 0, 0, 0.2);
-      padding: 5px;
-    }
-
-    .history-item {
-      padding: 8px 10px;
-      border-radius: 6px;
-      margin-bottom: 5px;
-      background: rgba(255, 255, 255, 0.05);
-      border-left: 3px solid var(--primary);
-      cursor: pointer;
-      transition: var(--transition);
-    }
-
-    .history-item:hover {
-      background: rgba(108, 99, 255, 0.1);
-    }
-
-    .history-query {
-      font-size: 13px;
-      font-weight: 500;
-      margin-bottom: 3px;
-      color: var(--text);
-    }
-
-    .history-details {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      color: var(--text-secondary);
-    }
-
-    .history-status {
-      display: inline-block;
-      padding: 2px 6px;
-      border-radius: 10px;
-      font-size: 10px;
-      font-weight: 600;
-    }
-
-    .status-found {
-      background: rgba(76, 175, 80, 0.2);
-      color: #4caf50;
-    }
-
-    .status-not-found {
-      background: rgba(255, 152, 0, 0.2);
-      color: #ff9800;
-    }
-
-    .status-error {
-      background: rgba(244, 67, 54, 0.2);
-      color: #f44336;
-    }
-
-    .history-empty {
-      text-align: center;
-      padding: 20px 10px;
-      color: var(--text-secondary);
-      font-size: 12px;
-    }
-
-    .history-empty i {
-      font-size: 24px;
-      margin-bottom: 8px;
-      opacity: 0.5;
     }
 
     /* Main Content */
@@ -679,6 +568,182 @@
       box-shadow: 0 0 25px rgba(108, 99, 255, 0.6);
     }
 
+    /* Search History Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .modal-content {
+      background: rgba(30, 30, 46, 0.95);
+      border-radius: 20px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow: hidden;
+      border: 1px solid rgba(108, 99, 255, 0.4);
+      box-shadow: var(--shadow), var(--glow);
+      animation: popupAppear 0.4s ease;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 25px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .modal-header h3 {
+      color: var(--primary);
+      font-size: 22px;
+      margin: 0;
+    }
+
+    .close-modal {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 24px;
+      cursor: pointer;
+      transition: var(--transition);
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .close-modal:hover {
+      background: rgba(244, 67, 54, 0.1);
+      color: var(--error);
+    }
+
+    .modal-body {
+      padding: 20px;
+      max-height: calc(80vh - 80px);
+      overflow-y: auto;
+    }
+
+    .history-actions {
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .clear-history-btn {
+      background: rgba(244, 67, 54, 0.2);
+      color: var(--error);
+      border: 1px solid rgba(244, 67, 54, 0.4);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: var(--transition);
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .clear-history-btn:hover {
+      background: rgba(244, 67, 54, 0.3);
+      transform: translateY(-2px);
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .history-item {
+      background: rgba(45, 45, 65, 0.6);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: var(--transition);
+    }
+
+    .history-item:hover {
+      background: rgba(45, 45, 65, 0.8);
+      border-color: rgba(108, 99, 255, 0.2);
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .history-query {
+      font-weight: 600;
+      color: var(--primary);
+      font-size: 16px;
+    }
+
+    .history-date {
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    .history-status {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 10px;
+    }
+
+    .status-found {
+      background: rgba(76, 175, 80, 0.2);
+      color: #4caf50;
+    }
+
+    .status-not-found {
+      background: rgba(255, 152, 0, 0.2);
+      color: #ff9800;
+    }
+
+    .status-error {
+      background: rgba(244, 67, 54, 0.2);
+      color: var(--error);
+    }
+
+    .history-result {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 13px;
+      color: var(--text-secondary);
+      max-height: 100px;
+      overflow-y: auto;
+    }
+
+    .no-history {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-secondary);
+    }
+
+    .no-history i {
+      font-size: 48px;
+      margin-bottom: 15px;
+      opacity: 0.5;
+    }
+
     @keyframes fadeIn {
       from { opacity: 0; transform: scale(0.9);}
       to { opacity: 1; transform: scale(1);}
@@ -687,25 +752,6 @@
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(30px);}
       to { opacity: 1; transform: translateY(0);}
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-      .header {
-        padding: 15px 20px;
-      }
-      
-      .logo-text {
-        font-size: 18px;
-      }
-      
-      .welcome-text {
-        font-size: 14px;
-      }
-      
-      .dropdown-menu {
-        min-width: 250px;
-      }
     }
   </style> 
  </head>
@@ -756,6 +802,11 @@
           </div>
         </div>
         
+        <button class="menu-item" id="searchHistoryBtn">
+          <i class="fas fa-history"></i>
+          <span>Search History</span>
+        </button>
+        
         <button class="menu-item" onclick="showAlert('Profile settings coming soon!')">
           <i class="fas fa-user-cog"></i>
           <span>Profile Settings</span>
@@ -765,16 +816,6 @@
           <i class="fas fa-camera"></i>
           <span>Change Photo</span>
         </button>
-        
-        <div class="history-section">
-          <div class="history-header">
-            <div class="history-title">Recent Searches</div>
-            <button class="clear-history" onclick="window.clearHistory()">Clear</button>
-          </div>
-          <div class="history-list" id="historyList">
-            <!-- History items will be populated here -->
-          </div>
-        </div>
         
         <button class="menu-item logout" id="logoutBtn">
           <i class="fas fa-sign-out-alt"></i>
@@ -817,6 +858,26 @@
       <button class="cancel-btn" onclick="window.closePopup()">Cancel</button> 
     </div> 
   </div> 
+
+  <!-- Search History Modal -->
+  <div id="searchHistoryModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>🔍 Search History</h3>
+        <button class="close-modal" id="closeHistoryModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="history-actions">
+          <button class="clear-history-btn" id="clearHistoryBtn">
+            <i class="fas fa-trash"></i> Clear All History
+          </button>
+        </div>
+        <div class="history-list" id="historyList">
+          <!-- History items will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script>
     // Global variables
@@ -861,16 +922,130 @@
       navigator.clipboard.writeText(text).then(() => window.showAlert("Copied to clipboard!"));
     }
 
-    window.clearHistory = function() {
-      if (!currentUser) return;
-      
-      if (confirm("Are you sure you want to clear your search history?")) {
-        const historyRef = ref(database, `searchHistory/${currentUser.uid}`);
-        set(historyRef, null).then(() => {
-          window.showAlert("History cleared successfully!");
-          window.loadHistory();
-        });
-      }
+    // Search History Functions
+    window.saveSearchHistory = async function(query, result, status) {
+        if (!currentUser) return;
+        
+        try {
+            const historyRef = ref(database, `searchHistory/${currentUser.uid}`);
+            const snapshot = await get(historyRef);
+            let history = snapshot.val() || [];
+            
+            // Limit history to 50 items
+            if (history.length >= 50) {
+                history = history.slice(0, 49);
+            }
+            
+            // Add new search to beginning of array
+            const searchEntry = {
+                query: query,
+                result: result,
+                status: status, // 'found', 'not_found', 'error'
+                timestamp: new Date().toISOString(),
+                id: Date.now().toString()
+            };
+            
+            history.unshift(searchEntry);
+            
+            await set(historyRef, history);
+        } catch (error) {
+            console.error("Error saving search history:", error);
+        }
+    }
+
+    window.loadSearchHistory = async function() {
+        if (!currentUser) return [];
+        
+        try {
+            const historyRef = ref(database, `searchHistory/${currentUser.uid}`);
+            const snapshot = await get(historyRef);
+            return snapshot.val() || [];
+        } catch (error) {
+            console.error("Error loading search history:", error);
+            return [];
+        }
+    }
+
+    window.displaySearchHistory = async function() {
+        const historyList = document.getElementById('historyList');
+        const history = await window.loadSearchHistory();
+        
+        if (history.length === 0) {
+            historyList.innerHTML = `
+                <div class="no-history">
+                    <i class="fas fa-history"></i>
+                    <p>No search history yet</p>
+                    <p style="font-size: 12px; margin-top: 10px;">Your searches will appear here</p>
+                </div>
+            `;
+            return;
+        }
+        
+        historyList.innerHTML = history.map(item => `
+            <div class="history-item">
+                <div class="history-header">
+                    <span class="history-query">${item.query}</span>
+                    <span class="history-date">${new Date(item.timestamp).toLocaleString()}</span>
+                </div>
+                <div>
+                    <span class="history-status ${getStatusClass(item.status)}">${getStatusText(item.status)}</span>
+                </div>
+                ${item.result ? `<div class="history-result">${formatResultPreview(item.result)}</div>` : ''}
+            </div>
+        `).join('');
+    }
+
+    function getStatusClass(status) {
+        switch(status) {
+            case 'found': return 'status-found';
+            case 'not_found': return 'status-not-found';
+            case 'error': return 'status-error';
+            default: return 'status-error';
+        }
+    }
+
+    function getStatusText(status) {
+        switch(status) {
+            case 'found': return 'Data Found';
+            case 'not_found': return 'No Data';
+            case 'error': return 'Error';
+            default: return 'Unknown';
+        }
+    }
+
+    function formatResultPreview(result) {
+        // Limit preview to first 3 lines or 150 characters
+        const lines = result.split('\n').slice(0, 3);
+        let preview = lines.join('\n');
+        
+        if (preview.length > 150) {
+            preview = preview.substring(0, 150) + '...';
+        }
+        
+        return preview;
+    }
+
+    window.clearSearchHistory = async function() {
+        if (!currentUser || !confirm('Are you sure you want to clear all search history?')) return;
+        
+        try {
+            const historyRef = ref(database, `searchHistory/${currentUser.uid}`);
+            await set(historyRef, []);
+            await window.displaySearchHistory();
+            window.showAlert('Search history cleared successfully!');
+        } catch (error) {
+            console.error("Error clearing search history:", error);
+            window.showAlert('Error clearing search history. Please try again.');
+        }
+    }
+
+    window.showSearchHistory = function() {
+        document.getElementById('searchHistoryModal').style.display = 'flex';
+        window.displaySearchHistory();
+    }
+
+    window.closeSearchHistory = function() {
+        document.getElementById('searchHistoryModal').style.display = 'none';
     }
 
     // Matrix Animation
@@ -905,9 +1080,9 @@
       drops = Array(columns).fill(1);
     });
 
-    // Main fetch data function - COMPLETELY REWRITTEN
+    // Main fetch data function
     window.fetchData = async function() {
-      console.log("fetchData function called!");
+      console.log("fetchData function called!"); // Debug log
       
       const number = document.getElementById("number").value.trim();
       const responseBox = document.getElementById("responseBox");
@@ -928,106 +1103,102 @@
         return;
       }
 
-      responseBox.innerHTML = "<p style='color: #FFD700; font-weight: bold;'>⌛ Fetching data from database...</p>";
+      responseBox.innerHTML = "<p style='color: #FFD700; font-weight: bold;'>⌛ Fetching...</p>";
       responseBox.style.display = "block";
       shareButton.style.display = "none";
       copyButton.style.display = "none";
      
-      // Primary API URL
-      const apiUrl = `https://legendxdata.site/Api/simdata.php?phone=${encodeURIComponent(number)}`;
+      // Primary API (direct)
+      const realApi = `https://legendxdata.site/Api/simdata.php?phone=${encodeURIComponent(number)}`;
+
+      // Helper: try direct fetch first (fast), then fall back to proxy if necessary
+      async function tryDirectFetch(url, timeoutMs = 12000) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const res = await fetch(url, { signal: controller.signal });
+          clearTimeout(timer);
+          return res;
+        } catch (err) {
+          clearTimeout(timer);
+          throw err;
+        }
+      }
+
+      // Fallback proxy (AllOrigins raw)
+      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(realApi)}`;
 
       try {
-        console.log("Making API request to:", apiUrl);
-        
-        // SIMPLE FETCH - No complex proxy handling
-        const response = await fetch(apiUrl, {
-          method: 'GET',
-          mode: 'cors',
-          headers: {
-            'Accept': 'application/json',
-          }
-        });
-
-        console.log("Response status:", response.status);
-        console.log("Response headers:", response.headers);
-
-        // Get the response as text first to see what we're dealing with
-        const responseText = await response.text();
-        console.log("Raw response text:", responseText);
-
-        let data;
+        let res;
+        // 1) Try direct call
         try {
-          // Try to parse as JSON
-          data = JSON.parse(responseText);
-          console.log("Parsed JSON data:", data);
-        } catch (parseError) {
-          console.log("JSON parse failed, trying alternative parsing:", parseError);
-          // If direct JSON parse fails, try to extract JSON from the response
+          res = await tryDirectFetch(realApi, 12000);
+        } catch (directErr) {
+          // Direct failed (CORS/network/timeout) -> try proxy
+          res = await tryDirectFetch(proxyUrl, 12000);
+        }
+
+        if (!res || !res.ok) {
+          throw new Error("Network/Response error");
+        }
+
+        // Try to parse JSON
+        let apiData;
+        const contentType = res.headers.get("content-type") || "";
+
+        if (contentType.includes("application/json")) {
+          apiData = await res.json();
+        } else {
+          const txt = await res.text();
           try {
-            // Sometimes APIs return JSON wrapped in other content
-            const jsonMatch = responseText.match(/\{.*\}/s);
-            if (jsonMatch) {
-              data = JSON.parse(jsonMatch[0]);
-              console.log("Extracted JSON data:", data);
-            } else {
-              throw new Error("No JSON found in response");
+            apiData = JSON.parse(txt);
+          } catch (e) {
+            try {
+              const parsed = JSON.parse(txt);
+              if (parsed && parsed.contents) {
+                apiData = JSON.parse(parsed.contents);
+              } else {
+                throw e;
+              }
+            } catch (ee) {
+              throw new Error("Failed to parse API response");
             }
-          } catch (extractError) {
-            console.log("Alternative parsing failed:", extractError);
-            throw new Error("Failed to parse API response");
           }
         }
 
-        // Handle API response - SIMPLIFIED LOGIC
-        let searchStatus = "error";
-        let searchResult = null;
-        
-        // Check if we have valid data with records
-        if (data && data.records && Array.isArray(data.records)) {
-          console.log("Records found:", data.records.length);
-          
-          if (data.records.length > 0) {
-            let content = "";
-            data.records.forEach((rec, index) => {
-              content += `Result ${index + 1}:\n`;
-              content += `📞 Mobile: ${rec["Mobile"] || "Not found"}\n`;
-              content += `👤 Name: ${rec["Name"] || "Not found"}\n`;
-              content += `🆔 CNIC: ${rec["CNIC"] || "Not found"}\n`;
-              content += `📍 Address: ${rec["Address"] || "Not found"}\n`;
-              content += `🌍 Country: ${rec["Country"] || "Not found"}\n\n`;
-            });
+        // Handle API response
+        if (apiData && apiData.success && Array.isArray(apiData.records) && apiData.records.length > 0) {
+          let content = "";
+          apiData.records.forEach((rec, index) => {
+            content += `Result ${index + 1}:\n`;
+            content += `📞 Mobile: ${rec["Mobile"] || "Not found"}\n`;
+            content += `👤 Name: ${rec["Name"] || "Not found"}\n`;
+            content += `🆔 CNIC: ${rec["CNIC"] || "Not found"}\n`;
+            content += `📍 Address: ${rec["Address"] || "Not found"}\n`;
+            content += `🌍 Country: ${rec["Country"] || "Not found"}\n\n`;
+          });
 
-            responseBox.innerText = content.trim();
-            shareButton.style.display = "inline-block";
-            copyButton.style.display = "inline-block";
-            searchStatus = "found";
-            searchResult = content.trim();
-            
-            // Only deduct credit if data was found
-            if (window.useCredit) {
-              await window.useCredit();
-            }
-          } else {
-            responseBox.innerHTML = `<p style="color: #FFD700; font-size: 16px; font-weight: bold;">❌ No data found for this number.</p>`;
-            searchStatus = "not_found";
+          responseBox.innerText = content.trim();
+          shareButton.style.display = "inline-block";
+          copyButton.style.display = "inline-block";
+          
+          // Save successful search to history
+          await window.saveSearchHistory(number, content, 'found');
+          
+          // Only deduct credit if data was found
+          if (window.useCredit) {
+            await window.useCredit();
           }
         } else {
-          responseBox.innerHTML = `<p style="color: #FFD700; font-size: 16px; font-weight: bold;">❌ Invalid response format from server.</p>`;
-          searchStatus = "error";
+          responseBox.innerHTML = `<p style="color: #FFD700; font-size: 16px; font-weight: bold;">❌ Oops! Data not found.</p>`;
+          // Save not found search to history
+          await window.saveSearchHistory(number, null, 'not_found');
         }
-        
-        // Save search history
-        if (window.saveSearchHistory) {
-          await window.saveSearchHistory(number, searchStatus, searchResult);
-        }
-      } catch (error) {
-        console.error("Fetch error details:", error);
-        responseBox.innerHTML = `<p style="color: red; font-size: 16px; font-weight: bold;">⚠️ Network error. Please check your connection and try again.</p>`;
-        
-        // Save search history with error status
-        if (window.saveSearchHistory) {
-          await window.saveSearchHistory(number, "error", null);
-        }
+      } catch (e) {
+        console.error("Fetch error:", e);
+        responseBox.innerHTML = `<p style="color: red; font-size: 16px; font-weight: bold;">Error fetching data. Please try again later.</p>`;
+        // Save error to history
+        await window.saveSearchHistory(number, null, 'error');
       }
     }
 
@@ -1039,7 +1210,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-    import { getDatabase, ref, set, get, update, push, onValue, orderByChild, query, limitToLast } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+    import { getDatabase, ref, set, get, update } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
@@ -1073,98 +1244,6 @@
             return true;
         }
         return false;
-    }
-
-    window.saveSearchHistory = async function(query, status, result) {
-        if (!currentUser) return;
-        
-        const historyRef = ref(database, `searchHistory/${currentUser.uid}`);
-        const newHistoryRef = push(historyRef);
-        
-        await set(newHistoryRef, {
-            query: query,
-            status: status,
-            result: result,
-            timestamp: new Date().toISOString(),
-            userEmail: currentUser.email
-        });
-    }
-
-    window.loadHistory = function() {
-        if (!currentUser) return;
-        
-        const historyRef = ref(database, `searchHistory/${currentUser.uid}`);
-        const historyQuery = query(historyRef, orderByChild('timestamp'), limitToLast(10));
-        
-        onValue(historyQuery, (snapshot) => {
-            const historyList = document.getElementById('historyList');
-            historyList.innerHTML = '';
-            
-            if (!snapshot.exists()) {
-                historyList.innerHTML = `
-                    <div class="history-empty">
-                        <i class="fas fa-history"></i>
-                        <p>No search history yet</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            const historyData = snapshot.val();
-            const historyItems = [];
-            
-            for (const key in historyData) {
-                historyItems.push({
-                    id: key,
-                    ...historyData[key]
-                });
-            }
-            
-            // Sort by timestamp (newest first)
-            historyItems.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            
-            historyItems.forEach(item => {
-                const historyItem = document.createElement('div');
-                historyItem.className = 'history-item';
-                historyItem.onclick = function() {
-                    document.getElementById('number').value = item.query;
-                    window.hideError();
-                    document.getElementById('dropdownMenu').classList.remove('show');
-                };
-                
-                const date = new Date(item.timestamp);
-                const formattedDate = date.toLocaleDateString();
-                const formattedTime = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                
-                let statusClass = '';
-                let statusText = '';
-                
-                switch(item.status) {
-                    case 'found':
-                        statusClass = 'status-found';
-                        statusText = 'Found';
-                        break;
-                    case 'not_found':
-                        statusClass = 'status-not-found';
-                        statusText = 'Not Found';
-                        break;
-                    case 'error':
-                        statusClass = 'status-error';
-                        statusText = 'Error';
-                        break;
-                }
-                
-                historyItem.innerHTML = `
-                    <div class="history-query">${item.query}</div>
-                    <div class="history-details">
-                        <span>${formattedDate} ${formattedTime}</span>
-                        <span class="history-status ${statusClass}">${statusText}</span>
-                    </div>
-                `;
-                
-                historyList.appendChild(historyItem);
-            });
-        });
     }
 
     function updateCreditDisplay() {
@@ -1258,7 +1337,6 @@
             currentUser = user;
             updateUserInterface(user);
             initializeUserCredits(user);
-            window.loadHistory();
         }
     });
 
@@ -1266,6 +1344,23 @@
     document.getElementById('menuToggle').addEventListener('click', function() {
         const menu = document.getElementById('dropdownMenu');
         menu.classList.toggle('show');
+    });
+
+    // Search History Modal Events
+    document.getElementById('searchHistoryBtn').addEventListener('click', function() {
+        window.showSearchHistory();
+        document.getElementById('dropdownMenu').classList.remove('show');
+    });
+    
+    document.getElementById('closeHistoryModal').addEventListener('click', window.closeSearchHistory);
+    
+    document.getElementById('clearHistoryBtn').addEventListener('click', window.clearSearchHistory);
+    
+    // Close modal when clicking outside
+    document.getElementById('searchHistoryModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            window.closeSearchHistory();
+        }
     });
 
     // Logout functionality
