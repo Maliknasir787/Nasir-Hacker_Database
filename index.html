@@ -454,6 +454,15 @@
       box-shadow: 0 8px 20px rgba(85, 85, 85, 0.6) !important;
     }
 
+    .history-btn {
+      background: linear-gradient(90deg, #ff9800, #f57c00) !important;
+      box-shadow: 0 5px 15px rgba(255, 152, 0, 0.4) !important;
+    }
+
+    .history-btn:hover {
+      box-shadow: 0 8px 20px rgba(255, 152, 0, 0.6) !important;
+    }
+
     #responseBox {
       display: none;
       background: rgba(0, 0, 0, 0.35);
@@ -467,6 +476,147 @@
       animation: fadeIn 1s ease-in-out;
       max-height: 320px;
       overflow-y: auto;
+    }
+
+    /* History Modal */
+    .history-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      backdrop-filter: blur(10px);
+    }
+
+    .history-modal.show {
+      display: flex;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .history-content {
+      background: rgba(30, 30, 46, 0.95);
+      border-radius: 20px;
+      padding: 30px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 80vh;
+      overflow-y: auto;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: var(--shadow), var(--glow);
+      backdrop-filter: blur(15px);
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .history-title {
+      font-size: 24px;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .close-history {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 5px;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .close-history:hover {
+      color: var(--error);
+      background: rgba(244, 67, 54, 0.1);
+    }
+
+    .history-list {
+      display: grid;
+      gap: 15px;
+    }
+
+    .history-item {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 12px;
+      padding: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: var(--transition);
+    }
+
+    .history-item:hover {
+      border-color: rgba(108, 99, 255, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .history-query {
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--primary);
+      font-size: 16px;
+    }
+
+    .history-details {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .history-status {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-found {
+      background: rgba(76, 175, 80, 0.2);
+      color: #4caf50;
+    }
+
+    .status-not-found {
+      background: rgba(255, 152, 0, 0.2);
+      color: #ff9800;
+    }
+
+    .status-error {
+      background: rgba(244, 67, 54, 0.2);
+      color: #f44336;
+    }
+
+    .history-empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-secondary);
+    }
+
+    .history-empty i {
+      font-size: 48px;
+      margin-bottom: 15px;
+      opacity: 0.5;
     }
 
     /* Matrix Canvas */
@@ -577,6 +727,31 @@
       from { opacity: 0; transform: translateY(30px);}
       to { opacity: 1; transform: translateY(0);}
     }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .header {
+        padding: 15px 20px;
+      }
+      
+      .logo-text {
+        font-size: 18px;
+      }
+      
+      .welcome-text {
+        font-size: 14px;
+      }
+      
+      .history-content {
+        padding: 20px;
+        width: 95%;
+      }
+      
+      .history-details {
+        flex-direction: column;
+        gap: 5px;
+      }
+    }
   </style> 
  </head>
  
@@ -636,6 +811,11 @@
           <span>Change Photo</span>
         </button>
         
+        <button class="menu-item" onclick="window.showHistory()">
+          <i class="fas fa-history"></i>
+          <span>View History</span>
+        </button>
+        
         <button class="menu-item logout" id="logoutBtn">
           <i class="fas fa-sign-out-alt"></i>
           <span>Logout</span>
@@ -665,7 +845,23 @@
       
       <button id="shareButton" class="whatsapp-btn" onclick="window.shareWhatsApp()" style="display: none;">📲 Share on WhatsApp</button> 
       <button id="copyButton" class="copy-btn" onclick="window.copyToClipboard()" style="display: none;">📋 Copy Data</button> 
+      <button class="history-btn" onclick="window.showHistory()">📜 View History</button>
       <button class="telegram-btn" onclick="window.open('https://api.whatsapp.com/send?phone=+923206939553', '_blank')">💬 Owner Contact</button> 
+    </div>
+  </div>
+
+  <!-- History Modal -->
+  <div class="history-modal" id="historyModal">
+    <div class="history-content">
+      <div class="history-header">
+        <h2 class="history-title">Search History</h2>
+        <button class="close-history" onclick="window.closeHistory()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="history-list" id="historyList">
+        <!-- History items will be populated here -->
+      </div>
     </div>
   </div>
 
@@ -719,6 +915,15 @@
     window.copyToClipboard = function() {
       const text = document.getElementById("responseBox").innerText;
       navigator.clipboard.writeText(text).then(() => window.showAlert("Copied to clipboard!"));
+    }
+
+    window.showHistory = function() {
+      document.getElementById('historyModal').classList.add('show');
+      window.loadHistory();
+    }
+
+    window.closeHistory = function() {
+      document.getElementById('historyModal').classList.remove('show');
     }
 
     // Matrix Animation
@@ -840,6 +1045,9 @@
         }
 
         // Handle API response
+        let searchStatus = "error";
+        let searchResult = null;
+        
         if (apiData && apiData.success && Array.isArray(apiData.records) && apiData.records.length > 0) {
           let content = "";
           apiData.records.forEach((rec, index) => {
@@ -854,6 +1062,8 @@
           responseBox.innerText = content.trim();
           shareButton.style.display = "inline-block";
           copyButton.style.display = "inline-block";
+          searchStatus = "found";
+          searchResult = content.trim();
           
           // Only deduct credit if data was found
           if (window.useCredit) {
@@ -861,10 +1071,21 @@
           }
         } else {
           responseBox.innerHTML = `<p style="color: #FFD700; font-size: 16px; font-weight: bold;">❌ Oops! Data not found.</p>`;
+          searchStatus = "not_found";
+        }
+        
+        // Save search history
+        if (window.saveSearchHistory) {
+          await window.saveSearchHistory(number, searchStatus, searchResult);
         }
       } catch (e) {
         console.error("Fetch error:", e);
         responseBox.innerHTML = `<p style="color: red; font-size: 16px; font-weight: bold;">Error fetching data. Please try again later.</p>`;
+        
+        // Save search history with error status
+        if (window.saveSearchHistory) {
+          await window.saveSearchHistory(number, "error", null);
+        }
       }
     }
 
@@ -876,7 +1097,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-    import { getDatabase, ref, set, get, update } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+    import { getDatabase, ref, set, get, update, push, onValue, orderByChild, query, limitToLast } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
@@ -894,7 +1115,7 @@
 
     // List of users with unlimited credits
     const unlimitedUsers = [
-      "nasirjafarmaibal@gmail.com",
+      "admin@nasir.com",
       "owner@nasir.com"
     ];
 
@@ -910,6 +1131,93 @@
             return true;
         }
         return false;
+    }
+
+    window.saveSearchHistory = async function(query, status, result) {
+        if (!currentUser) return;
+        
+        const historyRef = ref(database, `searchHistory/${currentUser.uid}`);
+        const newHistoryRef = push(historyRef);
+        
+        await set(newHistoryRef, {
+            query: query,
+            status: status,
+            result: result,
+            timestamp: new Date().toISOString(),
+            userEmail: currentUser.email
+        });
+    }
+
+    window.loadHistory = function() {
+        if (!currentUser) return;
+        
+        const historyRef = ref(database, `searchHistory/${currentUser.uid}`);
+        const historyQuery = query(historyRef, orderByChild('timestamp'), limitToLast(50));
+        
+        onValue(historyQuery, (snapshot) => {
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = '';
+            
+            if (!snapshot.exists()) {
+                historyList.innerHTML = `
+                    <div class="history-empty">
+                        <i class="fas fa-history"></i>
+                        <h3>No Search History</h3>
+                        <p>Your search history will appear here</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const historyData = snapshot.val();
+            const historyItems = [];
+            
+            for (const key in historyData) {
+                historyItems.push({
+                    id: key,
+                    ...historyData[key]
+                });
+            }
+            
+            // Sort by timestamp (newest first)
+            historyItems.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            historyItems.forEach(item => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                
+                const date = new Date(item.timestamp);
+                const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                
+                let statusClass = '';
+                let statusText = '';
+                
+                switch(item.status) {
+                    case 'found':
+                        statusClass = 'status-found';
+                        statusText = 'Data Found';
+                        break;
+                    case 'not_found':
+                        statusClass = 'status-not-found';
+                        statusText = 'No Data';
+                        break;
+                    case 'error':
+                        statusClass = 'status-error';
+                        statusText = 'Error';
+                        break;
+                }
+                
+                historyItem.innerHTML = `
+                    <div class="history-query">${item.query}</div>
+                    <div class="history-details">
+                        <span><i class="far fa-clock"></i> ${formattedDate}</span>
+                        <span class="history-status ${statusClass}">${statusText}</span>
+                    </div>
+                `;
+                
+                historyList.appendChild(historyItem);
+            });
+        });
     }
 
     function updateCreditDisplay() {
@@ -1034,6 +1342,13 @@
             event.target !== avatar && 
             !avatar.contains(event.target)) {
             menu.classList.remove('show');
+        }
+    });
+
+    // Close history modal when clicking outside
+    document.getElementById('historyModal').addEventListener('click', function(event) {
+        if (event.target === this) {
+            window.closeHistory();
         }
     });
   </script>
