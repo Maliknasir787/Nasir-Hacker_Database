@@ -240,6 +240,30 @@
     }
   </style> 
  </head> 
+ <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
+    authDomain: "nasir-48572.firebaseapp.com",
+    databaseURL: "https://nasir-48572-default-rtdb.firebaseio.com",
+    projectId: "nasir-48572",
+    storageBucket: "nasir-48572.appspot.com",
+    messagingSenderId: "1032758456576",
+    appId: "1:1032758456576:web:eaea202eb1f313efc743e5"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+onAuthStateChanged(auth, (user) => {
+    if (!user) {
+        window.location.href = "/login.html"; 
+    }
+});
+ </script>
+ 
  <body> 
   <canvas id="matrixCanvas"></canvas> 
   <div class="box"> 
@@ -253,27 +277,7 @@
    </div> 
   </div> 
   <script>
-    type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
-    authDomain: "nasir-48572.firebaseapp.com",
-    databaseURL: "https://nasir-48572-default-rtdb.firebaseio.com",
-    projectId: "nasir-48572",
-    storageBucket: "nasir-48572.appspot.com",
-    messagingSenderId: "1032758456576",
-    appId: "1:1032758456576:web:eaea202eb1f313efc743e5"
-};
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-
-onAuthStateChanged(auth, (user) => {
-    if (!user) {
-        window.location.href = "/login.html"; 
-    }
-});
+    
     const canvas = document.getElementById("matrixCanvas");
     const ctx = canvas.getContext("2d");
     canvas.width = window.innerWidth;
