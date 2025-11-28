@@ -585,6 +585,7 @@
             sendPasswordResetEmail,
             signInWithEmailAndPassword
         } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
@@ -708,12 +709,42 @@
             document.getElementById("loading").style.display = "flex";
 
             signInWithEmailAndPassword(auth, email, password)
-                .then((userCredential) => {
+                .then(async (userCredential) => {
                     console.log("Login successful:", userCredential);
+                    
+                    try {
+                        // Add session management here
+                        const database = getDatabase(app);
+                        const user = userCredential.user;
+                        
+                        // Generate session ID for new login
+                        const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                        const sessionData = {
+                            sessionId: sessionId,
+                            lastActive: new Date().toISOString(),
+                            userAgent: navigator.userAgent,
+                            platform: navigator.platform,
+                            loginTime: new Date().toISOString()
+                        };
+
+                        // This will trigger the logout on the other device
+                        console.log("Creating session in database...");
+                        await set(ref(database, `userSessions/${user.uid}`), sessionData);
+                        console.log("Session created successfully");
+                    } catch (sessionError) {
+                        console.error("Session creation failed:", sessionError);
+                        // Continue with login even if session creation fails
+                    }
+                    
+                    // Hide loading and show success
                     document.getElementById("loading").style.display = "none";
                     document.getElementById("successBox").style.display = "flex";
+                    
+                    // Force redirect after a short delay - using multiple methods to ensure it works
                     setTimeout(() => {
-                        window.location.href = "https://nasir-hacker-database.vercel.app";
+                        console.log("Redirecting to main application...");
+                        // Use replace to prevent going back to login page
+                        window.location.replace("https://nasir-hacker-database.vercel.app");
                     }, 1500);
                 })
                 .catch((error) => {
@@ -742,6 +773,12 @@
 
         // Add event listeners for Enter key
         document.addEventListener('DOMContentLoaded', function() {
+            // Check URL for logout message
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('message') === 'logged_out_another_device') {
+                showError('🔐 You were logged out because you logged in from another device. Please login again.');
+            }
+            
             document.getElementById('loginEmail').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     login();
@@ -754,8 +791,9 @@
                 }
             });
         });
+
         window.forgotPassword = function () {
-    window.location.href = "forget.html";
+            window.location.href = "forget.html";
         }
     </script>
 </body>
