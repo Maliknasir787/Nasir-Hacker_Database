@@ -1,219 +1,443 @@
 <!doctype html>
 <html lang="en"> 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pak Sim Details</title>
-
+ <head> 
+  <meta charset="UTF-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <title>Pak Sim Details</title> 
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
     body {
       font-family: "Poppins", Arial, sans-serif;
       background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
       min-height: 100vh;
-      display: flex; justify-content: center; align-items: center;
-      color: #fff; overflow-x: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+      overflow-x: hidden;
     }
 
     #matrixCanvas {
-      position: fixed; top: 0; left: 0;
-      width: 100vw; height: 100vh;
-      z-index: 0; opacity: 0.15; pointer-events: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      opacity: 0.15;
+      pointer-events: none;
     }
 
     .box {
-      position: relative; z-index: 1;
-      background: rgba(255,255,255,0.08);
+      position: relative;
+      z-index: 1;
+      background: rgba(255, 255, 255, 0.08);
       border-radius: 20px;
       padding: 40px 30px;
-      width: 100%; max-width: 450px;
-      border: 1px solid rgba(255,255,255,0.25);
+      width: 100%;
+      max-width: 450px;
+      backdrop-filter: blur(12px) saturate(180%);
+      -webkit-backdrop-filter: blur(12px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      box-shadow: 0 0 30px rgba(0, 255, 255, 0.15);
       text-align: center;
+      animation: fadeUp 1s ease-in-out;
     }
 
     .box h2 {
-      font-size: 30px; margin-bottom: 25px;
+      font-size: 30px;
+      margin-bottom: 25px;
       background: linear-gradient(90deg, #ff00cc, #3333ff);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      font-weight: 700;
+      letter-spacing: 1px;
     }
 
     .box input {
-      width: 100%; padding: 14px; margin-bottom: 20px;
-      border-radius: 12px; border: none;
-      background: rgba(255,255,255,0.12); color: #fff;
+      width: 100%;
+      padding: 14px;
+      margin-bottom: 20px;
+      border-radius: 12px;
+      border: none;
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+      font-size: 16px;
+      outline: none;
+      box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.3);
+      transition: 0.3s ease;
+    }
+    .box input:focus {
+      background: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 0 12px #00ffe7;
     }
 
     .box button {
-      width: 100%; padding: 14px; margin: 10px 0;
-      border: none; border-radius: 12px;
-      font-size: 16px; font-weight: bold;
-      cursor: pointer; color: #fff;
+      width: 100%;
+      padding: 14px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #fff;
+      letter-spacing: 1px;
+      transition: transform 0.25s ease, box-shadow 0.3s ease;
+    }
+    .box button:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 0 20px rgba(255,255,255,0.4);
     }
 
-    .primary-btn { background: linear-gradient(90deg, #ff416c, #ff4b2b); }
-    .whatsapp-btn { background: linear-gradient(90deg, #25D366, #128C7E); }
-    .telegram-btn { background: linear-gradient(90deg, #00c6ff, #0072ff); }
-    .copy-btn { background: linear-gradient(90deg, #555, #333); }
+    .primary-btn {
+      background: linear-gradient(90deg, #ff416c, #ff4b2b);
+      box-shadow: 0 0 12px #ff416c;
+    }
+    .whatsapp-btn {
+      background: linear-gradient(90deg, #25D366, #128C7E);
+      box-shadow: 0 0 12px #25D366;
+    }
+    .telegram-btn {
+      background: linear-gradient(90deg, #00c6ff, #0072ff);
+      box-shadow: 0 0 12px #00c6ff;
+    }
+    .copy-btn {
+      background: linear-gradient(90deg, #555, #333);
+      box-shadow: 0 0 12px #777;
+    }
 
     #responseBox {
-      display: none; background: rgba(0,0,0,0.35);
-      padding: 18px; margin-top: 20px;
-      border-radius: 12px; font-size: 15px;
-      max-height: 320px; overflow-y: auto;
+      display: none;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 18px;
+      margin-top: 20px;
+      border-radius: 12px;
+      text-align: left;
       white-space: pre-line;
+      font-size: 15px;
+      box-shadow: inset 0 0 12px rgba(0,255,255,0.3);
+      animation: fadeIn 1s ease-in-out;
+      max-height: 320px;
+      overflow-y: auto;
     }
 
-  </style>
-</head>
+    /* === Futuristic Popup === */
+    #popupOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, rgba(0,0,0,0.95), rgba(0,0,0,1));
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      backdrop-filter: blur(8px);
+      overflow: hidden;
+    }
 
-<script type="module" src="protect.js"></script>
+    #popupOverlay::before {
+      content: "";
+      position: absolute;
+      width: 200%;
+      height: 200%;
+      background: repeating-radial-gradient(circle, rgba(0,255,255,0.03) 0, transparent 1px);
+      animation: rotateGrid 30s linear infinite;
+    }
 
-<!-- FIREBASE LOGIN PROTECTION -->
-<script type="module">
+    @keyframes rotateGrid {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    #popupOverlay div {
+      position: relative;
+      background: rgba(20, 20, 30, 0.8);
+      padding: 40px 35px;
+      border-radius: 20px;
+      text-align: center;
+      max-width: 380px;
+      width: 90%;
+      border: 1px solid rgba(0,255,255,0.4);
+      box-shadow: 0 0 30px rgba(0,255,255,0.3), inset 0 0 25px rgba(0,255,255,0.2);
+      backdrop-filter: blur(15px);
+      animation: popupAppear 1s ease forwards;
+      transform: scale(0.85);
+    }
+
+    @keyframes popupAppear {
+      from { opacity: 0; transform: scale(0.7) translateY(30px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    #popupOverlay h3 {
+      color: #00ffe7;
+      margin-bottom: 20px;
+      font-size: 22px;
+      text-shadow: 0 0 10px rgba(0,255,255,0.6);
+      letter-spacing: 0.5px;
+    }
+
+    #popupOverlay button {
+      margin: 10px;
+      padding: 12px 22px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.25s ease;
+      font-size: 15px;
+      letter-spacing: 0.5px;
+    }
+
+    #popupOverlay .join-btn {
+      background: linear-gradient(90deg, #00ffe7, #0072ff);
+      color: #fff;
+      box-shadow: 0 0 15px rgba(0,255,255,0.4);
+    }
+
+    #popupOverlay .cancel-btn {
+      background: linear-gradient(90deg, #444, #111);
+      color: #ccc;
+      box-shadow: 0 0 10px rgba(255,255,255,0.1);
+    }
+
+    #popupOverlay button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 25px rgba(0,255,255,0.6);
+    }
+
+    #popupOverlay div::before {
+      content: "";
+      position: absolute;
+      inset: -3px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, rgba(0,255,255,0.4), rgba(255,0,255,0.4), rgba(0,255,255,0.4));
+      filter: blur(12px);
+      z-index: -1;
+      opacity: 0.8;
+      animation: neonPulse 4s infinite alternate;
+    }
+
+    @keyframes neonPulse {
+      from { opacity: 0.5; filter: blur(10px); }
+      to { opacity: 1; filter: blur(14px); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.9);}
+      to { opacity: 1; transform: scale(1);}
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px);}
+      to { opacity: 1; transform: translateY(0);}
+    }
+  </style> 
+ </head>
+ <script type="module" src="protect.js"></script>
+ 
+ <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
-  authDomain: "nasir-48572.firebaseapp.com",
-  databaseURL: "https://nasir-48572-default-rtdb.firebaseio.com",
-  projectId: "nasir-48572",
-  storageBucket: "nasir-48572.appspot.com",
-  messagingSenderId: "1032758456576",
-  appId: "1:1032758456576:web:eaea202eb1f313efc743e5"
+    apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
+    authDomain: "nasir-48572.firebaseapp.com",
+    databaseURL: "https://nasir-48572-default-rtdb.firebaseio.com",
+    projectId: "nasir-48572",
+    storageBucket: "nasir-48572.appspot.com",
+    messagingSenderId: "1032758456576",
+    appId: "1:1032758456576:web:eaea202eb1f313efc743e5"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-onAuthStateChanged(auth, user => {
-  if (!user) window.location.href = "/login.html";
+onAuthStateChanged(auth, (user) => {
+    if (!user) {
+        window.location.href = "/login.html"; 
+    }
 });
-</script>
+ </script>
+ 
+ <body> 
+  <canvas id="matrixCanvas"></canvas> 
+  <div class="box"> 
+   <h2>NASIR HACKER DB</h2> 
+   <button onclick="logout()" style="background:red;color:white;padding:8px;border:none;border-radius:6px;">
+    Logout
+   </button>
+   
+   <input type="text" id="number" placeholder="Enter phone number or CNIC" required> <button class="primary-btn" onclick="fetchData()">🔎 Get Details</button> 
+   <div id="responseBox"></div> <button id="shareButton" class="whatsapp-btn" onclick="shareWhatsApp()" style="display: none;">📲 Share on WhatsApp</button> <button id="copyButton" class="copy-btn" onclick="copyToClipboard()" style="display: none;">📋 Copy Data</button> <button class="telegram-btn" onclick="window.open('https://api.whatsapp.com/send?phone=+923206939553', '_blank')">💬 Owner Contact</button> 
+  </div> <!-- New Futuristic Popup --> 
+  <div id="popupOverlay"> 
+   <div> 
+    <h3>⚙️ In case of any issue, contact admin</h3> <button class="join-btn" onclick="contactAdmin()">💬 Contact Admin</button> <button class="cancel-btn" onclick="closePopup()">Cancel</button> 
+   </div> 
+  </div> 
+  <script>
+    
+    const canvas = document.getElementById("matrixCanvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const letters = "01";
+    const fontSize = 16;
+    let columns = Math.floor(canvas.width / fontSize);
+    let drops = Array(columns).fill(1);
 
-<body>
+    function drawMatrix() {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#00ff99";
+      ctx.font = fontSize + "px monospace";
+      for (let i = 0; i < drops.length; i++) {
+        const text = letters[Math.floor(Math.random() * letters.length)];
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    }
+    setInterval(drawMatrix, 35);
+    window.addEventListener("resize", () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      columns = Math.floor(canvas.width / fontSize);
+      drops = Array(columns).fill(1);
+    });
+  </script> 
+  <script>
+    async function fetchData() {
+      const number = document.getElementById("number").value.trim();
+      const responseBox = document.getElementById("responseBox");
+      const shareButton = document.getElementById("shareButton");
+      const copyButton = document.getElementById("copyButton");
 
-<canvas id="matrixCanvas"></canvas>
+      if (!number) {
+        alert("Please enter a phone number or CNIC.");
+        return;
+      }
 
-<div class="box">
-  <h2>NASIR HACKER DB</h2>
+      responseBox.innerHTML = "<p style='color: #FFD700; font-weight: bold;'>⌛ Fetching...</p>";
+      responseBox.style.display = "block";
+      shareButton.style.display = "none";
+      copyButton.style.display = "none";
+     
+      // Primary API (direct)
+      const realApi = `https://legendxdata.site/Api/simdata.php?phone=${encodeURIComponent(number)}`;
 
-  <button onclick="logout()" style="background:red;color:white;padding:8px;border:none;border-radius:6px;">Logout</button>
+      // Helper: try direct fetch first (fast), then fall back to proxy if necessary
+      async function tryDirectFetch(url, timeoutMs = 12000) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const res = await fetch(url, { signal: controller.signal });
+          clearTimeout(timer);
+          return res;
+        } catch (err) {
+          clearTimeout(timer);
+          throw err;
+        }
+      }
 
-  <input type="text" id="number" placeholder="Enter phone number or CNIC" required>
-  <button class="primary-btn" onclick="fetchData()">🔎 Get Details</button>
+      // Fallback proxy (AllOrigins raw)
+      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(realApi)}`;
 
-  <div id="responseBox"></div>
+      try {
+        let res;
+        // 1) Try direct call
+        try {
+          res = await tryDirectFetch(realApi, 12000);
+        } catch (directErr) {
+          // Direct failed (CORS/network/timeout) -> try proxy
+          res = await tryDirectFetch(proxyUrl, 12000);
+        }
 
-  <button id="shareButton" class="whatsapp-btn" onclick="shareWhatsApp()" style="display:none;">📲 Share on WhatsApp</button>
-  <button id="copyButton" class="copy-btn" onclick="copyToClipboard()" style="display:none;">📋 Copy Data</button>
+        if (!res || !res.ok) {
+          throw new Error("Network/Response error");
+        }
 
-  <button class="telegram-btn" onclick="window.open('https://api.whatsapp.com/send?phone=+923206939553')">💬 Owner Contact</button>
-</div>
+        // Try to parse JSON. Some proxies return JSON string, some return raw JSON.
+        let apiData;
+        const contentType = res.headers.get("content-type") || "";
 
+        if (contentType.includes("application/json")) {
+          apiData = await res.json();
+        } else {
+          // response might be plain text (e.g. proxy returning raw body) - attempt to parse
+          const txt = await res.text();
+          try {
+            apiData = JSON.parse(txt);
+          } catch (e) {
+            // If the original allorigins GET format was used, it returns { contents: "..." }
+            try {
+              const parsed = JSON.parse(txt);
+              if (parsed && parsed.contents) {
+                apiData = JSON.parse(parsed.contents);
+              } else {
+                throw e;
+              }
+            } catch (ee) {
+              throw new Error("Failed to parse API response");
+            }
+          }
+        }
 
-<script>
-/* ---------------------------
-   🔥 FIXED WORKING API SYSTEM
-----------------------------*/
+        // Now handle the same shape you had originally
+        if (apiData && apiData.success && Array.isArray(apiData.records) && apiData.records.length > 0) {
+          let content = "";
+          apiData.records.forEach((rec, index) => {
+            content += `Result ${index + 1}:\n`;
+            content += `📞 Mobile: ${rec["Mobile"] || "Not found"}\n`;
+            content += `👤 Name: ${rec["Name"] || "Not found"}\n`;
+            content += `🆔 CNIC: ${rec["CNIC"] || "Not found"}\n`;
+            content += `📍 Address: ${rec["Address"] || "Not found"}\n`;
+            content += `🌍 Country: ${rec["Country"] || "Not found"}\n\n`;
+          });
 
-async function fetchData() {
-  const number = document.getElementById("number").value.trim();
-  const box = document.getElementById("responseBox");
-  const shareBtn = document.getElementById("shareButton");
-  const copyBtn = document.getElementById("copyButton");
-
-  if (!number) return alert("Please enter a number or CNIC.");
-
-  box.style.display = "block";
-  box.innerHTML = "<p style='color:#FFD700;font-weight:bold;'>⏳ Fetching…</p>";
-  shareBtn.style.display = "none";
-  copyBtn.style.display = "none";
-
-  const realAPI = `https://legendxdata.site/Api/simdata.php?phone=${number}`;
-
-  // WORKING PROXY FIX
-  const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(realAPI)}`;
-
-  try {
-    let res = await fetch(proxy);
-
-    if (!res.ok) throw new Error("Proxy failed");
-
-    const data = await res.json();
-
-    if (!data.success || !Array.isArray(data.records)) {
-      box.innerHTML = "<b style='color:#FFD700;'>❌ No record found.</b>";
-      return;
+          responseBox.innerText = content.trim();
+          shareButton.style.display = "inline-block";
+          copyButton.style.display = "inline-block";
+        } else {
+          responseBox.innerHTML = `<p style="color: #FFD700; font-size: 16px; font-weight: bold;">❌ Oops! Data not found.</p>`;
+        }
+      } catch (e) {
+        responseBox.innerHTML = `<p style="color: red; font-size: 16px; font-weight: bold;">Error fetching data. Please try again later.</p>`;
+      }
     }
 
-    let txt = "";
-    data.records.forEach((r, i) => {
-      txt += `Result ${i + 1}:\n`;
-      txt += `📞 Mobile: ${r.Mobile || "Not found"}\n`;
-      txt += `👤 Name: ${r.Name || "Not found"}\n`;
-      txt += `🆔 CNIC: ${r.CNIC || "Not found"}\n`;
-      txt += `📍 Address: ${r.Address || "Not found"}\n`;
-      txt += `🌍 Country: ${r.Country || "Not found"}\n\n`;
-    });
+    function contactAdmin() {
+      window.open("https://api.whatsapp.com/send?phone=+923206939553", "_blank");
+      closePopup();
+    }
 
-    box.innerText = txt.trim();
-    shareBtn.style.display = "inline-block";
-    copyBtn.style.display = "inline-block";
+    function closePopup() {
+      document.getElementById("popupOverlay").style.display = "none";
+    }
 
-  } catch (err) {
-    box.innerHTML = `<p style="color:red;font-weight:bold;">❌ Error fetching API</p>`;
-  }
-}
+    function shareWhatsApp() {
+      const text = document.getElementById("responseBox").innerText;
+      const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+      window.open(url, "_blank");
+    }
 
-/* ----------------------------------------------------- */
+    function copyToClipboard() {
+      const text = document.getElementById("responseBox").innerText;
+      navigator.clipboard.writeText(text).then(() => alert("Copied to clipboard!"));
+    }
 
-function shareWhatsApp() {
-  const txt = document.getElementById("responseBox").innerText;
-  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(txt)}`);
-}
-
-function copyToClipboard() {
-  const text = document.getElementById("responseBox").innerText;
-  navigator.clipboard.writeText(text);
-  alert("Copied!");
-}
-
-</script>
-
-
-<script>
-// MATRIX EFFECT (untouched)
-const canvas = document.getElementById("matrixCanvas");
-const ctx = canvas.getContext("2d");
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-const letters = "01";
-const fontSize = 16;
-let columns = Math.floor(canvas.width / fontSize);
-let drops = Array(columns).fill(1);
-
-function drawMatrix() {
-  ctx.fillStyle = "rgba(0,0,0,0.05)";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-
-  ctx.fillStyle = "#00ff99";
-  ctx.font = fontSize + "px monospace";
-
-  drops.forEach((y, i) => {
-    const text = letters[Math.floor(Math.random()*letters.length)];
-    ctx.fillText(text, i*fontSize, y*fontSize);
-
-    if (y*fontSize > canvas.height && Math.random() > 0.975)
-      drops[i] = 0;
-
-    drops[i]++;
-  });
-}
-setInterval(drawMatrix, 35);
-</script>
-
-</body>
+    setTimeout(() => {
+      document.getElementById("popupOverlay").style.display = "flex";
+    }, 10000);
+  </script> 
+ </body>
 </html>
