@@ -156,6 +156,23 @@
       margin: 0 20px;
     }
 
+    .credit-display {
+      background: rgba(108, 99, 255, 0.2);
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1px solid rgba(108, 99, 255, 0.4);
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .credit-display.unlimited {
+      background: rgba(76, 175, 80, 0.2);
+      border-color: rgba(76, 175, 80, 0.4);
+    }
+
     .user-menu {
       position: relative;
       display: flex;
@@ -403,6 +420,13 @@
       box-shadow: 0 8px 20px rgba(108, 99, 255, 0.6);
     }
 
+    .box button:disabled {
+      background: #666 !important;
+      box-shadow: none !important;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
     .whatsapp-btn {
       background: linear-gradient(90deg, #25D366, #128C7E) !important;
       box-shadow: 0 5px 15px rgba(37, 211, 102, 0.4) !important;
@@ -577,6 +601,11 @@
     <div class="welcome-text" id="welcomeMessage">
       Welcome To Nasir Database
     </div>
+
+    <div class="credit-display" id="creditDisplay">
+      <i class="fas fa-coins"></i>
+      <span id="creditCount">Loading...</span>
+    </div>
     
     <div class="user-menu">
       <div class="user-avatar" id="userAvatar">
@@ -630,7 +659,7 @@
         </div>
       </div>
       
-      <button onclick="fetchData()">🔎 Get Details</button> 
+      <button id="fetchButton" onclick="fetchData()">🔎 Get Details</button> 
       
       <div id="responseBox"></div> 
       
@@ -652,6 +681,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+    import { getDatabase, ref, set, get, update } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
@@ -665,8 +695,18 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const database = getDatabase(app);
 
     let currentUser = null;
+    let userCredits = 0;
+    let isUnlimited = false;
+
+    // List of users with unlimited credits (you can add more emails here)
+    const unlimitedUsers = [
+      "admin@nasir.com",
+      "owner@nasir.com"
+      // Add more admin emails here
+    ];
 
     onAuthStateChanged(auth, (user) => {
         if (!user) {
@@ -674,8 +714,74 @@
         } else {
             currentUser = user;
             updateUserInterface(user);
+            initializeUserCredits(user);
         }
     });
+
+    async function initializeUserCredits(user) {
+        const userRef = ref(database, `users/${user.uid}`);
+        const snapshot = await get(userRef);
+        
+        const today = new Date().toDateString();
+        const userData = snapshot.val();
+        
+        // Check if user has unlimited access
+        isUnlimited = unlimitedUsers.includes(user.email);
+        
+        if (!userData || userData.lastReset !== today) {
+            // First time user or new day - set credits
+            const defaultCredits = isUnlimited ? -1 : 10; // -1 means unlimited
+            
+            await set(userRef, {
+                credits: defaultCredits,
+                lastReset: today,
+                email: user.email
+            });
+            
+            userCredits = defaultCredits;
+        } else {
+            // Existing user, same day
+            userCredits = userData.credits;
+        }
+        
+        updateCreditDisplay();
+    }
+
+    async function useCredit() {
+        if (isUnlimited) return true;
+        
+        if (userCredits > 0) {
+            userCredits--;
+            await update(ref(database, `users/${currentUser.uid}`), {
+                credits: userCredits
+            });
+            updateCreditDisplay();
+            return true;
+        }
+        return false;
+    }
+
+    function updateCreditDisplay() {
+        const creditDisplay = document.getElementById('creditDisplay');
+        const creditCount = document.getElementById('creditCount');
+        const fetchButton = document.getElementById('fetchButton');
+        
+        if (isUnlimited) {
+            creditCount.textContent = 'Unlimited Credits';
+            creditDisplay.classList.add('unlimited');
+            fetchButton.disabled = false;
+        } else {
+            creditCount.textContent = `${userCredits} Credits Remaining`;
+            creditDisplay.classList.remove('unlimited');
+            fetchButton.disabled = userCredits <= 0;
+            
+            if (userCredits <= 0) {
+                fetchButton.innerHTML = '❌ No Credits Left';
+            } else {
+                fetchButton.innerHTML = '🔎 Get Details';
+            }
+        }
+    }
 
     function updateUserInterface(user) {
         const userName = user.email.split('@')[0];
@@ -733,6 +839,11 @@
             menu.classList.remove('show');
         }
     });
+
+    // Make functions available globally
+    window.useCredit = useCredit;
+    window.userCredits = () => userCredits;
+    window.isUnlimitedUser = () => isUnlimited;
   </script>
 
   <script>
@@ -797,6 +908,12 @@
 
       if (!number) {
         showError("Please enter a phone number or CNIC.");
+        return;
+      }
+
+      // Check credits
+      if (!window.isUnlimitedUser() && window.userCredits() <= 0) {
+        showError("No credits remaining. Please try again tomorrow.");
         return;
       }
 
@@ -868,7 +985,7 @@
         // Now handle the same shape you had originally
         if (apiData && apiData.success && Array.isArray(apiData.records) && apiData.records.length > 0) {
           let content = "";
-          apiData.records.forEach((rec, index) => {
+          apiData.records.forEach((rec, index) {
             content += `Result ${index + 1}:\n`;
             content += `📞 Mobile: ${rec["Mobile"] || "Not found"}\n`;
             content += `👤 Name: ${rec["Name"] || "Not found"}\n`;
@@ -880,11 +997,16 @@
           responseBox.innerText = content.trim();
           shareButton.style.display = "inline-block";
           copyButton.style.display = "inline-block";
+          
+          // Only deduct credit if data was found
+          await window.useCredit();
         } else {
           responseBox.innerHTML = `<p style="color: #FFD700; font-size: 16px; font-weight: bold;">❌ Oops! Data not found.</p>`;
+          // Don't deduct credit if no data found
         }
       } catch (e) {
         responseBox.innerHTML = `<p style="color: red; font-size: 16px; font-weight: bold;">Error fetching data. Please try again later.</p>`;
+        // Don't deduct credit if there was an error
       }
     }
 
