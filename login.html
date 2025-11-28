@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Secure Login | Nasir</title>
+    <title>Nasir Login System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -25,7 +25,6 @@
             --text-secondary: #b0b0b0;
             --success: #4caf50;
             --error: #f44336;
-            --warning: #ff9800;
             --border-radius: 12px;
             --transition: all 0.3s ease;
             --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
@@ -245,45 +244,6 @@
             background: rgba(108, 99, 255, 0.1);
         }
 
-        /* Error Message */
-        .error-message {
-            display: none;
-            color: var(--error);
-            font-size: 13px;
-            margin-top: 8px;
-            padding: 8px 12px;
-            background: rgba(244, 67, 54, 0.1);
-            border-radius: 6px;
-            border-left: 3px solid var(--error);
-            animation: fadeIn 0.3s ease;
-        }
-
-        .error-message i {
-            margin-right: 6px;
-        }
-
-        /* Success Message */
-        .success-message {
-            display: none;
-            color: var(--success);
-            font-size: 13px;
-            margin-top: 8px;
-            padding: 8px 12px;
-            background: rgba(76, 175, 80, 0.1);
-            border-radius: 6px;
-            border-left: 3px solid var(--success);
-            animation: fadeIn 0.3s ease;
-        }
-
-        .success-message i {
-            margin-right: 6px;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
         /* Button Styles */
         .btn {
             width: 100%;
@@ -417,6 +377,11 @@
             animation: bounce 1s infinite alternate;
         }
 
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
         @keyframes bounce {
             from { transform: translateY(0); }
             to { transform: translateY(-10px); }
@@ -476,6 +441,41 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        /* Error Message Styles */
+        .error-message {
+            display: none;
+            background-color: rgba(244, 67, 54, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+            padding: 12px 15px;
+            border-radius: var(--border-radius);
+            margin-top: 10px;
+            font-size: 14px;
+            text-align: left;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .error-message i {
+            margin-right: 8px;
+        }
+
+        .success-message {
+            display: none;
+            background-color: rgba(76, 175, 80, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+            padding: 12px 15px;
+            border-radius: var(--border-radius);
+            margin-top: 10px;
+            font-size: 14px;
+            text-align: left;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .success-message i {
+            margin-right: 8px;
+        }
     </style>
 </head>
 
@@ -531,12 +531,12 @@
                         <i class="fas fa-eye"></i>
                     </button>
                 </div>
-                <!-- Error message will appear here -->
+                <!-- Error message container below password field -->
                 <div class="error-message" id="errorMessage">
                     <i class="fas fa-exclamation-circle"></i>
                     <span id="errorText"></span>
                 </div>
-                <!-- Success message will appear here -->
+                <!-- Success message container -->
                 <div class="success-message" id="successMessage">
                     <i class="fas fa-check-circle"></i>
                     <span id="successText"></span>
@@ -664,10 +664,10 @@
                 showError("Please enter your email address first");
                 return;
             }
-            
+
             // Show loading animation
             document.getElementById("loading").style.display = "flex";
-            
+
             sendPasswordResetEmail(auth, email)
                 .then(() => {
-           
+                    document.getElementB
