@@ -659,12 +659,12 @@
         </div>
       </div>
       
-      <button id="fetchButton" onclick="fetchData()">🔎 Get Details</button> 
+      <button id="fetchButton" onclick="window.fetchData()">🔎 Get Details</button> 
       
       <div id="responseBox"></div> 
       
-      <button id="shareButton" class="whatsapp-btn" onclick="shareWhatsApp()" style="display: none;">📲 Share on WhatsApp</button> 
-      <button id="copyButton" class="copy-btn" onclick="copyToClipboard()" style="display: none;">📋 Copy Data</button> 
+      <button id="shareButton" class="whatsapp-btn" onclick="window.shareWhatsApp()" style="display: none;">📲 Share on WhatsApp</button> 
+      <button id="copyButton" class="copy-btn" onclick="window.copyToClipboard()" style="display: none;">📋 Copy Data</button> 
       <button class="telegram-btn" onclick="window.open('https://api.whatsapp.com/send?phone=+923206939553', '_blank')">💬 Owner Contact</button> 
     </div>
   </div>
@@ -673,10 +673,205 @@
   <div id="popupOverlay"> 
     <div> 
       <h3>⚙️ In case of any issue, contact admin</h3> 
-      <button class="join-btn" onclick="contactAdmin()">💬 Contact Admin</button> 
-      <button class="cancel-btn" onclick="closePopup()">Cancel</button> 
+      <button class="join-btn" onclick="window.contactAdmin()">💬 Contact Admin</button> 
+      <button class="cancel-btn" onclick="window.closePopup()">Cancel</button> 
     </div> 
   </div> 
+
+  <script>
+    // Global variables
+    let currentUser = null;
+    let userCredits = 0;
+    let isUnlimited = false;
+
+    // Global functions
+    window.showAlert = function(message) {
+        alert(message);
+    }
+
+    window.showError = function(message) {
+        const errorElement = document.getElementById('inputError');
+        const errorText = document.getElementById('errorText');
+        errorText.textContent = message;
+        errorElement.style.display = 'block';
+    }
+
+    window.hideError = function() {
+        const errorElement = document.getElementById('inputError');
+        errorElement.style.display = 'none';
+    }
+
+    window.contactAdmin = function() {
+      window.open("https://api.whatsapp.com/send?phone=+923206939553", "_blank");
+      window.closePopup();
+    }
+
+    window.closePopup = function() {
+      document.getElementById("popupOverlay").style.display = "none";
+    }
+
+    window.shareWhatsApp = function() {
+      const text = document.getElementById("responseBox").innerText;
+      const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+      window.open(url, "_blank");
+    }
+
+    window.copyToClipboard = function() {
+      const text = document.getElementById("responseBox").innerText;
+      navigator.clipboard.writeText(text).then(() => window.showAlert("Copied to clipboard!"));
+    }
+
+    // Matrix Animation
+    const canvas = document.getElementById("matrixCanvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const letters = "01";
+    const fontSize = 16;
+    let columns = Math.floor(canvas.width / fontSize);
+    let drops = Array(columns).fill(1);
+
+    function drawMatrix() {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#00ff99";
+      ctx.font = fontSize + "px monospace";
+      for (let i = 0; i < drops.length; i++) {
+        const text = letters[Math.floor(Math.random() * letters.length)];
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    }
+    setInterval(drawMatrix, 35);
+    window.addEventListener("resize", () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      columns = Math.floor(canvas.width / fontSize);
+      drops = Array(columns).fill(1);
+    });
+
+    // Main fetch data function
+    window.fetchData = async function() {
+      console.log("fetchData function called!"); // Debug log
+      
+      const number = document.getElementById("number").value.trim();
+      const responseBox = document.getElementById("responseBox");
+      const shareButton = document.getElementById("shareButton");
+      const copyButton = document.getElementById("copyButton");
+
+      // Hide any previous error
+      window.hideError();
+
+      if (!number) {
+        window.showError("Please enter a phone number or CNIC.");
+        return;
+      }
+
+      // Check credits
+      if (!isUnlimited && userCredits <= 0) {
+        window.showError("No credits remaining. Please try again tomorrow.");
+        return;
+      }
+
+      responseBox.innerHTML = "<p style='color: #FFD700; font-weight: bold;'>⌛ Fetching...</p>";
+      responseBox.style.display = "block";
+      shareButton.style.display = "none";
+      copyButton.style.display = "none";
+     
+      // Primary API (direct)
+      const realApi = `https://legendxdata.site/Api/simdata.php?phone=${encodeURIComponent(number)}`;
+
+      // Helper: try direct fetch first (fast), then fall back to proxy if necessary
+      async function tryDirectFetch(url, timeoutMs = 12000) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const res = await fetch(url, { signal: controller.signal });
+          clearTimeout(timer);
+          return res;
+        } catch (err) {
+          clearTimeout(timer);
+          throw err;
+        }
+      }
+
+      // Fallback proxy (AllOrigins raw)
+      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(realApi)}`;
+
+      try {
+        let res;
+        // 1) Try direct call
+        try {
+          res = await tryDirectFetch(realApi, 12000);
+        } catch (directErr) {
+          // Direct failed (CORS/network/timeout) -> try proxy
+          res = await tryDirectFetch(proxyUrl, 12000);
+        }
+
+        if (!res || !res.ok) {
+          throw new Error("Network/Response error");
+        }
+
+        // Try to parse JSON
+        let apiData;
+        const contentType = res.headers.get("content-type") || "";
+
+        if (contentType.includes("application/json")) {
+          apiData = await res.json();
+        } else {
+          const txt = await res.text();
+          try {
+            apiData = JSON.parse(txt);
+          } catch (e) {
+            try {
+              const parsed = JSON.parse(txt);
+              if (parsed && parsed.contents) {
+                apiData = JSON.parse(parsed.contents);
+              } else {
+                throw e;
+              }
+            } catch (ee) {
+              throw new Error("Failed to parse API response");
+            }
+          }
+        }
+
+        // Handle API response
+        if (apiData && apiData.success && Array.isArray(apiData.records) && apiData.records.length > 0) {
+          let content = "";
+          apiData.records.forEach((rec, index) => {
+            content += `Result ${index + 1}:\n`;
+            content += `📞 Mobile: ${rec["Mobile"] || "Not found"}\n`;
+            content += `👤 Name: ${rec["Name"] || "Not found"}\n`;
+            content += `🆔 CNIC: ${rec["CNIC"] || "Not found"}\n`;
+            content += `📍 Address: ${rec["Address"] || "Not found"}\n`;
+            content += `🌍 Country: ${rec["Country"] || "Not found"}\n\n`;
+          });
+
+          responseBox.innerText = content.trim();
+          shareButton.style.display = "inline-block";
+          copyButton.style.display = "inline-block";
+          
+          // Only deduct credit if data was found
+          if (window.useCredit) {
+            await window.useCredit();
+          }
+        } else {
+          responseBox.innerHTML = `<p style="color: #FFD700; font-size: 16px; font-weight: bold;">❌ Oops! Data not found.</p>`;
+        }
+      } catch (e) {
+        console.error("Fetch error:", e);
+        responseBox.innerHTML = `<p style="color: red; font-size: 16px; font-weight: bold;">Error fetching data. Please try again later.</p>`;
+      }
+    }
+
+    setTimeout(() => {
+      document.getElementById("popupOverlay").style.display = "flex";
+    }, 10000);
+  </script>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
@@ -697,65 +892,13 @@
     const auth = getAuth(app);
     const database = getDatabase(app);
 
-    let currentUser = null;
-    let userCredits = 0;
-    let isUnlimited = false;
-
-    // List of users with unlimited credits (you can add more emails here)
+    // List of users with unlimited credits
     const unlimitedUsers = [
       "admin@nasir.com",
       "owner@nasir.com"
-      // Add more admin emails here
     ];
 
-    onAuthStateChanged(auth, (user) => {
-        if (!user) {
-            window.location.href = "/login.html"; 
-        } else {
-            currentUser = user;
-            updateUserInterface(user);
-            initializeUserCredits(user);
-        }
-    });
-
-    async function initializeUserCredits(user) {
-        try {
-            const userRef = ref(database, `users/${user.uid}`);
-            const snapshot = await get(userRef);
-            
-            const today = new Date().toDateString();
-            const userData = snapshot.val();
-            
-            // Check if user has unlimited access
-            isUnlimited = unlimitedUsers.includes(user.email);
-            
-            if (!userData || userData.lastReset !== today) {
-                // First time user or new day - set credits
-                const defaultCredits = isUnlimited ? -1 : 10; // -1 means unlimited
-                
-                await set(userRef, {
-                    credits: defaultCredits,
-                    lastReset: today,
-                    email: user.email,
-                    createdAt: new Date().toISOString()
-                });
-                
-                userCredits = defaultCredits;
-            } else {
-                // Existing user, same day
-                userCredits = userData.credits;
-            }
-            
-            updateCreditDisplay();
-        } catch (error) {
-            console.error("Error initializing credits:", error);
-            // Fallback if database fails
-            userCredits = 10;
-            updateCreditDisplay();
-        }
-    }
-
-    async function useCredit() {
+    window.useCredit = async function() {
         if (isUnlimited) return true;
         
         if (userCredits > 0) {
@@ -817,6 +960,52 @@
         if (dropdownName) dropdownName.textContent = userName;
     }
 
+    async function initializeUserCredits(user) {
+        try {
+            const userRef = ref(database, `users/${user.uid}`);
+            const snapshot = await get(userRef);
+            
+            const today = new Date().toDateString();
+            const userData = snapshot.val();
+            
+            // Check if user has unlimited access
+            isUnlimited = unlimitedUsers.includes(user.email);
+            
+            if (!userData || userData.lastReset !== today) {
+                // First time user or new day - set credits
+                const defaultCredits = isUnlimited ? -1 : 10;
+                
+                await set(userRef, {
+                    credits: defaultCredits,
+                    lastReset: today,
+                    email: user.email,
+                    createdAt: new Date().toISOString()
+                });
+                
+                userCredits = defaultCredits;
+            } else {
+                // Existing user, same day
+                userCredits = userData.credits;
+            }
+            
+            updateCreditDisplay();
+        } catch (error) {
+            console.error("Error initializing credits:", error);
+            userCredits = 10;
+            updateCreditDisplay();
+        }
+    }
+
+    onAuthStateChanged(auth, (user) => {
+        if (!user) {
+            window.location.href = "/login.html"; 
+        } else {
+            currentUser = user;
+            updateUserInterface(user);
+            initializeUserCredits(user);
+        }
+    });
+
     // Menu toggle functionality
     document.getElementById('menuToggle').addEventListener('click', function() {
         const menu = document.getElementById('dropdownMenu');
@@ -847,208 +1036,6 @@
             menu.classList.remove('show');
         }
     });
-
-    // Make functions available globally
-    window.useCredit = useCredit;
-    window.userCredits = () => userCredits;
-    window.isUnlimitedUser = () => isUnlimited;
   </script>
-
-  <script>
-    // Matrix Animation
-    const canvas = document.getElementById("matrixCanvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    const letters = "01";
-    const fontSize = 16;
-    let columns = Math.floor(canvas.width / fontSize);
-    let drops = Array(columns).fill(1);
-
-    function drawMatrix() {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "#00ff99";
-      ctx.font = fontSize + "px monospace";
-      for (let i = 0; i < drops.length; i++) {
-        const text = letters[Math.floor(Math.random() * letters.length)];
-        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-          drops[i] = 0;
-        }
-        drops[i]++;
-      }
-    }
-    setInterval(drawMatrix, 35);
-    window.addEventListener("resize", () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      columns = Math.floor(canvas.width / fontSize);
-      drops = Array(columns).fill(1);
-    });
-
-    // Error message functions
-    function showError(message) {
-        const errorElement = document.getElementById('inputError');
-        const errorText = document.getElementById('errorText');
-        errorText.textContent = message;
-        errorElement.style.display = 'block';
-    }
-
-    function hideError() {
-        const errorElement = document.getElementById('inputError');
-        errorElement.style.display = 'none';
-    }
-
-    function showAlert(message) {
-        alert(message);
-    }
-
-    // Your existing functions
-    async function fetchData() {
-      const number = document.getElementById("number").value.trim();
-      const responseBox = document.getElementById("responseBox");
-      const shareButton = document.getElementById("shareButton");
-      const copyButton = document.getElementById("copyButton");
-
-      // Hide any previous error
-      hideError();
-
-      if (!number) {
-        showError("Please enter a phone number or CNIC.");
-        return;
-      }
-
-      // Check credits
-      if (!window.isUnlimitedUser() && window.userCredits() <= 0) {
-        showError("No credits remaining. Please try again tomorrow.");
-        return;
-      }
-
-      responseBox.innerHTML = "<p style='color: #FFD700; font-weight: bold;'>⌛ Fetching...</p>";
-      responseBox.style.display = "block";
-      shareButton.style.display = "none";
-      copyButton.style.display = "none";
-     
-      // Primary API (direct)
-      const realApi = `https://legendxdata.site/Api/simdata.php?phone=${encodeURIComponent(number)}`;
-
-      // Helper: try direct fetch first (fast), then fall back to proxy if necessary
-      async function tryDirectFetch(url, timeoutMs = 12000) {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), timeoutMs);
-        try {
-          const res = await fetch(url, { signal: controller.signal });
-          clearTimeout(timer);
-          return res;
-        } catch (err) {
-          clearTimeout(timer);
-          throw err;
-        }
-      }
-
-      // Fallback proxy (AllOrigins raw)
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(realApi)}`;
-
-      try {
-        let res;
-        // 1) Try direct call
-        try {
-          res = await tryDirectFetch(realApi, 12000);
-        } catch (directErr) {
-          // Direct failed (CORS/network/timeout) -> try proxy
-          res = await tryDirectFetch(proxyUrl, 12000);
-        }
-
-        if (!res || !res.ok) {
-          throw new Error("Network/Response error");
-        }
-
-        // Try to parse JSON. Some proxies return JSON string, some return raw JSON.
-        let apiData;
-        const contentType = res.headers.get("content-type") || "";
-
-        if (contentType.includes("application/json")) {
-          apiData = await res.json();
-        } else {
-          // response might be plain text (e.g. proxy returning raw body) - attempt to parse
-          const txt = await res.text();
-          try {
-            apiData = JSON.parse(txt);
-          } catch (e) {
-            // If the original allorigins GET format was used, it returns { contents: "..." }
-            try {
-              const parsed = JSON.parse(txt);
-              if (parsed && parsed.contents) {
-                apiData = JSON.parse(parsed.contents);
-              } else {
-                throw e;
-              }
-            } catch (ee) {
-              throw new Error("Failed to parse API response");
-            }
-          }
-        }
-
-        // Now handle the same shape you had originally
-        if (apiData && apiData.success && Array.isArray(apiData.records) && apiData.records.length > 0) {
-          let content = "";
-          apiData.records.forEach((rec, index) {
-            content += `Result ${index + 1}:\n`;
-            content += `📞 Mobile: ${rec["Mobile"] || "Not found"}\n`;
-            content += `👤 Name: ${rec["Name"] || "Not found"}\n`;
-            content += `🆔 CNIC: ${rec["CNIC"] || "Not found"}\n`;
-            content += `📍 Address: ${rec["Address"] || "Not found"}\n`;
-            content += `🌍 Country: ${rec["Country"] || "Not found"}\n\n`;
-          });
-
-          responseBox.innerText = content.trim();
-          shareButton.style.display = "inline-block";
-          copyButton.style.display = "inline-block";
-          
-          // Only deduct credit if data was found
-          await window.useCredit();
-        } else {
-          responseBox.innerHTML = `<p style="color: #FFD700; font-size: 16px; font-weight: bold;">❌ Oops! Data not found.</p>`;
-          // Don't deduct credit if no data found
-        }
-      } catch (e) {
-        responseBox.innerHTML = `<p style="color: red; font-size: 16px; font-weight: bold;">Error fetching data. Please try again later.</p>`;
-        // Don't deduct credit if there was an error
-      }
-    }
-
-    function contactAdmin() {
-      window.open("https://api.whatsapp.com/send?phone=+923206939553", "_blank");
-      closePopup();
-    }
-
-    function closePopup() {
-      document.getElementById("popupOverlay").style.display = "none";
-    }
-
-    function shareWhatsApp() {
-      const text = document.getElementById("responseBox").innerText;
-      const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-      window.open(url, "_blank");
-    }
-
-    function copyToClipboard() {
-      const text = document.getElementById("responseBox").innerText;
-      navigator.clipboard.writeText(text).then(() => showAlert("Copied to clipboard!"));
-    }
-
-    setTimeout(() => {
-      document.getElementById("popupOverlay").style.display = "flex";
-    }, 10000);
-
-    // Make functions global
-    window.fetchData = fetchData;
-    window.shareWhatsApp = shareWhatsApp;
-    window.copyToClipboard = copyToClipboard;
-    window.contactAdmin = contactAdmin;
-    window.closePopup = closePopup;
-    window.showAlert = showAlert;
-  </script> 
  </body>
 </html>
