@@ -190,11 +190,15 @@
       font-size: 20px;
       cursor: pointer;
       padding: 8px;
-      border-radius: 50%;
+      border-radius: 6px;
       transition: var(--transition);
       display: flex;
       flex-direction: column;
       gap: 3px;
+      width: 30px;
+      height: 30px;
+      align-items: center;
+      justify-content: center;
     }
 
     .menu-toggle:hover {
@@ -259,6 +263,7 @@
     .user-name {
       font-weight: 600;
       color: var(--text);
+      font-size: 14px;
     }
 
     .user-email {
@@ -281,6 +286,7 @@
       width: 100%;
       text-align: left;
       font-size: 14px;
+      font-family: inherit;
     }
 
     .menu-item:hover {
@@ -562,13 +568,13 @@ function updateUserInterface(user) {
     const userName = user.email.split('@')[0];
     const userInitial = userName.charAt(0).toUpperCase();
     
-    console.log("Updating UI for user:", userName); // Debug log
+    console.log("Updating UI for user:", userName);
     
     // Update welcome message
     const welcomeElement = document.getElementById('welcomeMessage');
     if (welcomeElement) {
         welcomeElement.textContent = `Welcome ${userName} To Nasir Database`;
-        console.log("Welcome message updated"); // Debug log
+        console.log("Welcome message updated");
     }
     
     // Update avatar
@@ -587,13 +593,14 @@ function updateUserInterface(user) {
     if (dropdownName) dropdownName.textContent = userName;
 }
 
-function toggleMenu() {
+// Make functions global
+window.toggleMenu = function() {
+    console.log("Toggle menu clicked");
     const menu = document.getElementById('dropdownMenu');
-    console.log("Toggle menu clicked, current display:", menu.style.display); // Debug log
     menu.classList.toggle('show');
 }
 
-function logout() {
+window.logout = function() {
     signOut(auth).then(() => {
         window.location.href = "/login.html";
     }).catch((error) => {
@@ -609,15 +616,18 @@ document.addEventListener('click', function(event) {
     
     if (menu.classList.contains('show') && 
         !menu.contains(event.target) && 
+        event.target !== toggle && 
         !toggle.contains(event.target) &&
+        event.target !== avatar && 
         !avatar.contains(event.target)) {
         menu.classList.remove('show');
     }
 });
 
-// Make functions global
-window.toggleMenu = toggleMenu;
-window.logout = logout;
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM loaded, menu functions initialized");
+});
  </script>
  
  <body> 
@@ -687,7 +697,7 @@ window.logout = logout;
       <h2>NASIR HACKER DB</h2>
       
       <input type="text" id="number" placeholder="Enter phone number or CNIC" required> 
-      <button class="primary-btn" onclick="fetchData()">🔎 Get Details</button> 
+      <button onclick="fetchData()">🔎 Get Details</button> 
       
       <div id="responseBox"></div> 
       
