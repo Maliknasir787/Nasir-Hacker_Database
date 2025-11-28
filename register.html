@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Create Account - Nasir</title>
+<title>Register — Nasir</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
     body {
@@ -49,54 +49,58 @@
         margin-top: 12px;
         color: #aaa;
         cursor: pointer;
-        text-decoration: underline;
     }
 </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>✨ Create Account</h2>
+    <h2>📝 Create Account</h2>
 
     <input type="email" id="regEmail" placeholder="Email">
     <input type="password" id="regPassword" placeholder="Password">
+
     <button onclick="register()">Register</button>
 
     <div class="toggle" onclick="goLogin()">Already have an account? Login</div>
 </div>
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
-        authDomain: "nasir-48572.firebaseapp.com",
-        databaseURL: "https://nasir-48572-default-rtdb.firebaseio.com",
-        projectId: "nasir-48572",
-        storageBucket: "nasir-48572.appspot.com",
-        messagingSenderId: "1032758456576",
-        appId: "1:1032758456576:web:eaea202eb1f313efc743e5"
-    };
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+import { 
+    getAuth,
+    createUserWithEmailAndPassword
+} from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+const firebaseConfig = {
+    apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
+    authDomain: "nasir-48572.firebaseapp.com",
+    projectId: "nasir-48572",
+    storageBucket: "nasir-48572.appspot.com",
+    messagingSenderId: "1032758456576",
+    appId: "1:1032758456576:web:eaea202eb1f313efc743e5"
+};
 
-    window.goLogin = function () {
-        window.location.href = "login.html";
-    }
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
-    window.register = function () {
-        const email = document.getElementById("regEmail").value;
-        const password = document.getElementById("regPassword").value;
+window.goLogin = function () {
+    window.location.href = "login.html";
+}
 
-        createUserWithEmailAndPassword(auth, email, password)
-            .then(() => {
-                alert("Account created successfully!");
-                window.location.href = "login.html";
-            })
-            .catch((error) => alert(error.message));
-    }
+window.register = function () {
+    const email = document.getElementById("regEmail").value;
+    const password = document.getElementById("regPassword").value;
+
+    createUserWithEmailAndPassword(auth, email, password)
+        .then(() => {
+            alert("Account created successfully!");
+            window.location.href = "login.html";
+        })
+        .catch(e => alert(e.message));
+}
+
 </script>
 
 </body>
