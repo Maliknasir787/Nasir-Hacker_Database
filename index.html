@@ -880,12 +880,7 @@
   </div>
 
   <script>
-    // Global variables
-    let currentUser = null;
-    let userCredits = 0;
-    let isUnlimited = false;
-
-    // Global functions
+    // Global functions that don't need Firebase
     window.showAlert = function(message) {
         alert(message);
     }
@@ -922,14 +917,86 @@
       navigator.clipboard.writeText(text).then(() => window.showAlert("Copied to clipboard!"));
     }
 
+    // Matrix Animation
+    const canvas = document.getElementById("matrixCanvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const letters = "01";
+    const fontSize = 16;
+    let columns = Math.floor(canvas.width / fontSize);
+    let drops = Array(columns).fill(1);
+
+    function drawMatrix() {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#00ff99";
+      ctx.font = fontSize + "px monospace";
+      for (let i = 0; i < drops.length; i++) {
+        const text = letters[Math.floor(Math.random() * letters.length)];
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    }
+    setInterval(drawMatrix, 35);
+    window.addEventListener("resize", () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      columns = Math.floor(canvas.width / fontSize);
+      drops = Array(columns).fill(1);
+    });
+
+    setTimeout(() => {
+      document.getElementById("popupOverlay").style.display = "flex";
+    }, 10000);
+  </script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+    import { getDatabase, ref, set, get, update } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
+        authDomain: "nasir-48572.firebaseapp.com",
+        databaseURL: "https://nasir-48572-default-rtdb.firebaseio.com",
+        projectId: "nasir-48572",
+        storageBucket: "nasir-48572.appspot.com",
+        messagingSenderId: "1032758456576",
+        appId: "1:1032758456576:web:eaea202eb1f313efc743e5"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const database = getDatabase(app);
+
+    // Global variables
+    let currentUser = null;
+    let userCredits = 0;
+    let isUnlimited = false;
+
+    // List of users with unlimited credits
+    const unlimitedUsers = [
+      "nasirjafarmaibal@gmail.com",
+      "owner@nasir.com"
+    ];
+
     // Search History Functions
     window.saveSearchHistory = async function(query, result, status) {
-        if (!currentUser) return;
+        if (!currentUser) {
+            console.log("No user logged in, cannot save history");
+            return;
+        }
         
         try {
             const historyRef = ref(database, `searchHistory/${currentUser.uid}`);
             const snapshot = await get(historyRef);
             let history = snapshot.val() || [];
+            
+            console.log("Saving search history for:", query);
             
             // Limit history to 50 items
             if (history.length >= 50) {
@@ -948,18 +1015,24 @@
             history.unshift(searchEntry);
             
             await set(historyRef, history);
+            console.log("Search history saved successfully!");
         } catch (error) {
             console.error("Error saving search history:", error);
         }
     }
 
     window.loadSearchHistory = async function() {
-        if (!currentUser) return [];
+        if (!currentUser) {
+            console.log("No user logged in");
+            return [];
+        }
         
         try {
             const historyRef = ref(database, `searchHistory/${currentUser.uid}`);
             const snapshot = await get(historyRef);
-            return snapshot.val() || [];
+            const history = snapshot.val() || [];
+            console.log("Loaded history items:", history.length);
+            return history;
         } catch (error) {
             console.error("Error loading search history:", error);
             return [];
@@ -969,6 +1042,8 @@
     window.displaySearchHistory = async function() {
         const historyList = document.getElementById('historyList');
         const history = await window.loadSearchHistory();
+        
+        console.log("Displaying history items:", history.length);
         
         if (history.length === 0) {
             historyList.innerHTML = `
@@ -1048,41 +1123,108 @@
         document.getElementById('searchHistoryModal').style.display = 'none';
     }
 
-    // Matrix Animation
-    const canvas = document.getElementById("matrixCanvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    const letters = "01";
-    const fontSize = 16;
-    let columns = Math.floor(canvas.width / fontSize);
-    let drops = Array(columns).fill(1);
-
-    function drawMatrix() {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "#00ff99";
-      ctx.font = fontSize + "px monospace";
-      for (let i = 0; i < drops.length; i++) {
-        const text = letters[Math.floor(Math.random() * letters.length)];
-        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-          drops[i] = 0;
+    // Credit Management
+    window.useCredit = async function() {
+        if (isUnlimited) return true;
+        
+        if (userCredits > 0) {
+            userCredits--;
+            await update(ref(database, `users/${currentUser.uid}`), {
+                credits: userCredits
+            });
+            updateCreditDisplay();
+            return true;
         }
-        drops[i]++;
-      }
+        return false;
     }
-    setInterval(drawMatrix, 35);
-    window.addEventListener("resize", () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      columns = Math.floor(canvas.width / fontSize);
-      drops = Array(columns).fill(1);
-    });
+
+    function updateCreditDisplay() {
+        const creditDisplay = document.getElementById('creditDisplay');
+        const creditCount = document.getElementById('creditCount');
+        const fetchButton = document.getElementById('fetchButton');
+        
+        if (isUnlimited) {
+            creditCount.textContent = 'Unlimited Credits';
+            creditDisplay.classList.add('unlimited');
+            fetchButton.disabled = false;
+        } else {
+            creditCount.textContent = `${userCredits} Credits Remaining`;
+            creditDisplay.classList.remove('unlimited');
+            fetchButton.disabled = userCredits <= 0;
+            
+            if (userCredits <= 0) {
+                fetchButton.innerHTML = '❌ No Credits Left';
+            } else {
+                fetchButton.innerHTML = '🔎 Get Details';
+            }
+        }
+    }
+
+    function updateUserInterface(user) {
+        const userName = user.email.split('@')[0];
+        const userInitial = userName.charAt(0).toUpperCase();
+        
+        // Update welcome message
+        const welcomeElement = document.getElementById('welcomeMessage');
+        if (welcomeElement) {
+            welcomeElement.textContent = `Welcome ${userName} To Nasir Database`;
+        }
+        
+        // Update avatar
+        const avatarElement = document.getElementById('userAvatar');
+        if (avatarElement) {
+            avatarElement.textContent = userInitial;
+        }
+        
+        // Update dropdown info
+        const dropdownAvatar = document.getElementById('dropdownAvatar');
+        const dropdownEmail = document.getElementById('dropdownEmail');
+        const dropdownName = document.getElementById('dropdownName');
+        
+        if (dropdownAvatar) dropdownAvatar.textContent = userInitial;
+        if (dropdownEmail) dropdownEmail.textContent = user.email;
+        if (dropdownName) dropdownName.textContent = userName;
+    }
+
+    async function initializeUserCredits(user) {
+        try {
+            const userRef = ref(database, `users/${user.uid}`);
+            const snapshot = await get(userRef);
+            
+            const today = new Date().toDateString();
+            const userData = snapshot.val();
+            
+            // Check if user has unlimited access
+            isUnlimited = unlimitedUsers.includes(user.email);
+            
+            if (!userData || userData.lastReset !== today) {
+                // First time user or new day - set credits
+                const defaultCredits = isUnlimited ? -1 : 10;
+                
+                await set(userRef, {
+                    credits: defaultCredits,
+                    lastReset: today,
+                    email: user.email,
+                    createdAt: new Date().toISOString()
+                });
+                
+                userCredits = defaultCredits;
+            } else {
+                // Existing user, same day
+                userCredits = userData.credits;
+            }
+            
+            updateCreditDisplay();
+        } catch (error) {
+            console.error("Error initializing credits:", error);
+            userCredits = 10;
+            updateCreditDisplay();
+        }
+    }
 
     // Main fetch data function
     window.fetchData = async function() {
-      console.log("fetchData function called!"); // Debug log
+      console.log("fetchData function called!");
       
       const number = document.getElementById("number").value.trim();
       const responseBox = document.getElementById("responseBox");
@@ -1202,134 +1344,7 @@
       }
     }
 
-    setTimeout(() => {
-      document.getElementById("popupOverlay").style.display = "flex";
-    }, 10000);
-  </script>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-    import { getDatabase, ref, set, get, update } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
-
-    const firebaseConfig = {
-        apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
-        authDomain: "nasir-48572.firebaseapp.com",
-        databaseURL: "https://nasir-48572-default-rtdb.firebaseio.com",
-        projectId: "nasir-48572",
-        storageBucket: "nasir-48572.appspot.com",
-        messagingSenderId: "1032758456576",
-        appId: "1:1032758456576:web:eaea202eb1f313efc743e5"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const database = getDatabase(app);
-
-    // List of users with unlimited credits
-    const unlimitedUsers = [
-      "nasirjafarmaibal@gmail.com",
-      "owner@nasir.com"
-    ];
-
-    window.useCredit = async function() {
-        if (isUnlimited) return true;
-        
-        if (userCredits > 0) {
-            userCredits--;
-            await update(ref(database, `users/${currentUser.uid}`), {
-                credits: userCredits
-            });
-            updateCreditDisplay();
-            return true;
-        }
-        return false;
-    }
-
-    function updateCreditDisplay() {
-        const creditDisplay = document.getElementById('creditDisplay');
-        const creditCount = document.getElementById('creditCount');
-        const fetchButton = document.getElementById('fetchButton');
-        
-        if (isUnlimited) {
-            creditCount.textContent = 'Unlimited Credits';
-            creditDisplay.classList.add('unlimited');
-            fetchButton.disabled = false;
-        } else {
-            creditCount.textContent = `${userCredits} Credits Remaining`;
-            creditDisplay.classList.remove('unlimited');
-            fetchButton.disabled = userCredits <= 0;
-            
-            if (userCredits <= 0) {
-                fetchButton.innerHTML = '❌ No Credits Left';
-            } else {
-                fetchButton.innerHTML = '🔎 Get Details';
-            }
-        }
-    }
-
-    function updateUserInterface(user) {
-        const userName = user.email.split('@')[0];
-        const userInitial = userName.charAt(0).toUpperCase();
-        
-        // Update welcome message
-        const welcomeElement = document.getElementById('welcomeMessage');
-        if (welcomeElement) {
-            welcomeElement.textContent = `Welcome ${userName} To Nasir Database`;
-        }
-        
-        // Update avatar
-        const avatarElement = document.getElementById('userAvatar');
-        if (avatarElement) {
-            avatarElement.textContent = userInitial;
-        }
-        
-        // Update dropdown info
-        const dropdownAvatar = document.getElementById('dropdownAvatar');
-        const dropdownEmail = document.getElementById('dropdownEmail');
-        const dropdownName = document.getElementById('dropdownName');
-        
-        if (dropdownAvatar) dropdownAvatar.textContent = userInitial;
-        if (dropdownEmail) dropdownEmail.textContent = user.email;
-        if (dropdownName) dropdownName.textContent = userName;
-    }
-
-    async function initializeUserCredits(user) {
-        try {
-            const userRef = ref(database, `users/${user.uid}`);
-            const snapshot = await get(userRef);
-            
-            const today = new Date().toDateString();
-            const userData = snapshot.val();
-            
-            // Check if user has unlimited access
-            isUnlimited = unlimitedUsers.includes(user.email);
-            
-            if (!userData || userData.lastReset !== today) {
-                // First time user or new day - set credits
-                const defaultCredits = isUnlimited ? -1 : 10;
-                
-                await set(userRef, {
-                    credits: defaultCredits,
-                    lastReset: today,
-                    email: user.email,
-                    createdAt: new Date().toISOString()
-                });
-                
-                userCredits = defaultCredits;
-            } else {
-                // Existing user, same day
-                userCredits = userData.credits;
-            }
-            
-            updateCreditDisplay();
-        } catch (error) {
-            console.error("Error initializing credits:", error);
-            userCredits = 10;
-            updateCreditDisplay();
-        }
-    }
-
+    // Firebase Auth State Listener
     onAuthStateChanged(auth, (user) => {
         if (!user) {
             window.location.href = "/login.html"; 
