@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Reset Password - Nasir Secure</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6c63ff;
+            --primary-dark: #5a52d5;
+            --secondary: #ff6584;
+            --dark: #121212;
+            --dark-light: #1e1e1e;
+            --dark-lighter: #2d2d2d;
+            --text: #ffffff;
+            --text-secondary: #b0b0b0;
+            --success: #4caf50;
+            --error: #f44336;
+            --border-radius: 12px;
+            --transition: all 0.3s ease;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            --glow: 0 0 20px rgba(108, 99, 255, 0.4);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0d0d0d 0%, #1a1a2e 50%, #16213e 100%);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            position: relative;
+            overflow: hidden;
+            line-height: 1.6;
+        }
+
+        /* Background Animation */
+        .bg-animation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .bg-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+            opacity: 0.1;
+            animation: float 15s infinite ease-in-out;
+        }
+
+        .bg-circle:nth-child(1) {
+            width: 300px;
+            height: 300px;
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .bg-circle:nth-child(2) {
+            width: 200px;
+            height: 200px;
+            top: 60%;
+            left: 80%;
+            animation-delay: 3s;
+        }
+
+        .bg-circle:nth-child(3) {
+            width: 400px;
+            height: 400px;
+            top: 30%;
+            left: 60%;
+            animation-delay: 6s;
+        }
+
+        .bg-circle:nth-child(4) {
+            width: 250px;
+            height: 250px;
+            top: 70%;
+            left: 20%;
+            animation-delay: 9s;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) translateX(0);
+            }
+            25% {
+                transform: translateY(-20px) translateX(10px);
+            }
+            50% {
+                transform: translateY(10px) translateX(-10px);
+            }
+            75% {
+                transform: translateY(-10px) translateX(-20px);
+            }
+        }
+
+        /* Main Container */
+        .container {
+            position: relative;
+            z-index: 10;
+            background: rgba(30, 30, 46, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 40px 35px;
+            width: 100%;
+            max-width: 420px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow), var(--glow);
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: var(--transition);
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), var(--glow);
+        }
+
+        /* Logo and Header */
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-icon {
+            background: var(--primary);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            box-shadow: 0 5px 15px rgba(108, 99, 255, 0.4);
+        }
+
+        .logo-icon i {
+            font-size: 24px;
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+            position: relative;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .input-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 15px;
+            color: var(--text-secondary);
+            z-index: 2;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px 15px 15px 45px;
+            background: var(--dark-lighter);
+            border: 2px solid transparent;
+            border-radius: var(--border-radius);
+            color: var(--text);
+            font-size: 16px;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            background: var(--dark-light);
+            box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.2);
+        }
+
+        input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        /* Button Styles */
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            color: white;
+            transition: var(--transition);
+            box-shadow: 0 5px 15px rgba(108, 99, 255, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(108, 99, 255, 0.6);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transform: translateX(-100%);
+        }
+
+        .btn:hover::after {
+            transform: translateX(100%);
+            transition: transform 0.6s ease;
+        }
+
+        /* Links and Additional Options */
+        .links {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        .link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .link:hover {
+            color: var(--primary);
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 25px;
+                margin: 20px;
+            }
+            
+            .logo-text {
+                font-size: 20px;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(18, 18, 18, 0.8);
+            border-radius: var(--border-radius);
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 99;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(108, 99, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Success Box */
+        .success-box {
+            display: none;
+            position: absolute;
+            inset: 0;
+            background: rgba(18, 18, 18, 0.95);
+            border-radius: var(--border-radius);
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            color: var(--success);
+            animation: fadeIn 0.5s;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+            text-align: center;
+            padding: 20px;
+        }
+
+        .success-box i {
+            font-size: 60px;
+            margin-bottom: 20px;
+            animation: bounce 1s infinite alternate;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-10px); }
+        }
+
+        /* Error Message Styles */
+        .error-message {
+            display: none;
+            background-color: rgba(244, 67, 54, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+            padding: 12px 15px;
+            border-radius: var(--border-radius);
+            margin-top: 10px;
+            font-size: 14px;
+            text-align: left;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .error-message i {
+            margin-right: 8px;
+        }
+
+        .success-message {
+            display: none;
+            background-color: rgba(76, 175, 80, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+            padding: 12px 15px;
+            border-radius: var(--border-radius);
+            margin-top: 10px;
+            font-size: 14px;
+            text-align: left;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .success-message i {
+            margin-right: 8px;
+        }
+
+        .back-btn {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            margin-top: 15px;
+        }
+
+        .back-btn:hover {
+            background: rgba(108, 99, 255, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Background Animation -->
+    <div class="bg-animation">
+        <div class="bg-circle"></div>
+        <div class="bg-circle"></div>
+        <div class="bg-circle"></div>
+        <div class="bg-circle"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Success Box -->
+        <div class="success-box" id="successBox">
+            <i class="fas fa-check-circle"></i>
+            <div>Reset Link Sent!</div>
+            <p style="font-size: 16px; margin-top: 10px; color: var(--text-secondary);">
+                Check your email for password reset instructions
+            </p>
+            <button class="btn back-btn" onclick="goBackToLogin()" style="margin-top: 20px;">
+                <i class="fas fa-arrow-left"></i> Back to Login
+            </button>
+        </div>
+
+        <!-- Loading Animation -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div>Sending reset link...</div>
+        </div>
+
+        <!-- Logo and Header -->
+        <div class="logo">
+            <div class="logo-icon">
+                <i class="fas fa-key"></i>
+            </div>
+            <div class="logo-text">Nasir Secure</div>
+        </div>
+        
+        <p class="subtitle">Reset your password to access your secure dashboard</p>
+
+        <!-- Reset Password Form -->
+        <div id="resetBox">
+            <div class="form-group">
+                <label class="form-label" for="resetEmail">Email Address</label>
+                <div class="input-container">
+                    <i class="fas fa-envelope input-icon"></i>
+                    <input type="email" id="resetEmail" placeholder="Enter your email address">
+                </div>
+                <!-- Error message container -->
+                <div class="error-message" id="errorMessage">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span id="errorText"></span>
+                </div>
+                <!-- Success message container -->
+                <div class="success-message" id="successMessage">
+                    <i class="fas fa-check-circle"></i>
+                    <span id="successText"></span>
+                </div>
+            </div>
+
+            <button type="button" class="btn" onclick="sendResetLink()">
+                <i class="fas fa-paper-plane"></i> Send Reset Link
+            </button>
+
+            <div class="links">
+                <div class="link" onclick="goBackToLogin()">
+                    <i class="fas fa-arrow-left"></i> Back to Login
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            &copy; 2023 Nasir Secure. All rights reserved.
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+        import { 
+            getAuth,
+            sendPasswordResetEmail
+        } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
+            authDomain: "nasir-48572.firebaseapp.com",
+            projectId: "nasir-48572",
+            storageBucket: "nasir-48572.appspot.com",
+            messagingSenderId: "1032758456576",
+            appId: "1:1032758456576:web:eaea202eb1f313efc743e5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // Function to show error message
+        function showError(message) {
+            console.log("Error:", message);
+            const errorElement = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            const successElement = document.getElementById('successMessage');
+            
+            // Hide success message if visible
+            successElement.style.display = 'none';
+            
+            // Show error message
+            errorText.textContent = message;
+            errorElement.style.display = 'block';
+        }
+
+        // Function to show success message
+        function showSuccess(message) {
+            console.log("Success:", message);
+            const successElement = document.getElementById('successMessage');
+            const successText = document.getElementById('successText');
+            const errorElement = document.getElementById('errorMessage');
+            
+            // Hide error message if visible
+            errorElement.style.display = 'none';
+            
+            // Show success message
+            successText.textContent = message;
+            successElement.style.display = 'block';
+        }
+
+        // Function to hide all messages
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        // Make functions globally available
+        window.goBackToLogin = function () {
+            console.log("Redirecting to login page");
+            window.location.href = "index.html";
+        }
+
+        window.sendResetLink = function () {
+            const email = document.getElementById("resetEmail").value;
+            
+            console.log("Sending reset link to:", email);
+            
+            // Hide any previous messages
+            hideMessages();
+            
+            // Basic validation
+            if (!email) {
+                showError("Please enter your email address");
+                return;
+            }
+
+            // Email format validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showError("Please enter a valid email address");
+                return;
+            }
+
+            // Show loading animation
+            document.getElementById("loading").style.display = "flex";
+
+            sendPasswordResetEmail(auth, email)
+                .then(() => {
+                    document.getElementById("loading").style.display = "none";
+                    // Show success box instead of message
+                    document.getElementById("successBox").style.display = "flex";
+                    document.getElementById("resetBox").style.display = "none";
+                })
+                .catch(err => {
+                    document.getElementById("loading").style.display = "none";
+                    console.error("Password reset error:", err);
+                    
+                    // Convert Firebase errors to user-friendly messages
+                    let errorMessage = "Failed to send reset email. Please try again.";
+                    if (err.code === "auth/user-not-found") {
+                        errorMessage = "Email not found. Please check your email address.";
+                    } else if (err.code === "auth/invalid-email") {
+                        errorMessage = "Invalid email address format.";
+                    } else if (err.code === "auth/too-many-requests") {
+                        errorMessage = "Too many attempts. Please try again later.";
+                    } else if (err.code === "auth/network-request-failed") {
+                        errorMessage = "Network error. Please check your internet connection.";
+                    }
+                    
+                    showError(errorMessage);
+                });
+        }
+
+        // Add event listener for Enter key
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('resetEmail').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendResetLink();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
