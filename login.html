@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Nasir Login System</title>
+    <title>Secure Login | Nasir</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -25,6 +25,7 @@
             --text-secondary: #b0b0b0;
             --success: #4caf50;
             --error: #f44336;
+            --warning: #ff9800;
             --border-radius: 12px;
             --transition: all 0.3s ease;
             --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
@@ -244,6 +245,45 @@
             background: rgba(108, 99, 255, 0.1);
         }
 
+        /* Error Message */
+        .error-message {
+            display: none;
+            color: var(--error);
+            font-size: 13px;
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: rgba(244, 67, 54, 0.1);
+            border-radius: 6px;
+            border-left: 3px solid var(--error);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .error-message i {
+            margin-right: 6px;
+        }
+
+        /* Success Message */
+        .success-message {
+            display: none;
+            color: var(--success);
+            font-size: 13px;
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: rgba(76, 175, 80, 0.1);
+            border-radius: 6px;
+            border-left: 3px solid var(--success);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .success-message i {
+            margin-right: 6px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         /* Button Styles */
         .btn {
             width: 100%;
@@ -377,11 +417,6 @@
             animation: bounce 1s infinite alternate;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
         @keyframes bounce {
             from { transform: translateY(0); }
             to { transform: translateY(-10px); }
@@ -496,6 +531,16 @@
                         <i class="fas fa-eye"></i>
                     </button>
                 </div>
+                <!-- Error message will appear here -->
+                <div class="error-message" id="errorMessage">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span id="errorText"></span>
+                </div>
+                <!-- Success message will appear here -->
+                <div class="success-message" id="successMessage">
+                    <i class="fas fa-check-circle"></i>
+                    <span id="successText"></span>
+                </div>
             </div>
 
             <button class="btn" onclick="login()">
@@ -559,6 +604,40 @@
             if (user) window.location.href = "https://nasir-hacker-database.vercel.app";
         });
 
+        // Function to show error message
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            const successElement = document.getElementById('successMessage');
+            
+            // Hide success message if visible
+            successElement.style.display = 'none';
+            
+            // Show error message
+            errorText.textContent = message;
+            errorElement.style.display = 'block';
+        }
+
+        // Function to show success message
+        function showSuccess(message) {
+            const successElement = document.getElementById('successMessage');
+            const successText = document.getElementById('successText');
+            const errorElement = document.getElementById('errorMessage');
+            
+            // Hide error message if visible
+            errorElement.style.display = 'none';
+            
+            // Show success message
+            successText.textContent = message;
+            successElement.style.display = 'block';
+        }
+
+        // Function to hide all messages
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
         window.togglePassword = function(id) {
             const field = document.getElementById(id);
             const icon = field.parentNode.querySelector('i');
@@ -579,34 +658,16 @@
         }
 
         window.forgotPassword = function () {
-            const email = prompt("Enter your email:");
-            if (!email) return;
-
-            sendPasswordResetEmail(auth, email)
-                .then(() => alert("Password reset link sent to your email!"))
-                .catch(err => alert(err.message));
-        }
-
-        window.login = function () {
             const email = document.getElementById("loginEmail").value;
-            const password = document.getElementById("loginPassword").value;
+            
+            if (!email) {
+                showError("Please enter your email address first");
+                return;
+            }
             
             // Show loading animation
             document.getElementById("loading").style.display = "flex";
-
-            signInWithEmailAndPassword(auth, email, password)
+            
+            sendPasswordResetEmail(auth, email)
                 .then(() => {
-                    document.getElementById("loading").style.display = "none";
-                    document.getElementById("successBox").style.display = "flex";
-                    setTimeout(() => {
-                        window.location.href = "https://nasir-hacker-database.vercel.app";
-                    }, 1500);
-                })
-                .catch((e) => {
-                    document.getElementById("loading").style.display = "none";
-                    alert("Login failed: " + e.message);
-                });
-        }
-    </script>
-</body>
-</html>
+           
