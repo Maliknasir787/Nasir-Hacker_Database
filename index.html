@@ -239,7 +239,9 @@
       to { opacity: 1; transform: translateY(0);}
     }
   </style> 
- </head> 
+ </head>
+ <script type="module" src="protect.js"></script>
+ 
  <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
@@ -268,6 +270,10 @@ onAuthStateChanged(auth, (user) => {
   <canvas id="matrixCanvas"></canvas> 
   <div class="box"> 
    <h2>NASIR HACKER DB</h2> 
+   <button onclick="logout()" style="background:red;color:white;padding:8px;border:none;border-radius:6px;">
+    Logout
+   </button>
+   
    <input type="text" id="number" placeholder="Enter phone number or CNIC" required> <button class="primary-btn" onclick="fetchData()">🔎 Get Details</button> 
    <div id="responseBox"></div> <button id="shareButton" class="whatsapp-btn" onclick="shareWhatsApp()" style="display: none;">📲 Share on WhatsApp</button> <button id="copyButton" class="copy-btn" onclick="copyToClipboard()" style="display: none;">📋 Copy Data</button> <button class="telegram-btn" onclick="window.open('https://api.whatsapp.com/send?phone=+923206939553', '_blank')">💬 Owner Contact</button> 
   </div> <!-- New Futuristic Popup --> 
@@ -325,6 +331,7 @@ onAuthStateChanged(auth, (user) => {
       responseBox.style.display = "block";
       shareButton.style.display = "none";
       copyButton.style.display = "none";
+     
 
       const url = `https://api.allorigins.win/get?url=${encodeURIComponent(`https://legendxdata.site/Api/simdata.php?phone=${number}`)}`;
 
