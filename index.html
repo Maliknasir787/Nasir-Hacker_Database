@@ -905,7 +905,7 @@
       drops = Array(columns).fill(1);
     });
 
-    // Main fetch data function - FIXED API CALL
+    // Main fetch data function - COMPLETELY REWRITTEN
     window.fetchData = async function() {
       console.log("fetchData function called!");
       
@@ -939,63 +939,81 @@
       try {
         console.log("Making API request to:", apiUrl);
         
-        // Try direct fetch first
-        let response;
-        try {
-          response = await fetch(apiUrl);
-          console.log("Direct fetch response status:", response.status);
-        } catch (directError) {
-          console.log("Direct fetch failed, trying CORS proxy:", directError);
-          // If direct fails, try with CORS proxy
-          const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
-          response = await fetch(proxyUrl);
-        }
+        // SIMPLE FETCH - No complex proxy handling
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          mode: 'cors',
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        console.log("Response status:", response.status);
+        console.log("Response headers:", response.headers);
 
-        // Parse response based on whether we used proxy or not
+        // Get the response as text first to see what we're dealing with
+        const responseText = await response.text();
+        console.log("Raw response text:", responseText);
+
         let data;
-        if (response.url.includes('allorigins.win')) {
-          // Proxy response
-          const proxyData = await response.json();
-          data = JSON.parse(proxyData.contents);
-        } else {
-          // Direct response
-          data = await response.json();
+        try {
+          // Try to parse as JSON
+          data = JSON.parse(responseText);
+          console.log("Parsed JSON data:", data);
+        } catch (parseError) {
+          console.log("JSON parse failed, trying alternative parsing:", parseError);
+          // If direct JSON parse fails, try to extract JSON from the response
+          try {
+            // Sometimes APIs return JSON wrapped in other content
+            const jsonMatch = responseText.match(/\{.*\}/s);
+            if (jsonMatch) {
+              data = JSON.parse(jsonMatch[0]);
+              console.log("Extracted JSON data:", data);
+            } else {
+              throw new Error("No JSON found in response");
+            }
+          } catch (extractError) {
+            console.log("Alternative parsing failed:", extractError);
+            throw new Error("Failed to parse API response");
+          }
         }
 
-        console.log("API Response data:", data);
-
-        // Handle API response
+        // Handle API response - SIMPLIFIED LOGIC
         let searchStatus = "error";
         let searchResult = null;
         
-        if (data && data.success && Array.isArray(data.records) && data.records.length > 0) {
-          let content = "";
-          data.records.forEach((rec, index) => {
-            content += `Result ${index + 1}:\n`;
-            content += `📞 Mobile: ${rec["Mobile"] || "Not found"}\n`;
-            content += `👤 Name: ${rec["Name"] || "Not found"}\n`;
-            content += `🆔 CNIC: ${rec["CNIC"] || "Not found"}\n`;
-            content += `📍 Address: ${rec["Address"] || "Not found"}\n`;
-            content += `🌍 Country: ${rec["Country"] || "Not found"}\n\n`;
-          });
-
-          responseBox.innerText = content.trim();
-          shareButton.style.display = "inline-block";
-          copyButton.style.display = "inline-block";
-          searchStatus = "found";
-          searchResult = content.trim();
+        // Check if we have valid data with records
+        if (data && data.records && Array.isArray(data.records)) {
+          console.log("Records found:", data.records.length);
           
-          // Only deduct credit if data was found
-          if (window.useCredit) {
-            await window.useCredit();
+          if (data.records.length > 0) {
+            let content = "";
+            data.records.forEach((rec, index) => {
+              content += `Result ${index + 1}:\n`;
+              content += `📞 Mobile: ${rec["Mobile"] || "Not found"}\n`;
+              content += `👤 Name: ${rec["Name"] || "Not found"}\n`;
+              content += `🆔 CNIC: ${rec["CNIC"] || "Not found"}\n`;
+              content += `📍 Address: ${rec["Address"] || "Not found"}\n`;
+              content += `🌍 Country: ${rec["Country"] || "Not found"}\n\n`;
+            });
+
+            responseBox.innerText = content.trim();
+            shareButton.style.display = "inline-block";
+            copyButton.style.display = "inline-block";
+            searchStatus = "found";
+            searchResult = content.trim();
+            
+            // Only deduct credit if data was found
+            if (window.useCredit) {
+              await window.useCredit();
+            }
+          } else {
+            responseBox.innerHTML = `<p style="color: #FFD700; font-size: 16px; font-weight: bold;">❌ No data found for this number.</p>`;
+            searchStatus = "not_found";
           }
         } else {
-          responseBox.innerHTML = `<p style="color: #FFD700; font-size: 16px; font-weight: bold;">❌ Oops! Data not found for this number.</p>`;
-          searchStatus = "not_found";
+          responseBox.innerHTML = `<p style="color: #FFD700; font-size: 16px; font-weight: bold;">❌ Invalid response format from server.</p>`;
+          searchStatus = "error";
         }
         
         // Save search history
@@ -1004,7 +1022,7 @@
         }
       } catch (error) {
         console.error("Fetch error details:", error);
-        responseBox.innerHTML = `<p style="color: red; font-size: 16px; font-weight: bold;">⚠️ Error: ${error.message}. Please check the number and try again.</p>`;
+        responseBox.innerHTML = `<p style="color: red; font-size: 16px; font-weight: bold;">⚠️ Network error. Please check your connection and try again.</p>`;
         
         // Save search history with error status
         if (window.saveSearchHistory) {
@@ -1039,7 +1057,7 @@
 
     // List of users with unlimited credits
     const unlimitedUsers = [
-      "nasirjafarmaibal@gmail.com",
+      "admin@nasir.com",
       "owner@nasir.com"
     ];
 
