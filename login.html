@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>Nasir Login System</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
     body {
         font-family: Arial, sans-serif;
@@ -22,6 +23,7 @@
         border-radius: 15px;
         box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
         text-align: center;
+        position: relative;
     }
     input {
         width: 90%;
@@ -49,7 +51,45 @@
         margin-top: 12px;
         color: #aaa;
         cursor: pointer;
+    }
+    .small {
+        font-size: 13px;
+        margin-top: 8px;
+        cursor: pointer;
+        color: #ccc;
         text-decoration: underline;
+    }
+    .success-box {
+        display: none;
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,0.8);
+        border-radius: 15px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        font-size: 20px;
+        color: gold;
+        animation: fadeIn 0.3s;
+    }
+    @keyframes fadeIn {
+        from {opacity: 0} to {opacity: 1}
+    }
+    .eye {
+        position: relative;
+        width: 90%;
+        margin: auto;
+    }
+    .eye button {
+        position: absolute;
+        right: 10px;
+        top: 12px;
+        background: none;
+        border: none;
+        color: black;
+        cursor: pointer;
+        font-size: 14px;
     }
 </style>
 </head>
@@ -58,13 +98,22 @@
 <div class="container">
     <h2>🔐 Nasir Login</h2>
 
-    <!-- LOGIN BOX (unchanged) -->
+    <!-- SUCCESS ANIMATION -->
+    <div class="success-box" id="successBox">
+        ✅ Login Successful  
+    </div>
+
     <div id="loginBox">
         <input type="email" id="loginEmail" placeholder="Email">
-        <input type="password" id="loginPassword" placeholder="Password">
+
+        <div class="eye">
+            <input type="password" id="loginPassword" placeholder="Password">
+            <button onclick="togglePassword('loginPassword')">👁</button>
+        </div>
+
         <button onclick="login()">Login</button>
 
-        <!-- Now opens register.html -->
+        <div class="small" onclick="forgotPassword()">Forgot Password?</div>
         <div class="toggle" onclick="goRegister()">Create new account</div>
     </div>
 </div>
@@ -72,14 +121,15 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
     import { 
-        getAuth, 
+        getAuth,
+        onAuthStateChanged,
+        sendPasswordResetEmail,
         signInWithEmailAndPassword
     } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
         authDomain: "nasir-48572.firebaseapp.com",
-        databaseURL: "https://nasir-48572-default-rtdb.firebaseio.com",
         projectId: "nasir-48572",
         storageBucket: "nasir-48572.appspot.com",
         messagingSenderId: "1032758456576",
@@ -89,21 +139,41 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    // NEW: redirect to register.html
+    // Remember me (Auto login)
+    onAuthStateChanged(auth, (user) => {
+        if (user) window.location.href = "https://nasir-hacker-database.vercel.app";
+    });
+
+    window.togglePassword = function(id) {
+        const f = document.getElementById(id);
+        f.type = f.type === "password" ? "text" : "password";
+    }
+
     window.goRegister = function () {
         window.location.href = "register.html";
     }
 
-    // LOGIN FUNCTION (unchanged)
+    window.forgotPassword = function () {
+        const email = prompt("Enter your email:");
+        if (!email) return;
+
+        sendPasswordResetEmail(auth, email)
+            .then(() => alert("Password reset link sent!"))
+            .catch(err => alert(err.message));
+    }
+
     window.login = function () {
         const email = document.getElementById("loginEmail").value;
         const password = document.getElementById("loginPassword").value;
 
         signInWithEmailAndPassword(auth, email, password)
             .then(() => {
-                window.location.href = "https://nasir-hacker-database.vercel.app";
+                document.getElementById("successBox").style.display = "flex";
+                setTimeout(() => {
+                    window.location.href = "https://nasir-hacker-database.vercel.app";
+                }, 1200);
             })
-            .catch((error) => alert("Invalid login: " + error.message));
+            .catch((e) => alert("Invalid login: " + e.message));
     }
 </script>
 
