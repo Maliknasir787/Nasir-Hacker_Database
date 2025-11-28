@@ -527,7 +527,7 @@
                 <div class="input-container">
                     <i class="fas fa-lock input-icon"></i>
                     <input type="password" id="loginPassword" placeholder="Enter your password">
-                    <button class="password-toggle" onclick="togglePassword('loginPassword')">
+                    <button type="button" class="password-toggle" onclick="togglePassword('loginPassword')">
                         <i class="fas fa-eye"></i>
                     </button>
                 </div>
@@ -543,7 +543,7 @@
                 </div>
             </div>
 
-            <button class="btn" onclick="login()">
+            <button type="button" class="btn" onclick="login()">
                 <i class="fas fa-sign-in-alt"></i> Sign In
             </button>
 
@@ -582,7 +582,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
         import { 
             getAuth,
-            onAuthStateChanged,
             sendPasswordResetEmail,
             signInWithEmailAndPassword
         } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
@@ -599,13 +598,9 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        // Auto login (Remember me)
-        onAuthStateChanged(auth, (user) => {
-            if (user) window.location.href = "https://nasir-hacker-database.vercel.app";
-        });
-
         // Function to show error message
         function showError(message) {
+            console.log("Error:", message);
             const errorElement = document.getElementById('errorMessage');
             const errorText = document.getElementById('errorText');
             const successElement = document.getElementById('successMessage');
@@ -620,6 +615,7 @@
 
         // Function to show success message
         function showSuccess(message) {
+            console.log("Success:", message);
             const successElement = document.getElementById('successMessage');
             const successText = document.getElementById('successText');
             const errorElement = document.getElementById('errorMessage');
@@ -638,6 +634,7 @@
             document.getElementById('successMessage').style.display = 'none';
         }
 
+        // Make functions globally available
         window.togglePassword = function(id) {
             const field = document.getElementById(id);
             const icon = field.parentNode.querySelector('i');
@@ -654,6 +651,7 @@
         }
 
         window.goRegister = function () {
+            console.log("Redirecting to register page");
             window.location.href = "register.html";
         }
 
@@ -670,4 +668,92 @@
 
             sendPasswordResetEmail(auth, email)
                 .then(() => {
-                    document.getElementB
+                    document.getElementById("loading").style.display = "none";
+                    showSuccess("Password reset link sent to your email!");
+                })
+                .catch(err => {
+                    document.getElementById("loading").style.display = "none";
+                    console.error("Password reset error:", err);
+                    
+                    // Convert Firebase errors to user-friendly messages
+                    let errorMessage = "Failed to send reset email";
+                    if (err.code === "auth/user-not-found") {
+                        errorMessage = "Email not found. Please check your email address.";
+                    } else if (err.code === "auth/invalid-email") {
+                        errorMessage = "Invalid email address format.";
+                    } else if (err.code === "auth/too-many-requests") {
+                        errorMessage = "Too many attempts. Please try again later.";
+                    }
+                    
+                    showError(errorMessage);
+                });
+        }
+
+        window.login = function () {
+            const email = document.getElementById("loginEmail").value;
+            const password = document.getElementById("loginPassword").value;
+            
+            console.log("Login attempt with:", email);
+            
+            // Hide any previous messages
+            hideMessages();
+            
+            // Basic validation
+            if (!email || !password) {
+                showError("Please fill in all fields");
+                return;
+            }
+
+            // Show loading animation
+            document.getElementById("loading").style.display = "flex";
+
+            signInWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    console.log("Login successful:", userCredential);
+                    document.getElementById("loading").style.display = "none";
+                    document.getElementById("successBox").style.display = "flex";
+                    setTimeout(() => {
+                        window.location.href = "https://nasir-hacker-database.vercel.app";
+                    }, 1500);
+                })
+                .catch((error) => {
+                    document.getElementById("loading").style.display = "none";
+                    console.error("Login error:", error);
+                    
+                    // Convert Firebase errors to user-friendly messages
+                    let errorMessage = "Login failed. Please try again.";
+                    if (error.code === "auth/invalid-email") {
+                        errorMessage = "Invalid email address format.";
+                    } else if (error.code === "auth/user-not-found") {
+                        errorMessage = "Email not found. Please check your email address.";
+                    } else if (error.code === "auth/wrong-password") {
+                        errorMessage = "Incorrect password. Please try again.";
+                    } else if (error.code === "auth/too-many-requests") {
+                        errorMessage = "Too many failed attempts. Please try again later.";
+                    } else if (error.code === "auth/invalid-credential") {
+                        errorMessage = "Invalid credentials. Please check your email and password.";
+                    } else if (error.code === "auth/network-request-failed") {
+                        errorMessage = "Network error. Please check your internet connection.";
+                    }
+                    
+                    showError(errorMessage);
+                });
+        }
+
+        // Add event listeners for Enter key
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('loginEmail').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    login();
+                }
+            });
+            
+            document.getElementById('loginPassword').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    login();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
