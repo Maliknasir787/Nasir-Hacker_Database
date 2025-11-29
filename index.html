@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en"> 
  <head> 
@@ -985,46 +984,74 @@
       "owner@nasir.com"
     ];
 
-    // Session tracking function
+    // Session tracking function - FIXED VERSION
     window.trackActiveSession = async function(user) {
         try {
             const sessionRef = ref(database, `activeSessions/${user.uid}`);
-            const currentSessionId = Date.now().toString();
+            const currentSessionId = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
             
-            console.log("Setting up session tracking for user:", user.uid);
-            console.log("Current session ID:", currentSessionId);
+            console.log("🔄 Setting up session tracking for user:", user.uid);
+            console.log("🆔 Current session ID:", currentSessionId);
             
             // Store the current session
             await set(sessionRef, {
                 sessionId: currentSessionId,
                 lastActive: new Date().toISOString(),
                 userAgent: navigator.userAgent,
-                email: user.email
+                email: user.email,
+                timestamp: Date.now()
             });
             
             // Store session ID in localStorage
             localStorage.setItem(`nasir_session_${user.uid}`, currentSessionId);
             
-            // Listen for session changes
-            onValue(sessionRef, (snapshot) => {
+            console.log("✅ Session saved to Firebase and localStorage");
+            
+            // Listen for session changes with better error handling
+            const unsubscribe = onValue(sessionRef, (snapshot) => {
                 const sessionData = snapshot.val();
-                console.log("Session data changed:", sessionData);
+                console.log("📡 Session data changed:", sessionData);
                 
-                if (sessionData && sessionData.sessionId !== currentSessionId) {
-                    // Session changed - log out this device
-                    console.log("Session invalidated - logging out. Current:", currentSessionId, "New:", sessionData.sessionId);
-                    signOut(auth).then(() => {
-                        // Store logout reason before redirecting
-                        localStorage.setItem('logout_reason', 'session_ended_elsewhere');
-                        window.location.href = "/login.html";
-                    });
+                if (!sessionData) {
+                    console.log("❌ Session data deleted - logging out");
+                    handleLogout();
+                    return;
+                }
+                
+                const localSessionId = localStorage.getItem(`nasir_session_${user.uid}`);
+                console.log("🔍 Comparing sessions - Local:", localSessionId, "Remote:", sessionData.sessionId);
+                
+                if (sessionData.sessionId !== localSessionId) {
+                    console.log("🚨 Session ID mismatch - logging out this device");
+                    handleLogout();
                 }
             }, (error) => {
-                console.error("Error listening to session changes:", error);
+                console.error("❌ Error listening to session changes:", error);
             });
+            
+            // Store unsubscribe function for cleanup
+            window.sessionUnsubscribe = unsubscribe;
+            
         } catch (error) {
-            console.error("Error tracking session:", error);
+            console.error("❌ Error tracking session:", error);
         }
+    }
+
+    // Helper function for logout
+    function handleLogout() {
+        if (window.sessionUnsubscribe) {
+            window.sessionUnsubscribe();
+        }
+        
+        signOut(auth).then(() => {
+            console.log("👋 Session ended - redirecting to login");
+            localStorage.setItem('logout_reason', 'session_ended_elsewhere');
+            window.location.href = "/login.html";
+        }).catch((error) => {
+            console.error("Logout error:", error);
+            localStorage.setItem('logout_reason', 'session_ended_elsewhere');
+            window.location.href = "/login.html";
+        });
     }
 
     // Search History Functions
