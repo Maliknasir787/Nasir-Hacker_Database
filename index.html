@@ -977,8 +977,7 @@
     let currentUser = null;
     let userCredits = 0;
     let isUnlimited = false;
-
-   // Add this function to track active sessions
+    // Add this function to track active sessions
 window.trackActiveSession = async function(user) {
     try {
         const sessionRef = ref(database, `activeSessions/${user.uid}`);
@@ -1379,15 +1378,17 @@ window.trackActiveSession = async function(user) {
     }
 
     // Firebase Auth State Listener
-    onAuthStateChanged(auth, (user) => {
-        if (!user) {
-            window.location.href = "/login.html"; 
-        } else {
-            currentUser = user;
-            updateUserInterface(user);
-            initializeUserCredits(user);
-        }
-    });
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+        window.location.href = "/login.html"; 
+    } else {
+        currentUser = user;
+        updateUserInterface(user);
+        initializeUserCredits(user);
+        // Track the active session
+        window.trackActiveSession(user);
+    }
+});
 
     // Menu toggle functionality
     document.getElementById('menuToggle').addEventListener('click', function() {
@@ -1412,14 +1413,23 @@ window.trackActiveSession = async function(user) {
         }
     });
 
-    // Logout functionality
-    document.getElementById('logoutBtn').addEventListener('click', function() {
-        signOut(auth).then(() => {
-            window.location.href = "/login.html";
-        }).catch((error) => {
-            console.error('Logout error:', error);
-        });
+// Logout functionality
+document.getElementById('logoutBtn').addEventListener('click', function() {
+    if (currentUser) {
+        // Clear the session from database
+        const sessionRef = ref(database, `activeSessions/${currentUser.uid}`);
+        set(sessionRef, null);
+        
+        // Clear local storage
+        localStorage.removeItem(`nasir_session_${currentUser.uid}`);
+    }
+    
+    signOut(auth).then(() => {
+        window.location.href = "/login.html";
+    }).catch((error) => {
+        console.error('Logout error:', error);
     });
+});
 
     // Close dropdown when clicking outside
     document.addEventListener('click', function(event) {
