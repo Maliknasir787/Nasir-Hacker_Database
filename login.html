@@ -578,7 +578,7 @@
         </div>
     </div>
 
-  <script type="module">
+<script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
     import { 
         getAuth,
@@ -699,8 +699,8 @@
                 const sessionRef = ref(database, `activeSessions/${user.uid}`);
                 const newSessionId = Date.now().toString();
                 
-                console.log("🔄 Updating session for user:", user.uid);
-                console.log("🆔 New session ID:", newSessionId);
+                console.log("🔄 UPDATING SESSION FOR USER:", user.uid);
+                console.log("🆔 NEW SESSION ID:", newSessionId);
                 
                 // Set with error handling
                 set(sessionRef, {
@@ -709,7 +709,7 @@
                     userAgent: navigator.userAgent,
                     email: user.email
                 }).then(() => {
-                    console.log("✅ Session updated successfully in Firebase");
+                    console.log("✅ SESSION UPDATED SUCCESSFULLY");
                     document.getElementById("loading").style.display = "none";
                     document.getElementById("successBox").style.display = "flex";
                     setTimeout(() => {
