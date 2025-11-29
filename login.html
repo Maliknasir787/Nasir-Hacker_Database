@@ -725,24 +725,28 @@ function checkLogoutReason() {
             // Invalidate all other sessions by updating the session ID
             const user = userCredential.user;
             const sessionRef = ref(database, `activeSessions/${user.uid}`);
-            const newSessionId = Date.now().toString();
+            const newSessionId = Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
+            
+            console.log("🔄 Updating session for user:", user.uid);
+            console.log("🆔 New session ID:", newSessionId);
             
             // Set with error handling
             set(sessionRef, {
                 sessionId: newSessionId,
                 lastActive: new Date().toISOString(),
-                userAgent: navigator.userAgent
+                userAgent: navigator.userAgent,
+                email: user.email,
+                timestamp: Date.now()
             }).then(() => {
-                // Session updated successfully
-                console.log("Session updated successfully");
+                console.log("✅ Session updated successfully in Firebase");
                 document.getElementById("loading").style.display = "none";
                 document.getElementById("successBox").style.display = "flex";
                 setTimeout(() => {
                     window.location.href = "https://nasir-hacker-database.vercel.app";
                 }, 1500);
             }).catch((sessionError) => {
-                // Session update failed, but login was successful - still proceed
-                console.error("Session update failed:", sessionError);
+                console.error("❌ Session update failed:", sessionError);
+                // Still allow login even if session update fails
                 document.getElementById("loading").style.display = "none";
                 document.getElementById("successBox").style.display = "flex";
                 setTimeout(() => {
