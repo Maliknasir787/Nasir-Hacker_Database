@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Nasir Database</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .admin-header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-header h1 {
+            font-size: 24px;
+        }
+
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .admin-tabs {
+            display: flex;
+            background: #34495e;
+            padding: 0 20px;
+        }
+
+        .tab {
+            padding: 15px 25px;
+            color: white;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            border-bottom-color: #e74c3c;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .data-table th {
+            background: #34495e;
+            color: white;
+            font-weight: 600;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #7f8c8d;
+        }
+
+        .credit-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .credit-unlimited {
+            background: #27ae60;
+            color: white;
+        }
+
+        .credit-low {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .credit-normal {
+            background: #3498db;
+            color: white;
+        }
+
+        .session-active {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .session-inactive {
+            color: #e74c3c;
+        }
+
+        .logout-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+
+        @media (max-width: 768px) {
+            .admin-tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                padding: 12px 20px;
+            }
+            
+            .data-table {
+                font-size: 14px;
+            }
+            
+            .data-table th,
+            .data-table td {
+                padding: 8px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1><i class="fas fa-cogs"></i> Admin Panel - Nasir Database</h1>
+            <button class="logout-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+
+        <div class="admin-stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalUsers">0</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="activeSessions">0</div>
+                <div class="stat-label">Active Sessions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalSearches">0</div>
+                <div class="stat-label">Total Searches</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="adminsCount">0</div>
+                <div class="stat-label">Admin Users</div>
+            </div>
+        </div>
+
+        <div class="admin-tabs">
+            <div class="tab active" onclick="switchTab('users')">Users Management</div>
+            <div class="tab" onclick="switchTab('sessions')">Active Sessions</div>
+            <div class="tab" onclick="switchTab('history')">Search History</div>
+            <div class="tab" onclick="switchTab('admins')">Admins Management</div>
+        </div>
+
+        <!-- Users Tab -->
+        <div class="tab-content active" id="users-tab">
+            <div class="search-box">
+                <input type="text" id="userSearch" placeholder="Search users by email..." onkeyup="searchUsers()">
+            </div>
+            <div class="loading" id="usersLoading">Loading users...</div>
+            <table class="data-table" id="usersTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>Credits</th>
+                        <th>Last Reset</th>
+                        <th>Created At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- Sessions Tab -->
+        <div class="tab-content" id="sessions-tab">
+            <div class="loading" id="sessionsLoading">Loading sessions...</div>
+            <table class="data-table" id="sessionsTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>User Email</th>
+                        <th>Session ID</th>
+                        <th>Last Active</th>
+                        <th>User Agent</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="sessionsTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- History Tab -->
+        <div class="tab-content" id="history-tab">
+            <div class="search-box">
+                <input type="text" id="historySearch" placeholder="Search history by query or user..." onkeyup="searchHistory()">
+            </div>
+            <div class="loading" id="historyLoading">Loading search history...</div>
+            <table class="data-table" id="historyTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>User Email</th>
+                        <th>Query</th>
+                        <th>Status</th>
+                        <th>Timestamp</th>
+                        <th>Result Preview</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- Admins Tab -->
+        <div class="tab-content" id="admins-tab">
+            <button class="btn btn-primary" onclick="showAddAdminModal()" style="margin-bottom: 20px;">
+                <i class="fas fa-plus"></i> Add Admin
+            </button>
+            <div class="loading" id="adminsLoading">Loading admins...</div>
+            <table class="data-table" id="adminsTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>User UID</th>
+                        <th>Email</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="adminsTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div class="modal" id="editUserModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit User Credits</h2>
+                <button class="close-modal" onclick="closeEditUserModal()">&times;</button>
+            </div>
+            <div id="editUserForm">
+                <!-- Form will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Admin Modal -->
+    <div class="modal" id="addAdminModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Admin User</h2>
+                <button class="close-modal" onclick="closeAddAdminModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="adminEmail">User Email:</label>
+                <input type="email" id="adminEmail" placeholder="Enter user email">
+            </div>
+            <button class="btn btn-success" onclick="addAdmin()" style="width: 100%;">
+                <i class="fas fa-plus"></i> Add as Admin
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+        import { getDatabase, ref, get, set, update, remove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
+            authDomain: "nasir-48572.firebaseapp.com",
+            databaseURL: "https://nasir-48572-default-rtdb.firebaseio.com",
+            projectId: "nasir-48572",
+            storageBucket: "nasir-48572.appspot.com",
+            messagingSenderId: "1032758456576",
+            appId: "1:1032758456576:web:eaea202eb1f313efc743e5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
+
+        let currentAdmin = null;
+        let allUsers = [];
+        let allSessions = [];
+        let allHistory = [];
+
+        // Check if user is admin
+        async function checkAdminAccess(user) {
+            const adminRef = ref(database, `admins/${user.uid}`);
+            const snapshot = await get(adminRef);
+            return snapshot.exists();
+        }
+
+        // Load all data
+        async function loadAllData() {
+            if (!currentAdmin) return;
+
+            try {
+                await Promise.all([
+                    loadUsers(),
+                    loadSessions(),
+                    loadSearchHistory(),
+                    loadAdmins(),
+                    updateStats()
+                ]);
+            } catch (error) {
+                console.error("Error loading data:", error);
+            }
+        }
+
+        // Load users
+        async function loadUsers() {
+            const usersRef = ref(database, 'users');
+            const snapshot = await get(usersRef);
+            allUsers = [];
+            
+            if (snapshot.exists()) {
+                snapshot.forEach((childSnapshot) => {
+                    const userData = childSnapshot.val();
+                    allUsers.push({
+                        uid: childSnapshot.key,
+                        ...userData
+                    });
+                });
+            }
+            
+            displayUsers(allUsers);
+        }
+
+        // Display users in table
+        function displayUsers(users) {
+            const tbody = document.getElementById('usersTableBody');
+            const loading = document.getElementById('usersLoading');
+            const table = document.getElementById('usersTable');
+            
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No users found</td></tr>';
+            } else {
+                tbody.innerHTML = users.map(user => `
+                    <tr>
+                        <td>${user.email || 'N/A'}</td>
+                        <td>
+                            <span class="credit-badge ${user.credits === -1 ? 'credit-unlimited' : user.credits < 5 ? 'credit-low' : 'credit-normal'}">
+                                ${user.credits === -1 ? 'Unlimited' : user.credits}
+                            </span>
+                        </td>
+                        <td>${user.lastReset ? new Date(user.lastReset).toLocaleDateString() : 'N/A'}</td>
+                        <td>${user.createdAt ? new Date(user.createdAt).toLocaleString() : 'N/A'}</td>
+                        <td>
+                            <button class="btn btn-primary" onclick="editUser('${user.uid}')">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+            
+            loading.style.display = 'none';
+            table.style.display = 'table';
+        }
+
+        // Load active sessions
+        async function loadSessions() {
+            const sessionsRef = ref(database, 'activeSessions');
+            const snapshot = await get(sessionsRef);
+            allSessions = [];
+            
+            if (snapshot.exists()) {
+                snapshot.forEach((childSnapshot) => {
+                    const sessionData = childSnapshot.val();
+                    allSessions.push({
+                        uid: childSnapshot.key,
+                        ...sessionData
+                    });
+                });
+            }
+            
+            displaySessions(allSessions);
+        }
+
+        // Display sessions
+        function displaySessions(sessions) {
+            const tbody = document.getElementById('sessionsTableBody');
+            const loading = document.getElementById('sessionsLoading');
+            const table = document.getElementById('sessionsTable');
+            
+            if (sessions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No active sessions</td></tr>';
+            } else {
+                tbody.innerHTML = sessions.map(session => {
+                    const isActive = Date.now() - new Date(session.lastActive).getTime() < 300000; // 5 minutes
+                    return `
+                        <tr>
+                            <td>${session.email || 'N/A'}</td>
+                            <td>${session.sessionId ? session.sessionId.substring(0, 8) + '...' : 'N/A'}</td>
+                            <td>${new Date(session.lastActive).toLocaleString()}</td>
+                            <td title="${session.userAgent || 'N/A'}">${(session.userAgent || 'N/A').substring(0, 50)}...</td>
+                            <td class="${isActive ? 'session-active' : 'session-inactive'}">
+                                ${isActive ? 'Active' : 'Inactive'}
+                            </td>
+                            <td>
+                                <button class="btn btn-danger" onclick="terminateSession('${session.uid}')">
+                                    <i class="fas fa-ban"></i> Terminate
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+            
+            loading.style.display = 'none';
+            table.style.display = 'table';
+        }
+
+        // Load search history
+        async function loadSearchHistory() {
+            const historyRef = ref(database, 'searchHistory');
+            const snapshot = await get(historyRef);
+            allHistory = [];
+            
+            if (snapshot.exists()) {
+                snapshot.forEach((userSnapshot) => {
+                    const userHistory = userSnapshot.val();
+                    if (Array.isArray(userHistory)) {
+                        userHistory.forEach(historyItem => {
+                            allHistory.push({
+                                uid: userSnapshot.key,
+                                ...historyItem
+                            });
+                        });
+                    }
+                });
+            }
+            
+            displaySearchHistory(allHistory);
+        }
+
+        // Display search history
+        function displaySearchHistory(history) {
+            const tbody = document.getElementById('historyTableBody');
+            const loading = document.getElementById('historyLoading');
+            const table = document.getElementById('historyTable');
+            
+            if (history.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No search history</td></tr>';
+            } else {
+                tbody.innerHTML = history.map(item => `
+                    <tr>
+                        <td>${getUserEmail(item.uid) || 'N/A'}</td>
+                        <td>${item.query || 'N/A'}</td>
+                        <td>
+                            <span class="credit-badge ${item.status === 'found' ? 'credit-normal' : item.status === 'not_found' ? 'credit-low' : 'credit-unlimited'}">
+                                ${item.status || 'unknown'}
+                            </span>
+                        </td>
+                        <td>${new Date(item.timestamp).toLocaleString()}</td>
+                        <td title="${item.result || 'N/A'}">${(item.result || 'N/A').substring(0, 50)}...</td>
+                    </tr>
+                `).join('');
+            }
+            
+            loading.style.display = 'none';
+            table.style.display = 'table';
+        }
+
+        // Load admins
+        async function loadAdmins() {
+            const adminsRef = ref(database, 'admins');
+            const snapshot = await get(adminsRef);
+            const admins = [];
+            
+            if (snapshot.exists()) {
+                snapshot.forEach((childSnapshot) => {
+                    admins.push({
+                        uid: childSnapshot.key,
+                        ...childSnapshot.val()
+                    });
+                });
+            }
+            
+            displayAdmins(admins);
+        }
+
+        // Display admins
+        function displayAdmins(admins) {
+            const tbody = document.getElementById('adminsTableBody');
+            const loading = document.getElementById('adminsLoading');
+            const table = document.getElementById('adminsTable');
+            
+            if (admins.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">No admin users</td></tr>';
+            } else {
+                tbody.innerHTML = admins.map(admin => `
+                    <tr>
+                        <td>${admin.uid}</td>
+                        <td>${getUserEmail(admin.uid) || 'N/A'}</td>
+                        <td>
+                            <button class="btn btn-danger" onclick="removeAdmin('${admin.uid}')">
+                                <i class="fas fa-trash"></i> Remove
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+            
+            loading.style.display = 'none';
+            table.style.display = 'table';
+        }
+
+        // Update statistics
+        async function updateStats() {
+            document.getElementById('totalUsers').textContent = allUsers.length;
+            document.getElementById('activeSessions').textContent = allSessions.filter(s => 
+                Date.now() - new Date(s.lastActive).getTime() < 300000
+            ).length;
+            document.getElementById('totalSearches').textContent = allHistory.length;
+            
+            const adminsRef = ref(database, 'admins');
+            const adminsSnapshot = await get(adminsRef);
+            document.getElementById('adminsCount').textContent = adminsSnapshot.exists() ? adminsSnapshot.numChildren() : 0;
+        }
+
+        // Helper function to get user email by UID
+        function getUserEmail(uid) {
+            const user = allUsers.find(u => u.uid === uid);
+            return user ? user.email : null;
+        }
+
+        // Tab switching
+        window.switchTab = function(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+            
+            // Refresh data for the tab
+            switch(tabName) {
+                case 'users':
+                    loadUsers();
+                    break;
+                case 'sessions':
+                    loadSessions();
+                    break;
+                case 'history':
+                    loadSearchHistory();
+                    break;
+                case 'admins':
+                    loadAdmins();
+                    break;
+            }
+        }
+
+        // Search functionality
+        window.searchUsers = function() {
+            const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+            const filteredUsers = allUsers.filter(user => 
+                user.email && user.email.toLowerCase().includes(searchTerm)
+            );
+            displayUsers(filteredUsers);
+        }
+
+        window.searchHistory = function() {
+            const searchTerm = document.getElementById('historySearch').value.toLowerCase();
+            const filteredHistory = allHistory.filter(item => 
+                (item.query && item.query.toLowerCase().includes(searchTerm)) ||
+                (getUserEmail(item.uid) && getUserEmail(item.uid).toLowerCase().includes(searchTerm))
+            );
+            displaySearchHistory(filteredHistory);
+        }
+
+        // Edit user modal
+        window.editUser = async function(uid) {
+            const user = allUsers.find(u => u.uid === uid);
+            if (!user) return;
+            
+            document.getElementById('editUserForm').innerHTML = `
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="text" value="${user.email || ''}" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Credits:</label>
+                    <select id="editUserCredits">
+                        <option value="-1" ${user.credits === -1 ? 'selected' : ''}>Unlimited</option>
+                        <option value="0" ${user.credits === 0 ? 'selected' : ''}>0</option>
+                        <option value="5" ${user.credits === 5 ? 'selected' : ''}>5</option>
+                        <option value="10" ${user.credits === 10 ? 'selected' : ''}>10</option>
+                        <option value="20" ${user.credits === 20 ? 'selected' : ''}>20</option>
+                        <option value="50" ${user.credits === 50 ? 'selected' : ''}>50</option>
+                        <option value="100" ${user.credits === 100 ? 'selected' : ''}>100</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Last Reset Date:</label>
+                    <input type="date" id="editUserReset" value="${user.lastReset || new Date().toISOString().split('T')[0]}">
+                </div>
+                <button class="btn btn-success" onclick="saveUserChanges('${uid}')" style="width: 100%;">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            `;
+            
+            document.getElementById('editUserModal').style.display = 'flex';
+        }
+
+        window.closeEditUserModal = function() {
+            document.getElementById('editUserModal').style.display = 'none';
+        }
+
+        window.saveUserChanges = async function(uid) {
+            const credits = parseInt(document.getElementById('editUserCredits').value);
+            const lastReset = document.getElementById('editUserReset').value;
+            
+            try {
+                await update(ref(database, `users/${uid}`), {
+                    credits: credits,
+                    lastReset: lastReset
+                });
+                
+                alert('User updated successfully!');
+                closeEditUserModal();
+                loadUsers();
+                updateStats();
+            } catch (error) {
+                alert('Error updating user: ' + error.message);
+            }
+        }
+
+        // Terminate session
+        window.terminateSession = async function(uid) {
+            if (!confirm('Are you sure you want to terminate this session? The user will be logged out.')) return;
+            
+            try {
+                await set(ref(database, `activeSessions/${uid}`), null);
+                alert('Session terminated successfully!');
+                loadSessions();
+                updateStats();
+            } catch (error) {
+                alert('Error terminating session: ' + error.message);
+            }
+        }
+
+        // Admin management
+        window.showAddAdminModal = function() {
+            document.getElementById('addAdminModal').style.display = 'flex';
+        }
+
+        window.closeAddAdminModal = function() {
+            document.getElementById('addAdminModal').style.display = 'none';
+            document.getElementById('adminEmail').value = '';
+        }
+
+        window.addAdmin = async function() {
+            const email = document.getElementById('adminEmail').value.trim();
+            if (!email) {
+                alert('Please enter an email address');
+                return;
+            }
+            
+            // Find user by email
+            const user = allUsers.find(u => u.email === email);
+            if (!user) {
+                alert('User with this email not found');
+                return;
+            }
+            
+            try {
+                await set(ref(database, `admins/${user.uid}`), {
+                    email: email,
+                    addedBy: currentAdmin.uid,
+                    addedAt: new Date().toISOString()
+                });
+                
+                alert('Admin added successfully!');
+                closeAddAdminModal();
+                loadAdmins();
+                updateStats();
+            } catch (error) {
+                alert('Error adding admin: ' + error.message);
+            }
+        }
+
+        window.removeAdmin = async function(uid) {
+            if (!confirm('Are you sure you want to remove this admin?')) return;
+            
+            try {
+                await remove(ref(database, `admins/${uid}`));
+                alert('Admin removed successfully!');
+                loadAdmins();
+                updateStats();
+            } catch (error) {
+                alert('Error removing admin: ' + error.message);
+            }
+        }
+
+        // Logout
+        window.logout = function() {
+            signOut(auth).then(() => {
+                window.location.href = 'login.html';
+            });
+        }
+
+        // Auth state listener
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            const isAdmin = await checkAdminAccess(user);
+            if (!isAdmin) {
+                alert('Access denied. Admin privileges required.');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            currentAdmin = user;
+            document.getElementById('welcomeMessage').textContent = `Welcome, ${user.email}`;
+            await loadAllData();
+            
+            // Auto-refresh data every 30 seconds
+            setInterval(loadAllData, 30000);
+        });
+
+        // Close modals when clicking outside
+        window.addEventListener('click', function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
