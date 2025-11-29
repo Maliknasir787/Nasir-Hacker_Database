@@ -254,22 +254,6 @@
             color: #e74c3c;
         }
 
-        .logout-btn {
-            background: #e74c3c;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #7f8c8d;
-        }
-
         .refresh-btn {
             background: #3498db;
             color: white;
@@ -279,6 +263,22 @@
             cursor: pointer;
             font-size: 14px;
             margin-left: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+
+        .security-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px;
+            text-align: center;
         }
 
         @media (max-width: 768px) {
@@ -305,11 +305,15 @@
     <div class="admin-container">
         <div class="admin-header">
             <h1><i class="fas fa-cogs"></i> Admin Panel - Nasir Database</h1>
-            <div>
-                <button class="refresh-btn" onclick="loadAllData()">
-                    <i class="fas fa-sync-alt"></i> Refresh Data
-                </button>
-            </div>
+            <button class="refresh-btn" onclick="loadAllData()">
+                <i class="fas fa-sync-alt"></i> Refresh Data
+            </button>
+        </div>
+
+        <div class="security-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>Security Notice:</strong> This admin panel is running without authentication. 
+            For production use, please enable Firebase Authentication.
         </div>
 
         <div class="admin-stats">
@@ -347,6 +351,7 @@
             <table class="data-table" id="usersTable" style="display: none;">
                 <thead>
                     <tr>
+                        <th>User ID</th>
                         <th>Email</th>
                         <th>Credits</th>
                         <th>Last Reset</th>
@@ -364,7 +369,7 @@
             <table class="data-table" id="sessionsTable" style="display: none;">
                 <thead>
                     <tr>
-                        <th>User Email</th>
+                        <th>User ID</th>
                         <th>Session ID</th>
                         <th>Last Active</th>
                         <th>User Agent</th>
@@ -385,7 +390,7 @@
             <table class="data-table" id="historyTable" style="display: none;">
                 <thead>
                     <tr>
-                        <th>User Email</th>
+                        <th>User ID</th>
                         <th>Query</th>
                         <th>Status</th>
                         <th>Timestamp</th>
@@ -402,7 +407,7 @@
             <table class="data-table" id="adminsTable" style="display: none;">
                 <thead>
                     <tr>
-                        <th>User UID</th>
+                        <th>User ID</th>
                         <th>Email</th>
                         <th>Actions</th>
                     </tr>
@@ -425,25 +430,44 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, get, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    <!-- Add User Modal -->
+    <div class="modal" id="addUserModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New User</h2>
+                <button class="close-modal" onclick="closeAddUserModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="newUserId">User ID:</label>
+                <input type="text" id="newUserId" placeholder="Enter user ID">
+            </div>
+            <div class="form-group">
+                <label for="newUserEmail">Email:</label>
+                <input type="email" id="newUserEmail" placeholder="Enter user email">
+            </div>
+            <div class="form-group">
+                <label for="newUserCredits">Credits:</label>
+                <select id="newUserCredits">
+                    <option value="-1">Unlimited</option>
+                    <option value="0">0</option>
+                    <option value="5" selected>5</option>
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+            <button class="btn btn-success" onclick="addNewUser()" style="width: 100%;">
+                <i class="fas fa-plus"></i> Add User
+            </button>
+        </div>
+    </div>
 
-        // Your Firebase configuration
+    <script>
+        // Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
-            authDomain: "nasir-48572.firebaseapp.com",
-            databaseURL: "https://nasir-48572-default-rtdb.firebaseio.com",
-            projectId: "nasir-48572",
-            storageBucket: "nasir-48572.appspot.com",
-            messagingSenderId: "1032758456576",
-            appId: "1:1032758456576:web:eaea202eb1f313efc743e5"
+            databaseURL: "https://nasir-48572-default-rtdb.firebaseio.com"
         };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
 
         // Global data storage
         let allUsers = [];
@@ -466,10 +490,6 @@
                 updateStats();
                 
                 console.log("Data loaded successfully!");
-                console.log("Users:", allUsers.length);
-                console.log("Sessions:", allSessions.length);
-                console.log("History:", allHistory.length);
-                console.log("Admins:", allAdmins.length);
                 
             } catch (error) {
                 console.error("Error loading data:", error);
@@ -477,26 +497,31 @@
             }
         }
 
-        // Load users from Firebase
+        // Load users from Firebase using REST API
         async function loadUsers() {
-            const usersRef = ref(database, 'users');
-            const snapshot = await get(usersRef);
-            allUsers = [];
-            
-            if (snapshot.exists()) {
-                snapshot.forEach((childSnapshot) => {
-                    const userData = childSnapshot.val();
-                    allUsers.push({
-                        uid: childSnapshot.key,
-                        ...userData
+            try {
+                const response = await fetch(`${firebaseConfig.databaseURL}/users.json`);
+                const data = await response.json();
+                allUsers = [];
+                
+                if (data) {
+                    Object.keys(data).forEach(userId => {
+                        allUsers.push({
+                            uid: userId,
+                            ...data[userId]
+                        });
                     });
-                });
-                console.log("Loaded users:", allUsers);
-            } else {
-                console.log("No users found in database");
+                    console.log("Loaded users:", allUsers);
+                } else {
+                    console.log("No users found in database");
+                }
+                
+                displayUsers(allUsers);
+            } catch (error) {
+                console.error("Error loading users:", error);
+                document.getElementById('usersTableBody').innerHTML = 
+                    '<tr><td colspan="6" style="text-align: center; color: #e74c3c;">Error loading users: ' + error.message + '</td></tr>';
             }
-            
-            displayUsers(allUsers);
         }
 
         // Display users in table
@@ -506,7 +531,7 @@
             const table = document.getElementById('usersTable');
             
             if (users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No users found in database</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No users found in database</td></tr>';
             } else {
                 tbody.innerHTML = users.map(user => {
                     // Handle different credit formats
@@ -529,7 +554,8 @@
                     
                     return `
                         <tr>
-                            <td>${user.email || user.uid || 'N/A'}</td>
+                            <td>${user.uid || 'N/A'}</td>
+                            <td>${user.email || 'N/A'}</td>
                             <td>
                                 <span class="credit-badge ${creditClass}">
                                     ${creditsDisplay}
@@ -540,6 +566,9 @@
                             <td>
                                 <button class="btn btn-primary" onclick="editUser('${user.uid}')">
                                     <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="btn btn-danger" onclick="deleteUser('${user.uid}')" style="margin-left: 5px;">
+                                    <i class="fas fa-trash"></i> Delete
                                 </button>
                             </td>
                         </tr>
@@ -553,24 +582,29 @@
 
         // Load active sessions from Firebase
         async function loadSessions() {
-            const sessionsRef = ref(database, 'activeSessions');
-            const snapshot = await get(sessionsRef);
-            allSessions = [];
-            
-            if (snapshot.exists()) {
-                snapshot.forEach((childSnapshot) => {
-                    const sessionData = childSnapshot.val();
-                    allSessions.push({
-                        uid: childSnapshot.key,
-                        ...sessionData
+            try {
+                const response = await fetch(`${firebaseConfig.databaseURL}/activeSessions.json`);
+                const data = await response.json();
+                allSessions = [];
+                
+                if (data) {
+                    Object.keys(data).forEach(sessionId => {
+                        allSessions.push({
+                            uid: sessionId,
+                            ...data[sessionId]
+                        });
                     });
-                });
-                console.log("Loaded sessions:", allSessions);
-            } else {
-                console.log("No active sessions found");
+                    console.log("Loaded sessions:", allSessions);
+                } else {
+                    console.log("No active sessions found");
+                }
+                
+                displaySessions(allSessions);
+            } catch (error) {
+                console.error("Error loading sessions:", error);
+                document.getElementById('sessionsTableBody').innerHTML = 
+                    '<tr><td colspan="6" style="text-align: center; color: #e74c3c;">Error loading sessions: ' + error.message + '</td></tr>';
             }
-            
-            displaySessions(allSessions);
         }
 
         // Display sessions
@@ -589,7 +623,7 @@
                     
                     return `
                         <tr>
-                            <td>${session.email || 'N/A'}</td>
+                            <td>${session.uid || 'N/A'}</td>
                             <td>${sessionId}</td>
                             <td>${new Date(session.lastActive).toLocaleString()}</td>
                             <td title="${session.userAgent || 'N/A'}">${userAgent}</td>
@@ -612,40 +646,42 @@
 
         // Load search history from Firebase
         async function loadSearchHistory() {
-            const historyRef = ref(database, 'searchHistory');
-            const snapshot = await get(historyRef);
-            allHistory = [];
-            
-            if (snapshot.exists()) {
-                snapshot.forEach((userSnapshot) => {
-                    const userUid = userSnapshot.key;
-                    const userHistory = userSnapshot.val();
-                    
-                    // Handle both array and object formats
-                    if (Array.isArray(userHistory)) {
-                        userHistory.forEach(historyItem => {
-                            allHistory.push({
-                                uid: userUid,
-                                ...historyItem
-                            });
-                        });
-                    } else if (typeof userHistory === 'object') {
-                        Object.values(userHistory).forEach(historyItem => {
-                            if (typeof historyItem === 'object') {
+            try {
+                const response = await fetch(`${firebaseConfig.databaseURL}/searchHistory.json`);
+                const data = await response.json();
+                allHistory = [];
+                
+                if (data) {
+                    Object.keys(data).forEach(userId => {
+                        const userHistory = data[userId];
+                        
+                        if (Array.isArray(userHistory)) {
+                            userHistory.forEach(historyItem => {
                                 allHistory.push({
-                                    uid: userUid,
+                                    uid: userId,
                                     ...historyItem
                                 });
-                            }
-                        });
-                    }
-                });
-                console.log("Loaded history:", allHistory);
-            } else {
-                console.log("No search history found");
+                            });
+                        } else if (typeof userHistory === 'object') {
+                            Object.keys(userHistory).forEach(historyKey => {
+                                allHistory.push({
+                                    uid: userId,
+                                    ...userHistory[historyKey]
+                                });
+                            });
+                        }
+                    });
+                    console.log("Loaded history:", allHistory);
+                } else {
+                    console.log("No search history found");
+                }
+                
+                displaySearchHistory(allHistory);
+            } catch (error) {
+                console.error("Error loading history:", error);
+                document.getElementById('historyTableBody').innerHTML = 
+                    '<tr><td colspan="5" style="text-align: center; color: #e74c3c;">Error loading history: ' + error.message + '</td></tr>';
             }
-            
-            displaySearchHistory(allHistory);
         }
 
         // Display search history
@@ -663,7 +699,7 @@
                     
                     return `
                         <tr>
-                            <td>${getUserEmail(item.uid) || item.uid || 'N/A'}</td>
+                            <td>${item.uid || 'N/A'}</td>
                             <td>${item.query || 'N/A'}</td>
                             <td>
                                 <span class="credit-badge ${status === 'found' ? 'credit-normal' : status === 'not_found' ? 'credit-low' : 'credit-unlimited'}">
@@ -683,23 +719,29 @@
 
         // Load admins from Firebase
         async function loadAdmins() {
-            const adminsRef = ref(database, 'admins');
-            const snapshot = await get(adminsRef);
-            allAdmins = [];
-            
-            if (snapshot.exists()) {
-                snapshot.forEach((childSnapshot) => {
-                    allAdmins.push({
-                        uid: childSnapshot.key,
-                        ...childSnapshot.val()
+            try {
+                const response = await fetch(`${firebaseConfig.databaseURL}/admins.json`);
+                const data = await response.json();
+                allAdmins = [];
+                
+                if (data) {
+                    Object.keys(data).forEach(adminId => {
+                        allAdmins.push({
+                            uid: adminId,
+                            ...data[adminId]
+                        });
                     });
-                });
-                console.log("Loaded admins:", allAdmins);
-            } else {
-                console.log("No admins found");
+                    console.log("Loaded admins:", allAdmins);
+                } else {
+                    console.log("No admins found");
+                }
+                
+                displayAdmins(allAdmins);
+            } catch (error) {
+                console.error("Error loading admins:", error);
+                document.getElementById('adminsTableBody').innerHTML = 
+                    '<tr><td colspan="3" style="text-align: center; color: #e74c3c;">Error loading admins: ' + error.message + '</td></tr>';
             }
-            
-            displayAdmins(allAdmins);
         }
 
         // Display admins
@@ -714,7 +756,7 @@
                 tbody.innerHTML = admins.map(admin => `
                     <tr>
                         <td>${admin.uid}</td>
-                        <td>${admin.email || getUserEmail(admin.uid) || 'N/A'}</td>
+                        <td>${admin.email || 'N/A'}</td>
                         <td>
                             <button class="btn btn-danger" onclick="removeAdmin('${admin.uid}')">
                                 <i class="fas fa-trash"></i> Remove
@@ -741,12 +783,6 @@
             document.getElementById('adminsCount').textContent = allAdmins.length;
         }
 
-        // Helper function to get user email by UID
-        function getUserEmail(uid) {
-            const user = allUsers.find(u => u.uid === uid);
-            return user ? user.email : null;
-        }
-
         // Tab switching
         window.switchTab = function(tabName) {
             // Hide all tabs
@@ -767,7 +803,8 @@
             const searchTerm = document.getElementById('userSearch').value.toLowerCase();
             const filteredUsers = allUsers.filter(user => {
                 const email = user.email || '';
-                return email.toLowerCase().includes(searchTerm);
+                const uid = user.uid || '';
+                return email.toLowerCase().includes(searchTerm) || uid.toLowerCase().includes(searchTerm);
             });
             displayUsers(filteredUsers);
         }
@@ -776,9 +813,8 @@
             const searchTerm = document.getElementById('historySearch').value.toLowerCase();
             const filteredHistory = allHistory.filter(item => {
                 const query = item.query || '';
-                const userEmail = getUserEmail(item.uid) || '';
-                return query.toLowerCase().includes(searchTerm) || 
-                       userEmail.toLowerCase().includes(searchTerm);
+                const uid = item.uid || '';
+                return query.toLowerCase().includes(searchTerm) || uid.toLowerCase().includes(searchTerm);
             });
             displaySearchHistory(filteredHistory);
         }
@@ -830,29 +866,67 @@
             const lastReset = document.getElementById('editUserReset').value;
             
             try {
-                await update(ref(database, `users/${uid}`), {
-                    credits: credits,
-                    lastReset: lastReset
+                const response = await fetch(`${firebaseConfig.databaseURL}/users/${uid}.json`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        credits: credits,
+                        lastReset: lastReset
+                    })
                 });
                 
-                alert('User updated successfully!');
-                closeEditUserModal();
-                loadUsers();
-                updateStats();
+                if (response.ok) {
+                    alert('User updated successfully!');
+                    closeEditUserModal();
+                    loadUsers();
+                    updateStats();
+                } else {
+                    throw new Error('Failed to update user');
+                }
             } catch (error) {
                 alert('Error updating user: ' + error.message);
             }
         }
 
-        // Terminate session
-        window.terminateSession = async function(uid) {
-            if (!confirm('Are you sure you want to terminate this session? The user will be logged out.')) return;
+        // Delete user
+        window.deleteUser = async function(uid) {
+            if (!confirm('Are you sure you want to delete this user?')) return;
             
             try {
-                await remove(ref(database, `activeSessions/${uid}`));
-                alert('Session terminated successfully!');
-                loadSessions();
-                updateStats();
+                const response = await fetch(`${firebaseConfig.databaseURL}/users/${uid}.json`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    alert('User deleted successfully!');
+                    loadUsers();
+                    updateStats();
+                } else {
+                    throw new Error('Failed to delete user');
+                }
+            } catch (error) {
+                alert('Error deleting user: ' + error.message);
+            }
+        }
+
+        // Terminate session
+        window.terminateSession = async function(uid) {
+            if (!confirm('Are you sure you want to terminate this session?')) return;
+            
+            try {
+                const response = await fetch(`${firebaseConfig.databaseURL}/activeSessions/${uid}.json`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    alert('Session terminated successfully!');
+                    loadSessions();
+                    updateStats();
+                } else {
+                    throw new Error('Failed to terminate session');
+                }
             } catch (error) {
                 alert('Error terminating session: ' + error.message);
             }
@@ -863,10 +937,17 @@
             if (!confirm('Are you sure you want to remove this admin?')) return;
             
             try {
-                await remove(ref(database, `admins/${uid}`));
-                alert('Admin removed successfully!');
-                loadAdmins();
-                updateStats();
+                const response = await fetch(`${firebaseConfig.databaseURL}/admins/${uid}.json`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    alert('Admin removed successfully!');
+                    loadAdmins();
+                    updateStats();
+                } else {
+                    throw new Error('Failed to remove admin');
+                }
             } catch (error) {
                 alert('Error removing admin: ' + error.message);
             }
@@ -879,6 +960,9 @@
             }
         });
 
+        // Make loadAllData available globally
+        window.loadAllData = loadAllData;
+
         // Initialize the admin panel
         document.addEventListener('DOMContentLoaded', function() {
             console.log("Admin panel initialized");
@@ -887,9 +971,6 @@
             // Auto-refresh data every 30 seconds
             setInterval(loadAllData, 30000);
         });
-
-        // Make loadAllData available globally
-        window.loadAllData = loadAllData;
     </script>
 </body>
 </html>
