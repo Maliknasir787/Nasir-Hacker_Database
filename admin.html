@@ -270,6 +270,17 @@
             color: #7f8c8d;
         }
 
+        .refresh-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+
         @media (max-width: 768px) {
             .admin-tabs {
                 flex-direction: column;
@@ -295,8 +306,8 @@
         <div class="admin-header">
             <h1><i class="fas fa-cogs"></i> Admin Panel - Nasir Database</h1>
             <div>
-                <button class="btn btn-primary" onclick="refreshData()">
-                    <i class="fas fa-sync-alt"></i> Refresh
+                <button class="refresh-btn" onclick="loadAllData()">
+                    <i class="fas fa-sync-alt"></i> Refresh Data
                 </button>
             </div>
         </div>
@@ -414,114 +425,78 @@
         </div>
     </div>
 
-    <script>
-        // Mock data for demonstration
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, get, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Your Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
+            authDomain: "nasir-48572.firebaseapp.com",
+            databaseURL: "https://nasir-48572-default-rtdb.firebaseio.com",
+            projectId: "nasir-48572",
+            storageBucket: "nasir-48572.appspot.com",
+            messagingSenderId: "1032758456576",
+            appId: "1:1032758456576:web:eaea202eb1f313efc743e5"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Global data storage
         let allUsers = [];
         let allSessions = [];
         let allHistory = [];
         let allAdmins = [];
 
-        // Initialize with mock data
-        function initializeMockData() {
-            // Mock users
-            allUsers = [
-                {
-                    uid: 'user1',
-                    email: 'user1@example.com',
-                    credits: 5,
-                    lastReset: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-                    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-                },
-                {
-                    uid: 'user2',
-                    email: 'user2@example.com',
-                    credits: -1,
-                    lastReset: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-                    createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString()
-                },
-                {
-                    uid: 'user3',
-                    email: 'user3@example.com',
-                    credits: 0,
-                    lastReset: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-                    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
-                }
-            ];
-
-            // Mock sessions
-            allSessions = [
-                {
-                    uid: 'session1',
-                    email: 'user1@example.com',
-                    sessionId: 'abc123def456ghi789jkl012mno345pqr678',
-                    lastActive: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-                    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                },
-                {
-                    uid: 'session2',
-                    email: 'user2@example.com',
-                    sessionId: 'stu901vwx234yz567abc890def123ghi456',
-                    lastActive: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-                    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15'
-                }
-            ];
-
-            // Mock search history
-            allHistory = [
-                {
-                    uid: 'user1',
-                    query: 'How to learn JavaScript',
-                    status: 'found',
-                    timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-                    result: 'JavaScript is a programming language...'
-                },
-                {
-                    uid: 'user2',
-                    query: 'Best practices for React',
-                    status: 'not_found',
-                    timestamp: new Date(Date.now() - 120 * 60 * 1000).toISOString(),
-                    result: 'No results found for your query.'
-                },
-                {
-                    uid: 'user1',
-                    query: 'CSS Grid tutorial',
-                    status: 'found',
-                    timestamp: new Date(Date.now() - 180 * 60 * 1000).toISOString(),
-                    result: 'CSS Grid Layout is a two-dimensional layout system...'
-                }
-            ];
-
-            // Mock admins
-            allAdmins = [
-                {
-                    uid: 'admin1',
-                    email: 'admin@example.com'
-                }
-            ];
-        }
-
-        // Load all data
+        // Load all data from Firebase
         async function loadAllData() {
             try {
-                // In a real implementation, you would fetch data from Firebase here
-                // For now, we'll use mock data
-                initializeMockData();
+                console.log("Loading data from Firebase...");
                 
                 await Promise.all([
-                    displayUsers(allUsers),
-                    displaySessions(allSessions),
-                    displaySearchHistory(allHistory),
-                    displayAdmins(allAdmins),
-                    updateStats()
+                    loadUsers(),
+                    loadSessions(),
+                    loadSearchHistory(),
+                    loadAdmins()
                 ]);
+                
+                updateStats();
+                
+                console.log("Data loaded successfully!");
+                console.log("Users:", allUsers.length);
+                console.log("Sessions:", allSessions.length);
+                console.log("History:", allHistory.length);
+                console.log("Admins:", allAdmins.length);
+                
             } catch (error) {
                 console.error("Error loading data:", error);
-                // Show error messages in tables
-                document.getElementById('usersTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center; color: #e74c3c;">Error loading users</td></tr>';
-                document.getElementById('sessionsTableBody').innerHTML = '<tr><td colspan="6" style="text-align: center; color: #e74c3c;">Error loading sessions</td></tr>';
-                document.getElementById('historyTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center; color: #e74c3c;">Error loading history</td></tr>';
-                document.getElementById('adminsTableBody').innerHTML = '<tr><td colspan="3" style="text-align: center; color: #e74c3c;">Error loading admins</td></tr>';
+                alert("Error loading data: " + error.message);
             }
+        }
+
+        // Load users from Firebase
+        async function loadUsers() {
+            const usersRef = ref(database, 'users');
+            const snapshot = await get(usersRef);
+            allUsers = [];
+            
+            if (snapshot.exists()) {
+                snapshot.forEach((childSnapshot) => {
+                    const userData = childSnapshot.val();
+                    allUsers.push({
+                        uid: childSnapshot.key,
+                        ...userData
+                    });
+                });
+                console.log("Loaded users:", allUsers);
+            } else {
+                console.log("No users found in database");
+            }
+            
+            displayUsers(allUsers);
         }
 
         // Display users in table
@@ -531,29 +506,71 @@
             const table = document.getElementById('usersTable');
             
             if (users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No users found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No users found in database</td></tr>';
             } else {
-                tbody.innerHTML = users.map(user => `
-                    <tr>
-                        <td>${user.email || 'N/A'}</td>
-                        <td>
-                            <span class="credit-badge ${user.credits === -1 ? 'credit-unlimited' : user.credits < 5 ? 'credit-low' : 'credit-normal'}">
-                                ${user.credits === -1 ? 'Unlimited' : user.credits}
-                            </span>
-                        </td>
-                        <td>${user.lastReset ? new Date(user.lastReset).toLocaleDateString() : 'N/A'}</td>
-                        <td>${user.createdAt ? new Date(user.createdAt).toLocaleString() : 'N/A'}</td>
-                        <td>
-                            <button class="btn btn-primary" onclick="editUser('${user.uid}')">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
+                tbody.innerHTML = users.map(user => {
+                    // Handle different credit formats
+                    let creditsDisplay = 'N/A';
+                    let creditClass = 'credit-normal';
+                    
+                    if (user.credits !== undefined && user.credits !== null) {
+                        if (user.credits === -1 || user.credits === 'unlimited') {
+                            creditsDisplay = 'Unlimited';
+                            creditClass = 'credit-unlimited';
+                        } else {
+                            creditsDisplay = user.credits;
+                            creditClass = user.credits < 5 ? 'credit-low' : 'credit-normal';
+                        }
+                    }
+                    
+                    // Format dates
+                    const lastReset = user.lastReset ? new Date(user.lastReset).toLocaleDateString() : 'N/A';
+                    const createdAt = user.createdAt ? new Date(user.createdAt).toLocaleString() : 'N/A';
+                    
+                    return `
+                        <tr>
+                            <td>${user.email || user.uid || 'N/A'}</td>
+                            <td>
+                                <span class="credit-badge ${creditClass}">
+                                    ${creditsDisplay}
+                                </span>
+                            </td>
+                            <td>${lastReset}</td>
+                            <td>${createdAt}</td>
+                            <td>
+                                <button class="btn btn-primary" onclick="editUser('${user.uid}')">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
             }
             
             loading.style.display = 'none';
             table.style.display = 'table';
+        }
+
+        // Load active sessions from Firebase
+        async function loadSessions() {
+            const sessionsRef = ref(database, 'activeSessions');
+            const snapshot = await get(sessionsRef);
+            allSessions = [];
+            
+            if (snapshot.exists()) {
+                snapshot.forEach((childSnapshot) => {
+                    const sessionData = childSnapshot.val();
+                    allSessions.push({
+                        uid: childSnapshot.key,
+                        ...sessionData
+                    });
+                });
+                console.log("Loaded sessions:", allSessions);
+            } else {
+                console.log("No active sessions found");
+            }
+            
+            displaySessions(allSessions);
         }
 
         // Display sessions
@@ -563,16 +580,19 @@
             const table = document.getElementById('sessionsTable');
             
             if (sessions.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No active sessions</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No active sessions found</td></tr>';
             } else {
                 tbody.innerHTML = sessions.map(session => {
                     const isActive = Date.now() - new Date(session.lastActive).getTime() < 300000; // 5 minutes
+                    const sessionId = session.sessionId ? session.sessionId.substring(0, 8) + '...' : 'N/A';
+                    const userAgent = session.userAgent ? session.userAgent.substring(0, 50) + '...' : 'N/A';
+                    
                     return `
                         <tr>
                             <td>${session.email || 'N/A'}</td>
-                            <td>${session.sessionId ? session.sessionId.substring(0, 8) + '...' : 'N/A'}</td>
+                            <td>${sessionId}</td>
                             <td>${new Date(session.lastActive).toLocaleString()}</td>
-                            <td title="${session.userAgent || 'N/A'}">${(session.userAgent || 'N/A').substring(0, 50)}...</td>
+                            <td title="${session.userAgent || 'N/A'}">${userAgent}</td>
                             <td class="${isActive ? 'session-active' : 'session-inactive'}">
                                 ${isActive ? 'Active' : 'Inactive'}
                             </td>
@@ -590,6 +610,44 @@
             table.style.display = 'table';
         }
 
+        // Load search history from Firebase
+        async function loadSearchHistory() {
+            const historyRef = ref(database, 'searchHistory');
+            const snapshot = await get(historyRef);
+            allHistory = [];
+            
+            if (snapshot.exists()) {
+                snapshot.forEach((userSnapshot) => {
+                    const userUid = userSnapshot.key;
+                    const userHistory = userSnapshot.val();
+                    
+                    // Handle both array and object formats
+                    if (Array.isArray(userHistory)) {
+                        userHistory.forEach(historyItem => {
+                            allHistory.push({
+                                uid: userUid,
+                                ...historyItem
+                            });
+                        });
+                    } else if (typeof userHistory === 'object') {
+                        Object.values(userHistory).forEach(historyItem => {
+                            if (typeof historyItem === 'object') {
+                                allHistory.push({
+                                    uid: userUid,
+                                    ...historyItem
+                                });
+                            }
+                        });
+                    }
+                });
+                console.log("Loaded history:", allHistory);
+            } else {
+                console.log("No search history found");
+            }
+            
+            displaySearchHistory(allHistory);
+        }
+
         // Display search history
         function displaySearchHistory(history) {
             const tbody = document.getElementById('historyTableBody');
@@ -597,25 +655,51 @@
             const table = document.getElementById('historyTable');
             
             if (history.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No search history</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No search history found</td></tr>';
             } else {
-                tbody.innerHTML = history.map(item => `
-                    <tr>
-                        <td>${getUserEmail(item.uid) || 'N/A'}</td>
-                        <td>${item.query || 'N/A'}</td>
-                        <td>
-                            <span class="credit-badge ${item.status === 'found' ? 'credit-normal' : item.status === 'not_found' ? 'credit-low' : 'credit-unlimited'}">
-                                ${item.status || 'unknown'}
-                            </span>
-                        </td>
-                        <td>${new Date(item.timestamp).toLocaleString()}</td>
-                        <td title="${item.result || 'N/A'}">${(item.result || 'N/A').substring(0, 50)}...</td>
-                    </tr>
-                `).join('');
+                tbody.innerHTML = history.map(item => {
+                    const resultPreview = item.result ? item.result.substring(0, 50) + '...' : 'N/A';
+                    const status = item.status || 'unknown';
+                    
+                    return `
+                        <tr>
+                            <td>${getUserEmail(item.uid) || item.uid || 'N/A'}</td>
+                            <td>${item.query || 'N/A'}</td>
+                            <td>
+                                <span class="credit-badge ${status === 'found' ? 'credit-normal' : status === 'not_found' ? 'credit-low' : 'credit-unlimited'}">
+                                    ${status}
+                                </span>
+                            </td>
+                            <td>${new Date(item.timestamp).toLocaleString()}</td>
+                            <td title="${item.result || 'N/A'}">${resultPreview}</td>
+                        </tr>
+                    `;
+                }).join('');
             }
             
             loading.style.display = 'none';
             table.style.display = 'table';
+        }
+
+        // Load admins from Firebase
+        async function loadAdmins() {
+            const adminsRef = ref(database, 'admins');
+            const snapshot = await get(adminsRef);
+            allAdmins = [];
+            
+            if (snapshot.exists()) {
+                snapshot.forEach((childSnapshot) => {
+                    allAdmins.push({
+                        uid: childSnapshot.key,
+                        ...childSnapshot.val()
+                    });
+                });
+                console.log("Loaded admins:", allAdmins);
+            } else {
+                console.log("No admins found");
+            }
+            
+            displayAdmins(allAdmins);
         }
 
         // Display admins
@@ -625,12 +709,12 @@
             const table = document.getElementById('adminsTable');
             
             if (admins.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">No admin users</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">No admin users found</td></tr>';
             } else {
                 tbody.innerHTML = admins.map(admin => `
                     <tr>
                         <td>${admin.uid}</td>
-                        <td>${admin.email || 'N/A'}</td>
+                        <td>${admin.email || getUserEmail(admin.uid) || 'N/A'}</td>
                         <td>
                             <button class="btn btn-danger" onclick="removeAdmin('${admin.uid}')">
                                 <i class="fas fa-trash"></i> Remove
@@ -647,9 +731,12 @@
         // Update statistics
         function updateStats() {
             document.getElementById('totalUsers').textContent = allUsers.length;
-            document.getElementById('activeSessions').textContent = allSessions.filter(s => 
+            
+            const activeSessionsCount = allSessions.filter(s => 
                 Date.now() - new Date(s.lastActive).getTime() < 300000
             ).length;
+            document.getElementById('activeSessions').textContent = activeSessionsCount;
+            
             document.getElementById('totalSearches').textContent = allHistory.length;
             document.getElementById('adminsCount').textContent = allAdmins.length;
         }
@@ -678,18 +765,21 @@
         // Search functionality
         window.searchUsers = function() {
             const searchTerm = document.getElementById('userSearch').value.toLowerCase();
-            const filteredUsers = allUsers.filter(user => 
-                user.email && user.email.toLowerCase().includes(searchTerm)
-            );
+            const filteredUsers = allUsers.filter(user => {
+                const email = user.email || '';
+                return email.toLowerCase().includes(searchTerm);
+            });
             displayUsers(filteredUsers);
         }
 
         window.searchHistory = function() {
             const searchTerm = document.getElementById('historySearch').value.toLowerCase();
-            const filteredHistory = allHistory.filter(item => 
-                (item.query && item.query.toLowerCase().includes(searchTerm)) ||
-                (getUserEmail(item.uid) && getUserEmail(item.uid).toLowerCase().includes(searchTerm))
-            );
+            const filteredHistory = allHistory.filter(item => {
+                const query = item.query || '';
+                const userEmail = getUserEmail(item.uid) || '';
+                return query.toLowerCase().includes(searchTerm) || 
+                       userEmail.toLowerCase().includes(searchTerm);
+            });
             displaySearchHistory(filteredHistory);
         }
 
@@ -700,8 +790,12 @@
             
             document.getElementById('editUserForm').innerHTML = `
                 <div class="form-group">
+                    <label>User ID:</label>
+                    <input type="text" value="${user.uid}" disabled>
+                </div>
+                <div class="form-group">
                     <label>Email:</label>
-                    <input type="text" value="${user.email || ''}" disabled>
+                    <input type="text" value="${user.email || 'N/A'}" disabled>
                 </div>
                 <div class="form-group">
                     <label>Credits:</label>
@@ -736,16 +830,14 @@
             const lastReset = document.getElementById('editUserReset').value;
             
             try {
-                // In a real implementation, you would update Firebase here
-                const userIndex = allUsers.findIndex(u => u.uid === uid);
-                if (userIndex !== -1) {
-                    allUsers[userIndex].credits = credits;
-                    allUsers[userIndex].lastReset = lastReset;
-                }
+                await update(ref(database, `users/${uid}`), {
+                    credits: credits,
+                    lastReset: lastReset
+                });
                 
                 alert('User updated successfully!');
                 closeEditUserModal();
-                displayUsers(allUsers);
+                loadUsers();
                 updateStats();
             } catch (error) {
                 alert('Error updating user: ' + error.message);
@@ -757,10 +849,9 @@
             if (!confirm('Are you sure you want to terminate this session? The user will be logged out.')) return;
             
             try {
-                // In a real implementation, you would update Firebase here
-                allSessions = allSessions.filter(s => s.uid !== uid);
+                await remove(ref(database, `activeSessions/${uid}`));
                 alert('Session terminated successfully!');
-                displaySessions(allSessions);
+                loadSessions();
                 updateStats();
             } catch (error) {
                 alert('Error terminating session: ' + error.message);
@@ -772,20 +863,13 @@
             if (!confirm('Are you sure you want to remove this admin?')) return;
             
             try {
-                // In a real implementation, you would update Firebase here
-                allAdmins = allAdmins.filter(a => a.uid !== uid);
+                await remove(ref(database, `admins/${uid}`));
                 alert('Admin removed successfully!');
-                displayAdmins(allAdmins);
+                loadAdmins();
                 updateStats();
             } catch (error) {
                 alert('Error removing admin: ' + error.message);
             }
-        }
-
-        // Refresh data
-        window.refreshData = function() {
-            loadAllData();
-            alert('Data refreshed!');
         }
 
         // Close modals when clicking outside
@@ -797,11 +881,15 @@
 
         // Initialize the admin panel
         document.addEventListener('DOMContentLoaded', function() {
+            console.log("Admin panel initialized");
             loadAllData();
             
             // Auto-refresh data every 30 seconds
             setInterval(loadAllData, 30000);
         });
+
+        // Make loadAllData available globally
+        window.loadAllData = loadAllData;
     </script>
 </body>
 </html>
