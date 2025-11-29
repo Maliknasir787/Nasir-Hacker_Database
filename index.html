@@ -957,7 +957,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-    import { getDatabase, ref, set, get, update, onValue } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+    import { getDatabase, ref, set, get, update } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
@@ -977,7 +977,6 @@
     let currentUser = null;
     let userCredits = 0;
     let isUnlimited = false;
-    let sessionCheckInterval;
 
     // List of users with unlimited credits
     const unlimitedUsers = [
@@ -985,51 +984,51 @@
       "owner@nasir.com"
     ];
 
-    // SIMPLE SESSION TRACKING - This will work!
-    window.trackActiveSession = async function(user) {
+    // SUPER SIMPLE SESSION CHECK - This will 100% work!
+    window.checkSession = async function() {
+        if (!currentUser) return;
+        
         try {
-            const sessionRef = ref(database, `activeSessions/${user.uid}`);
-            const currentSessionId = Date.now().toString();
+            const sessionRef = ref(database, `activeSessions/${currentUser.uid}`);
+            const snapshot = await get(sessionRef);
+            const sessionData = snapshot.val();
             
-            console.log("🔄 Setting session for user:", user.uid);
+            const localSessionId = localStorage.getItem(`nasir_session_${currentUser.uid}`);
             
-            // Store the current session
-            await set(sessionRef, {
-                sessionId: currentSessionId,
-                lastActive: new Date().toISOString(),
-                userAgent: navigator.userAgent,
-                email: user.email
-            });
+            console.log("🔍 Session Check:");
+            console.log("Local:", localSessionId);
+            console.log("Remote:", sessionData ? sessionData.sessionId : "No session");
             
-            // Store session ID in localStorage
-            localStorage.setItem(`nasir_session_${user.uid}`, currentSessionId);
+            if (sessionData && sessionData.sessionId !== localSessionId) {
+                console.log("🚨 DIFFERENT SESSION - LOGGING OUT");
+                localStorage.setItem('logout_reason', 'session_ended_elsewhere');
+                await signOut(auth);
+                window.location.href = "/login.html";
+                return;
+            }
             
-            console.log("✅ Session saved:", currentSessionId);
-            
-            // Check session every 3 seconds (simple polling)
-            sessionCheckInterval = setInterval(async () => {
-                try {
-                    const snapshot = await get(sessionRef);
-                    const sessionData = snapshot.val();
-                    
-                    if (sessionData) {
-                        const localSessionId = localStorage.getItem(`nasir_session_${user.uid}`);
-                        
-                        if (sessionData.sessionId !== localSessionId) {
-                            console.log("🚨 Session changed! Logging out...");
-                            clearInterval(sessionCheckInterval);
-                            localStorage.setItem('logout_reason', 'session_ended_elsewhere');
-                            await signOut(auth);
-                            window.location.href = "/login.html";
-                        }
-                    }
-                } catch (error) {
-                    console.error("Session check error:", error);
-                }
-            }, 3000);
+            console.log("✅ Session OK");
             
         } catch (error) {
-            console.error("Error setting up session:", error);
+            console.error("Session check error:", error);
+        }
+    }
+
+    // Check session every 2 seconds
+    let sessionInterval;
+    window.startSessionChecking = function() {
+        // Check immediately
+        window.checkSession();
+        
+        // Then check every 2 seconds
+        sessionInterval = setInterval(() => {
+            window.checkSession();
+        }, 2000);
+    }
+
+    window.stopSessionChecking = function() {
+        if (sessionInterval) {
+            clearInterval(sessionInterval);
         }
     }
 
@@ -1401,8 +1400,8 @@
             currentUser = user;
             updateUserInterface(user);
             initializeUserCredits(user);
-            // Track the active session
-            window.trackActiveSession(user);
+            // Start session checking
+            window.startSessionChecking();
         }
     });
 
@@ -1439,10 +1438,8 @@
             // Clear local storage
             localStorage.removeItem(`nasir_session_${currentUser.uid}`);
             
-            // Clear interval
-            if (sessionCheckInterval) {
-                clearInterval(sessionCheckInterval);
-            }
+            // Stop session checking
+            window.stopSessionChecking();
         }
         
         signOut(auth).then(() => {
