@@ -1,719 +1,862 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Nasir Database</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Nasir Admin Panel — Extended</title>
 
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-        .admin-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
+<style>
+  /* ---------- layout & theme (kept close to your original look, expanded) ---------- */
+  :root{
+    --bg1: linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+    --accent:#3498db;
+    --muted:#7f8c8d;
+    --card-bg:#fff;
+    --surface:#f8f9fa;
+  }
+  *{box-sizing:border-box;font-family:Inter,Segoe UI,Roboto,Arial,sans-serif}
+  body{margin:0;background:var(--bg1);min-height:100vh;padding:28px; color:#222;}
+  .wrap{max-width:1200px;margin:0 auto;background:var(--card-bg);border-radius:16px;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,0.12);}
+  header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;background:linear-gradient(90deg,#2c3e50,#34495e);color:#fff}
+  header h1{font-size:20px;margin:0;display:flex;gap:12px;align-items:center}
+  header .controls{display:flex;gap:8px;align-items:center}
 
-        .admin-header {
-            background: linear-gradient(135deg, #2c3e50, #34495e);
-            color: white;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;padding:18px;background:var(--surface)}
+  .stat{background:var(--card-bg);padding:14px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.06);border-left:6px solid rgba(0,0,0,0.06)}
+  .stat .num{font-size:20px;font-weight:700}
+  .stat .label{color:var(--muted);font-size:13px;margin-top:6px}
 
-        .admin-header h1 {
-            font-size: 24px;
-        }
+  .tabs{display:flex;background:#34495e;padding:8px 12px;gap:8px}
+  .tab{padding:12px 18px;color:#fff;cursor:pointer;border-radius:8px}
+  .tab.active{background:rgba(255,255,255,0.06);border-bottom:3px solid #e74c3c}
 
-        .admin-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            padding: 20px;
-            background: #f8f9fa;
-        }
+  .panel{padding:18px}
+  .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+  .search{flex:1;display:flex;gap:8px}
+  .search input{flex:1;padding:10px;border-radius:8px;border:1px solid #ddd}
+  .btn{padding:8px 12px;border-radius:8px;border:0;cursor:pointer}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-danger{background:#e74c3c;color:#fff}
+  .btn-ghost{background:transparent;border:1px solid #ddd}
 
-        .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            border-left: 4px solid #667eea;
-        }
+  table{width:100%;border-collapse:collapse;background:var(--card-bg);border-radius:6px;overflow:hidden}
+  th,td{padding:10px;border-bottom:1px solid #eee;text-align:left;font-size:14px}
+  th{background:#34495e;color:#fff;position:sticky;top:0}
+  tr:hover td{background:#fafafa}
+  .user-id{font-family:monospace;background:#f2f4f6;padding:4px 6px;border-radius:4px}
 
-        .stat-number {
-            font-size: 32px;
-            font-weight: bold;
-            color: #2c3e50;
-        }
+  .credit-badge{padding:6px 8px;border-radius:8px;color:#fff;font-weight:700}
+  .credit-low{background:#e74c3c}
+  .credit-normal{background:#3498db}
+  .credit-high{background:#27ae60}
 
-        .stat-label {
-            color: #7f8c8d;
-            font-size: 14px;
-            margin-top: 5px;
-        }
+  .modal{position:fixed;left:0;top:0;height:100%;width:100%;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);z-index:9999}
+  .modal .box{background:#fff;padding:18px;border-radius:12px;width:420px;max-width:95%}
+  .modal .row{margin-bottom:12px}
+  .close-x{float:right;background:transparent;border:0;font-size:20px;cursor:pointer}
 
-        .admin-tabs {
-            display: flex;
-            background: #34495e;
-            padding: 0 20px;
-            flex-wrap: wrap;
-        }
+  .small{font-size:12px;color:var(--muted)}
+  .muted{color:var(--muted)}
+  .json-viewer{background:#f5f7fa;padding:12px;border-radius:8px;border:1px solid #eaeaea;max-height:320px;overflow:auto;font-family:monospace;font-size:12px;white-space:pre-wrap}
 
-        .tab {
-            padding: 15px 25px;
-            color: white;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s;
-        }
+  /* responsive */
+  @media (max-width:900px){
+    .tabs{flex-wrap:wrap}
+    th,td{font-size:13px}
+  }
 
-        .tab.active {
-            border-bottom-color: #e74c3c;
-            background: rgba(255,255,255,0.1);
-        }
-
-        .tab-content {
-            display: none;
-            padding: 20px;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .search-box {
-            margin-bottom: 20px;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 16px;
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .data-table th,
-        .data-table td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        .data-table th {
-            background: #34495e;
-            color: white;
-            font-weight: 600;
-        }
-
-        .data-table tr:hover {
-            background: #f8f9fa;
-        }
-
-        .btn {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
-
-        .btn-primary {
-            background: #3498db;
-            color: white;
-        }
-
-        .btn-danger {
-            background: #e74c3c;
-            color: white;
-        }
-
-        .btn-success {
-            background: #27ae60;
-            color: white;
-        }
-
-        .btn:hover {
-            opacity: 0.9;
-            transform: translateY(-2px);
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            max-width: 500px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #2c3e50;
-        }
-
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #e0e0e0;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .close-modal {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #7f8c8d;
-        }
-
-        .credit-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        .credit-unlimited {
-            background: #27ae60;
-            color: white;
-        }
-
-        .credit-low {
-            background: #e74c3c;
-            color: white;
-        }
-
-        .credit-normal {
-            background: #3498db;
-            color: white;
-        }
-
-        .session-active {
-            color: #27ae60;
-            font-weight: bold;
-        }
-
-        .session-inactive {
-            color: #e74c3c;
-        }
-
-        .refresh-btn {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #7f8c8d;
-        }
-
-        .add-user-btn {
-            background: #27ae60;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-bottom: 20px;
-        }
-
-        .user-id {
-            font-family: monospace;
-            background: #f8f9fa;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 12px;
-        }
-
-        .json-viewer {
-            background: #f8f9fa;
-            border: 1px solid #e0e0e0;
-            border-radius: 5px;
-            padding: 15px;
-            max-height: 400px;
-            overflow-y: auto;
-            font-family: monospace;
-            white-space: pre-wrap;
-            margin-top: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .admin-tabs {
-                flex-direction: column;
-            }
-            
-            .tab {
-                padding: 12px 20px;
-            }
-            
-            .data-table {
-                font-size: 14px;
-            }
-            
-            .data-table th,
-            .data-table td {
-                padding: 8px 10px;
-            }
-        }
-    </style>
+  /* utilities */
+  .flex{display:flex;gap:10px;align-items:center}
+  .col{display:flex;flex-direction:column}
+  .right{margin-left:auto}
+</style>
 </head>
 <body>
-    <div class="admin-container">
-        <div class="admin-header">
-            <h1><i class="fas fa-cogs"></i> Admin Panel - Nasir Database</h1>
-            <button class="refresh-btn" onclick="loadAllData()">
-                <i class="fas fa-sync-alt"></i> Refresh Data
-            </button>
-        </div>
 
-        <div class="admin-stats">
-            <div class="stat-card">
-                <div class="stat-number" id="totalUsers">0</div>
-                <div class="stat-label">Total Users</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="activeSessions">0</div>
-                <div class="stat-label">Active Sessions</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="totalSearches">0</div>
-                <div class="stat-label">Total Searches</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="adminsCount">0</div>
-                <div class="stat-label">Admin Users</div>
-            </div>
-        </div>
+<div class="wrap">
+  <header>
+    <h1><i class="fas fa-cogs"></i> Nasir Admin Panel</h1>
+    <div class="controls">
+      <button class="btn btn-ghost" id="refreshBtn" title="Refresh"> <i class="fas fa-sync-alt"></i> Refresh</button>
+      <button class="btn btn-ghost" id="realtimeToggleBtn" title="Realtime off">Realtime: OFF</button>
+      <button class="btn btn-primary" id="loginToggleBtn" title="Admin login">Admin Login</button>
+    </div>
+  </header>
 
-        <div class="admin-tabs">
-            <div class="tab active" onclick="switchTab('users')">Users Management</div>
-            <div class="tab" onclick="switchTab('sessions')">Active Sessions</div>
-            <div class="tab" onclick="switchTab('history')">Search History</div>
-            <div class="tab" onclick="switchTab('raw')">Raw Database View</div>
-        </div>
+  <!-- stats -->
+  <div class="stats">
+    <div class="stat"><div class="num" id="totalUsers">0</div><div class="label">Total users</div></div>
+    <div class="stat"><div class="num" id="activeSessionsCount">0</div><div class="label">Active sessions</div></div>
+    <div class="stat"><div class="num" id="totalSearchesCount">0</div><div class="label">Search history items</div></div>
+    <div class="stat"><div class="num" id="adminsCount">0</div><div class="label">Admins</div></div>
+  </div>
 
-        <!-- Users Tab -->
-        <div class="tab-content active" id="users-tab">
-            <div class="loading" id="usersLoading">Loading users from Firebase...</div>
-            <table class="data-table" id="usersTable" style="display: none;">
-                <thead>
-                    <tr>
-                        <th>User ID</th>
-                        <th>Email</th>
-                        <th>Last Active</th>
-                        <th>Session ID</th>
-                        <th>User Agent</th>
-                    </tr>
-                </thead>
-                <tbody id="usersTableBody"></tbody>
-            </table>
-        </div>
+  <!-- tabs -->
+  <div class="tabs" id="tabsBar">
+    <div class="tab active" data-tab="users">Users Management</div>
+    <div class="tab" data-tab="sessions">Active Sessions</div>
+    <div class="tab" data-tab="history">Search History</div>
+    <div class="tab" data-tab="raw">Raw Database</div>
+    <div class="tab" data-tab="backups">Backups</div>
+    <div class="tab" data-tab="audit">Audit Log</div>
+  </div>
 
-        <!-- Sessions Tab -->
-        <div class="tab-content" id="sessions-tab">
-            <div class="loading" id="sessionsLoading">Loading active sessions...</div>
-            <table class="data-table" id="sessionsTable" style="display: none;">
-                <thead>
-                    <tr>
-                        <th>User ID</th>
-                        <th>Email</th>
-                        <th>Session ID</th>
-                        <th>Last Active</th>
-                        <th>User Agent</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody id="sessionsTableBody"></tbody>
-            </table>
-        </div>
+  <div class="panel">
+    <!-- toolbar (shared) -->
+    <div class="toolbar">
+      <div class="search">
+        <input id="globalSearch" placeholder="Search users by id/email or session id or agent..." />
+        <button class="btn btn-primary" id="searchBtn"><i class="fas fa-search"></i></button>
+      </div>
 
-        <!-- History Tab -->
-        <div class="tab-content" id="history-tab">
-            <div class="loading" id="historyLoading">Loading search history...</div>
-            <table class="data-table" id="historyTable" style="display: none;">
-                <thead>
-                    <tr>
-                        <th>User ID</th>
-                        <th>Search Query</th>
-                    </tr>
-                </thead>
-                <tbody id="historyTableBody"></tbody>
-            </table>
-        </div>
-
-        <!-- Raw Database Tab -->
-        <div class="tab-content" id="raw-tab">
-            <div class="loading" id="rawLoading">Loading raw database...</div>
-            <div id="rawDataView" style="display: none;">
-                <h3>Raw Database Structure</h3>
-                <div class="json-viewer" id="rawJsonViewer"></div>
-            </div>
-        </div>
+      <div class="flex right">
+        <select id="filterSelect">
+          <option value="">All users</option>
+          <option value="lowCredits">Low credits (&lt;10)</option>
+          <option value="noEmail">No email</option>
+        </select>
+        <button class="btn btn-primary" id="addUserBtn"><i class="fas fa-user-plus"></i> Add</button>
+        <button class="btn" id="exportCsvBtn" title="Export visible rows to CSV">Export CSV</button>
+        <button class="btn" id="importJsonBtn" title="Import users JSON">Import JSON</button>
+      </div>
     </div>
 
-    <script>
-        // Firebase configuration
-        const firebaseConfig = {
-            databaseURL: "https://nasir-48572-default-rtdb.firebaseio.com"
-        };
+    <!-- USERS tab -->
+    <div id="tab-users" class="tab-content active">
+      <div class="small muted">Users collection from /users</div>
+      <table id="usersTable">
+        <thead>
+          <tr>
+            <th style="width:200px">User ID</th>
+            <th>Email</th>
+            <th style="width:110px">Credits</th>
+            <th>Last Active</th>
+            <th>Session ID</th>
+            <th>User Agent</th>
+            <th style="width:210px">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="usersTableBody">
+          <!-- injected rows -->
+        </tbody>
+      </table>
 
-        // Global data storage
-        let allUsers = [];
-        let allSessions = [];
-        let allHistory = [];
-        let rawDatabase = {};
+      <div style="margin-top:10px;display:flex;gap:10px;align-items:center">
+        <div class="small muted">Page:</div>
+        <button class="btn" id="prevPage">Prev</button>
+        <button class="btn" id="nextPage">Next</button>
+        <div class="small muted" id="pageInfo">0</div>
+      </div>
+    </div>
 
-        // Load all data from Firebase
-        async function loadAllData() {
-            try {
-                console.log("Loading data from Firebase...");
-                
-                await Promise.all([
-                    loadUsers(),
-                    loadSessions(),
-                    loadSearchHistory(),
-                    loadRawDatabase()
-                ]);
-                
-                updateStats();
-                
-                console.log("Data loaded successfully!");
-                
-            } catch (error) {
-                console.error("Error loading data:", error);
-                alert("Error loading data: " + error.message);
-            }
-        }
+    <!-- SESSIONS tab -->
+    <div id="tab-sessions" class="tab-content" style="display:none">
+      <div class="small muted">ActiveSessions node</div>
+      <table id="sessionsTable">
+        <thead>
+          <tr><th>User ID</th><th>Email</th><th>SessionId</th><th>Last Active</th><th>UserAgent</th><th>Status</th><th>Action</th></tr>
+        </thead>
+        <tbody id="sessionsTableBody"></tbody>
+      </table>
+    </div>
 
-        // Load users from Firebase
-        async function loadUsers() {
-            try {
-                const response = await fetch(`${firebaseConfig.databaseURL}/users.json`);
-                const data = await response.json();
-                allUsers = [];
-                
-                if (data && typeof data === 'object') {
-                    Object.keys(data).forEach(userId => {
-                        const userData = data[userId];
-                        if (userData && typeof userData === 'object') {
-                            allUsers.push({
-                                uid: userId,
-                                ...userData
-                            });
-                        }
-                    });
-                    console.log("Loaded users:", allUsers);
-                } else {
-                    console.log("No users found in database");
-                }
-                
-                displayUsers(allUsers);
-            } catch (error) {
-                console.error("Error loading users:", error);
-                document.getElementById('usersTableBody').innerHTML = 
-                    '<tr><td colspan="5" style="text-align: center; color: #e74c3c;">Error loading users: ' + error.message + '</td></tr>';
-            }
-        }
+    <!-- HISTORY tab -->
+    <div id="tab-history" class="tab-content" style="display:none">
+      <div class="small muted">SearchHistory node</div>
+      <table id="historyTable">
+        <thead><tr><th>User ID</th><th>Index/Key</th><th>Query</th></tr></thead>
+        <tbody id="historyTableBody"></tbody>
+      </table>
+    </div>
 
-        // Display users in table
-        function displayUsers(users) {
-            const tbody = document.getElementById('usersTableBody');
-            const loading = document.getElementById('usersLoading');
-            const table = document.getElementById('usersTable');
-            
-            if (users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No users found</td></tr>';
-            } else {
-                tbody.innerHTML = users.map(user => {
-                    // Format dates
-                    const lastActive = user.lastActive ? new Date(user.lastActive).toLocaleString() : 'Unknown';
-                    const sessionId = user.sessionId ? user.sessionId.substring(0, 8) + '...' : 'N/A';
-                    const userAgent = user.userAgent ? user.userAgent.substring(0, 50) + '...' : 'N/A';
-                    
-                    return `
-                        <tr>
-                            <td><span class="user-id">${user.uid}</span></td>
-                            <td>${user.email || 'No email'}</td>
-                            <td>${lastActive}</td>
-                            <td>${sessionId}</td>
-                            <td title="${user.userAgent || 'N/A'}">${userAgent}</td>
-                        </tr>
-                    `;
-                }).join('');
-            }
-            
-            loading.style.display = 'none';
-            table.style.display = 'table';
-        }
+    <!-- RAW DB tab -->
+    <div id="tab-raw" class="tab-content" style="display:none">
+      <div class="small muted">Full DB dump (.json)</div>
+      <div class="json-viewer" id="rawJsonViewer">Loading raw data...</div>
+      <div style="margin-top:12px">
+        <button class="btn btn-primary" id="downloadRawBtn">Download JSON</button>
+        <button class="btn btn-ghost" id="prettyPrintBtn">Pretty Print</button>
+      </div>
+    </div>
 
-        // Load active sessions from Firebase
-        async function loadSessions() {
-            try {
-                const response = await fetch(`${firebaseConfig.databaseURL}/activeSessions.json`);
-                const data = await response.json();
-                allSessions = [];
-                
-                if (data && typeof data === 'object') {
-                    Object.keys(data).forEach(userId => {
-                        const sessionData = data[userId];
-                        if (sessionData && typeof sessionData === 'object') {
-                            allSessions.push({
-                                uid: userId,
-                                ...sessionData
-                            });
-                        }
-                    });
-                    console.log("Loaded sessions:", allSessions);
-                } else {
-                    console.log("No active sessions found");
-                }
-                
-                displaySessions(allSessions);
-            } catch (error) {
-                console.error("Error loading sessions:", error);
-                document.getElementById('sessionsTableBody').innerHTML = 
-                    '<tr><td colspan="6" style="text-align: center; color: #e74c3c;">Error loading sessions: ' + error.message + '</td></tr>';
-            }
-        }
+    <!-- BACKUPS tab -->
+    <div id="tab-backups" class="tab-content" style="display:none">
+      <div class="small muted">Manual backups and restore</div>
+      <div style="display:flex;gap:10px;margin-top:10px">
+        <button class="btn btn-primary" id="doBackupBtn">Create Backup</button>
+        <button class="btn btn-ghost" id="listBackupsBtn">List Backups</button>
+        <button class="btn btn-danger" id="restoreBackupBtn">Restore Last Backup</button>
+      </div>
+      <div id="backupsList" style="margin-top:12px"></div>
+    </div>
 
-        // Display sessions
-        function displaySessions(sessions) {
-            const tbody = document.getElementById('sessionsTableBody');
-            const loading = document.getElementById('sessionsLoading');
-            const table = document.getElementById('sessionsTable');
-            
-            if (sessions.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No active sessions found</td></tr>';
-            } else {
-                tbody.innerHTML = sessions.map(session => {
-                    const isActive = session.lastActive ? (Date.now() - new Date(session.lastActive).getTime() < 300000) : false;
-                    const sessionId = session.sessionId ? session.sessionId.substring(0, 8) + '...' : 'N/A';
-                    const userAgent = session.userAgent ? session.userAgent.substring(0, 50) + '...' : 'N/A';
-                    const lastActive = session.lastActive ? new Date(session.lastActive).toLocaleString() : 'N/A';
-                    
-                    // Find user email
-                    const user = allUsers.find(u => u.uid === session.uid);
-                    const userEmail = user ? user.email : 'N/A';
-                    
-                    return `
-                        <tr>
-                            <td><span class="user-id">${session.uid}</span></td>
-                            <td>${userEmail}</td>
-                            <td>${sessionId}</td>
-                            <td>${lastActive}</td>
-                            <td title="${session.userAgent || 'N/A'}">${userAgent}</td>
-                            <td class="${isActive ? 'session-active' : 'session-inactive'}">
-                                ${isActive ? 'Active' : 'Inactive'}
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
-            }
-            
-            loading.style.display = 'none';
-            table.style.display = 'table';
-        }
+    <!-- AUDIT tab -->
+    <div id="tab-audit" class="tab-content" style="display:none">
+      <div class="small muted">Audit log (client-side events)</div>
+      <div id="auditLog" style="max-height:300px;overflow:auto;background:#fff;padding:10px;border-radius:8px;margin-top:8px"></div>
+    </div>
+  </div> <!-- panel end -->
+</div> <!-- wrap end -->
 
-        // Load search history from Firebase
-        async function loadSearchHistory() {
-            try {
-                const response = await fetch(`${firebaseConfig.databaseURL}/searchHistory.json`);
-                const data = await response.json();
-                allHistory = [];
-                
-                if (data && typeof data === 'object') {
-                    Object.keys(data).forEach(userId => {
-                        const userHistory = data[userId];
-                        
-                        if (Array.isArray(userHistory)) {
-                            userHistory.forEach(historyItem => {
-                                if (historyItem && typeof historyItem === 'string') {
-                                    allHistory.push({
-                                        uid: userId,
-                                        query: historyItem
-                                    });
-                                }
-                            });
-                        } else if (userHistory && typeof userHistory === 'object') {
-                            Object.keys(userHistory).forEach(historyKey => {
-                                const historyItem = userHistory[historyKey];
-                                if (historyItem && typeof historyItem === 'string') {
-                                    allHistory.push({
-                                        uid: userId,
-                                        query: historyItem
-                                    });
-                                }
-                            });
-                        }
-                    });
-                    console.log("Loaded history:", allHistory);
-                } else {
-                    console.log("No search history found");
-                }
-                
-                displaySearchHistory(allHistory);
-            } catch (error) {
-                console.error("Error loading history:", error);
-                document.getElementById('historyTableBody').innerHTML = 
-                    '<tr><td colspan="2" style="text-align: center; color: #e74c3c;">Error loading history: ' + error.message + '</td></tr>';
-            }
-        }
+<!-- ---------- MODALS ---------- -->
 
-        // Display search history
-        function displaySearchHistory(history) {
-            const tbody = document.getElementById('historyTableBody');
-            const loading = document.getElementById('historyLoading');
-            const table = document.getElementById('historyTable');
-            
-            if (history.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="2" style="text-align: center;">No search history found</td></tr>';
-            } else {
-                tbody.innerHTML = history.map(item => {
-                    return `
-                        <tr>
-                            <td><span class="user-id">${item.uid || 'N/A'}</span></td>
-                            <td>${item.query || 'N/A'}</td>
-                        </tr>
-                    `;
-                }).join('');
-            }
-            
-            loading.style.display = 'none';
-            table.style.display = 'table';
-        }
+<!-- Add / Edit User Modal -->
+<div class="modal" id="userModal">
+  <div class="box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <strong id="userModalTitle">Add User</strong>
+      <button class="close-x" onclick="closeUserModal()">×</button>
+    </div>
 
-        // Load raw database
-        async function loadRawDatabase() {
-            try {
-                const response = await fetch(`${firebaseConfig.databaseURL}/.json`);
-                const data = await response.json();
-                rawDatabase = data || {};
-                
-                console.log("Loaded raw database:", rawDatabase);
-                displayRawDatabase(rawDatabase);
-            } catch (error) {
-                console.error("Error loading raw database:", error);
-                document.getElementById('rawJsonViewer').innerHTML = 
-                    'Error loading raw database: ' + error.message;
-            }
-        }
+    <div class="row col">
+      <label class="small">User ID (unique)</label>
+      <input id="userIdInput" placeholder="uid_abc123">
+    </div>
 
-        // Display raw database
-        function displayRawDatabase(data) {
-            const loading = document.getElementById('rawLoading');
-            const container = document.getElementById('rawDataView');
-            const viewer = document.getElementById('rawJsonViewer');
-            
-            viewer.textContent = JSON.stringify(data, null, 2);
-            
-            loading.style.display = 'none';
-            container.style.display = 'block';
-        }
+    <div class="row col">
+      <label class="small">Email</label>
+      <input id="userEmailInput" placeholder="email@example.com">
+    </div>
 
-        // Update statistics
-        function updateStats() {
-            document.getElementById('totalUsers').textContent = allUsers.length;
-            
-            const activeSessionsCount = allSessions.filter(s => 
-                s.lastActive && (Date.now() - new Date(s.lastActive).getTime() < 300000)
-            ).length;
-            document.getElementById('activeSessions').textContent = activeSessionsCount;
-            
-            document.getElementById('totalSearches').textContent = allHistory.length;
-            
-            // For now, admins count is set to 0 since we don't have an admins node
-            document.getElementById('adminsCount').textContent = 0;
-        }
+    <div class="row col">
+      <label class="small">Credits</label>
+      <input id="userCreditsInput" type="number" placeholder="0">
+    </div>
 
-        // Tab switching
-        window.switchTab = function(tabName) {
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            document.getElementById(tabName + '-tab').classList.add('active');
-            event.target.classList.add('active');
-        }
+    <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+      <button class="btn" onclick="closeUserModal()">Cancel</button>
+      <button class="btn btn-primary" id="saveUserBtn">Save user</button>
+    </div>
+  </div>
+</div>
 
-        // Make loadAllData available globally
-        window.loadAllData = loadAllData;
+<!-- Credit Modal (inline edit also provided) -->
+<div class="modal" id="creditModal">
+  <div class="box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <strong>Edit Credits</strong>
+      <button class="close-x" onclick="closeCreditModal()">×</button>
+    </div>
 
-        // Initialize the admin panel
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log("Admin panel initialized");
-            loadAllData();
-            
-            // Auto-refresh data every 30 seconds
-            setInterval(loadAllData, 30000);
-        });
-    </script>
+    <div class="row col">
+      <label class="small">User ID</label>
+      <div id="creditUserId" class="user-id"></div>
+    </div>
+
+    <div class="row col">
+      <label class="small">Credits</label>
+      <input id="creditValue" type="number">
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+      <button class="btn" onclick="closeCreditModal()">Cancel</button>
+      <button class="btn btn-primary" id="saveCreditBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin login modal (simple) -->
+<div class="modal" id="adminLoginModal">
+  <div class="box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <strong>Admin Sign In</strong>
+      <button class="close-x" onclick="closeAdminLogin()">×</button>
+    </div>
+
+    <div class="row col">
+      <label class="small">Admin password (client-side check)</label>
+      <input id="adminPassword" type="password" placeholder="enter admin pass">
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+      <button class="btn" onclick="closeAdminLogin()">Cancel</button>
+      <button class="btn btn-primary" id="adminSigninBtn">Sign In</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================
+   CONFIG & GLOBALS
+   ========================= */
+const firebaseConfig = {
+  // Minimal requirement: databaseURL (replace with your real values).
+  // Example: databaseURL: "https://nasir-48572-default-rtdb.firebaseio.com"
+  apiKey: "",
+  authDomain: "",
+  databaseURL: "https://nasir-48572-default-rtdb.firebaseio.com",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
+};
+
+// utility
+const $ = id => document.getElementById(id);
+const qs = sel => document.querySelector(sel);
+const qsa = sel => document.querySelectorAll(sel);
+
+let allUsers = {};       // raw users map
+let allSessions = {};    // raw activeSessions map
+let allHistory = {};     // raw searchHistory map
+let rawDatabase = {};    // entire DB
+let page = 0;
+const pageSize = 18;
+let realtime = false;
+let dbListener = null;
+let userSortKey = null;
+let currentFilter = "";
+let isAdmin = false;     // client-side admin flag (convenience)
+const audit = [];
+
+/* =========================
+   HELPERS
+   ========================= */
+function logAudit(line){
+  const ts = new Date().toLocaleString();
+  audit.unshift(`[${ts}] ${line}`);
+  $('auditLog').innerHTML = audit.map(l=>`<div class="small">${escapeHtml(l)}</div>`).join('');
+}
+
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m])); }
+
+function apiGet(path){ // .json path
+  return fetch(`${firebaseConfig.databaseURL}/${path}.json`).then(r=>{
+    if(!r.ok) throw new Error('Network error: '+r.status);
+    return r.json();
+  });
+}
+function apiPut(path, payload){
+  return fetch(`${firebaseConfig.databaseURL}/${path}.json`,{method:'PUT',body:JSON.stringify(payload)})
+    .then(r=>{ if(!r.ok) throw new Error('Network error: '+r.status); return r.json() });
+}
+function apiPatch(path, payload){
+  return fetch(`${firebaseConfig.databaseURL}/${path}.json`,{method:'PATCH',body:JSON.stringify(payload)})
+    .then(r=>{ if(!r.ok) throw new Error('Network error: '+r.status); return r.json() });
+}
+function apiDelete(path){
+  return fetch(`${firebaseConfig.databaseURL}/${path}.json`,{method:'DELETE'}).then(r=>{
+    if(!r.ok) throw new Error('Network error: '+r.status); return r.json();
+  });
+}
+
+/* =========================
+   CORE LOADERS
+   ========================= */
+async function loadAllData(){
+  try{
+    $('refreshBtn').disabled = true;
+    logAudit('Loading all data...');
+    const [u,s,h,raw] = await Promise.all([
+      apiGet('users'),
+      apiGet('activeSessions'),
+      apiGet('searchHistory'),
+      apiGet('')
+    ]);
+    allUsers = u||{};
+    allSessions = s||{};
+    allHistory = h||{};
+    rawDatabase = raw||{};
+    renderAll();
+    $('refreshBtn').disabled = false;
+    logAudit('Load complete');
+  }catch(err){
+    console.error(err);
+    alert('Error loading data: '+err.message);
+    $('refreshBtn').disabled = false;
+  }
+}
+
+/* =========================
+   RENDERERS
+   ========================= */
+
+function renderAll(){
+  renderStats();
+  renderUsersTable();
+  renderSessionsTable();
+  renderHistory();
+  renderRaw();
+  renderAdminsCount();
+}
+
+function renderStats(){
+  const totalUsers = Object.keys(allUsers).length;
+  const activeSessionsCount = Object.keys(allSessions).length;
+  // count total history items
+  let totalHistory = 0;
+  Object.values(allHistory || {}).forEach(u=>{
+    if(Array.isArray(u)) totalHistory += u.length;
+    else if(typeof u === 'object') totalHistory += Object.keys(u).length;
+  });
+
+  $('totalUsers').innerText = totalUsers;
+  $('activeSessionsCount').innerText = activeSessionsCount;
+  $('totalSearchesCount').innerText = totalHistory;
+}
+
+function renderAdminsCount(){
+  let admins = 0;
+  // check sample admins node or admin flag in users
+  if(rawDatabase.admins) admins = Object.keys(rawDatabase.admins).length;
+  else {
+    Object.values(allUsers).forEach(u=>{ if(u && u.isAdmin) admins++ });
+  }
+  $('adminsCount').innerText = admins;
+}
+
+/* ========== USERS TABLE ========== */
+function getUserRowsArray(){
+  return Object.keys(allUsers || {}).map(uid => {
+    const obj = allUsers[uid] || {};
+    return { uid, ...obj };
+  });
+}
+
+function applyFilterAndSearch(rows){
+  const q = $('globalSearch').value.trim().toLowerCase();
+  const filter = $('filterSelect').value;
+  let filtered = rows.filter(r=>{
+    if(q){
+      const combined = `${r.uid} ${r.email||''} ${r.sessionId||''} ${r.userAgent||''}`.toLowerCase();
+      if(!combined.includes(q)) return false;
+    }
+    if(filter === 'lowCredits'){
+      return (Number(r.credits) || 0) < 10;
+    } else if(filter === 'noEmail'){
+      return !r.email;
+    }
+    return true;
+  });
+  return filtered;
+}
+
+function sortUsers(rows){
+  if(!userSortKey) return rows;
+  return rows.sort((a,b)=>{
+    if(a[userSortKey] < b[userSortKey]) return -1;
+    if(a[userSortKey] > b[userSortKey]) return 1;
+    return 0;
+  });
+}
+
+function renderUsersTable(){
+  let rows = getUserRowsArray();
+  rows = applyFilterAndSearch(rows);
+  rows = sortUsers(rows);
+
+  const total = rows.length;
+  const start = page * pageSize;
+  const paged = rows.slice(start, start + pageSize);
+
+  $('pageInfo').innerText = `${page+1} / ${Math.max(1, Math.ceil(total/pageSize))} (${total} total)`;
+
+  const body = paged.map(u=>{
+    const credits = (u.credits !== undefined) ? Number(u.credits) : 0;
+    let creditClass = 'credit-normal';
+    if(credits <= 0) creditClass = 'credit-low';
+    else if(credits >= 100) creditClass = 'credit-high';
+
+    const lastActive = u.lastActive ? (new Date(u.lastActive).toLocaleString()) : '—';
+    const sess = u.sessionId ? (String(u.sessionId).slice(0,16)+'...') : '—';
+
+    return `<tr>
+      <td><span class="user-id">${escapeHtml(u.uid)}</span></td>
+      <td>${escapeHtml(u.email||'—')}</td>
+      <td><span class="credit-badge ${creditClass}">${escapeHtml(String(credits))}</span></td>
+      <td>${escapeHtml(lastActive)}</td>
+      <td>${escapeHtml(sess)}</td>
+      <td title="${escapeHtml(u.userAgent||'')}">${escapeHtml((u.userAgent||'—').slice(0,40))}</td>
+      <td>
+         <div style="display:flex;gap:8px">
+           <button class="btn btn-primary" onclick="openCreditModal('${u.uid}')">Edit credits</button>
+           <button class="btn" onclick="openEditUser('${u.uid}')">Edit</button>
+           <button class="btn btn-ghost" onclick="toggleBlockUser('${u.uid}')">${u.blocked ? 'Unblock' : 'Block'}</button>
+           <button class="btn btn-danger" onclick="deleteUserConfirm('${u.uid}')">Delete</button>
+         </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  $('usersTableBody').innerHTML = body || `<tr><td colspan="7" style="text-align:center;color:${'#777'}">No users found</td></tr>`;
+}
+
+/* ========== SESSIONS TABLE ========== */
+function renderSessionsTable(){
+  const body = Object.keys(allSessions || {}).map(uid=>{
+    const s = allSessions[uid] || {};
+    const lastActive = s.lastActive ? new Date(s.lastActive).toLocaleString() : '—';
+    const isActive = s.lastActive ? ((Date.now() - new Date(s.lastActive).getTime()) < (1000*60*5)) : false;
+    // find email in users if present
+    const email = (allUsers[uid] && allUsers[uid].email) ? allUsers[uid].email : '—';
+    return `<tr>
+      <td><span class="user-id">${escapeHtml(uid)}</span></td>
+      <td>${escapeHtml(email)}</td>
+      <td>${escapeHtml(String(s.sessionId||'—'))}</td>
+      <td>${escapeHtml(lastActive)}</td>
+      <td title="${escapeHtml(s.userAgent||'')}">${escapeHtml((s.userAgent||'—').slice(0,36))}</td>
+      <td style="color:${isActive?'#27ae60':'#e74c3c'}">${isActive? 'Active':'Inactive'}</td>
+      <td><button class="btn" onclick="deleteSession('${uid}')">Remove</button></td>
+    </tr>`;
+  }).join('');
+  $('sessionsTableBody').innerHTML = body || `<tr><td colspan="7" style="text-align:center;color:#777">No sessions</td></tr>`;
+}
+
+/* ========== HISTORY ========== */
+function renderHistory(){
+  const rows = [];
+  Object.keys(allHistory || {}).forEach(uid=>{
+    const u = allHistory[uid];
+    if(Array.isArray(u)){
+      u.forEach((q,i)=> rows.push({uid,key:i,query:q}));
+    } else if(typeof u === 'object'){
+      Object.keys(u).forEach(k=> rows.push({uid,key:k,query:u[k]}));
+    }
+  });
+  $('historyTableBody').innerHTML = rows.map(r=>`<tr><td class="user-id">${escapeHtml(r.uid)}</td><td>${escapeHtml(String(r.key))}</td><td>${escapeHtml(String(r.query))}</td></tr>`).join('') || `<tr><td colspan="3" style="text-align:center;color:#777">No history</td></tr>`;
+}
+
+/* ========== RAW ========== */
+function renderRaw(){
+  $('rawJsonViewer').textContent = JSON.stringify(rawDatabase, null, 2);
+}
+
+/* =========================
+   CRUD / ACTIONS
+   ========================= */
+
+async function openEditUser(uid){
+  // open modal prefilled
+  $('userModalTitle').innerText = 'Edit user';
+  $('userIdInput').value = uid;
+  $('userIdInput').disabled = true;
+  const u = allUsers[uid] || {};
+  $('userEmailInput').value = u.email || '';
+  $('userCreditsInput').value = u.credits ?? 0;
+  $('saveUserBtn').onclick = async ()=>{
+    const payload = {
+      email: $('userEmailInput').value,
+      credits: Number($('userCreditsInput').value)
+    };
+    try{
+      await apiPatch(`users/${uid}`, payload);
+      logAudit(`Edited user ${uid}`);
+      await loadAllData();
+      closeUserModal();
+    }catch(e){ alert('Error: '+e.message); }
+  };
+  $('userModal').style.display = 'flex';
+}
+
+function openAddUser(){
+  $('userModalTitle').innerText = 'Add user';
+  $('userIdInput').disabled = false;
+  $('userIdInput').value = '';
+  $('userEmailInput').value = '';
+  $('userCreditsInput').value = 0;
+  $('saveUserBtn').onclick = async ()=>{
+    const uid = $('userIdInput').value.trim();
+    if(!uid) return alert('UID required');
+    const payload = {
+      email: $('userEmailInput').value||null,
+      credits: Number($('userCreditsInput').value)||0,
+      createdAt: new Date().toISOString()
+    };
+    try{
+      // safe: only create node if not exists — we PUT the object.
+      await apiPut(`users/${uid}`, payload);
+      logAudit(`Added user ${uid}`);
+      await loadAllData();
+      closeUserModal();
+    }catch(e){ alert('Error: '+e.message); }
+  };
+  $('userModal').style.display = 'flex';
+}
+function closeUserModal(){ $('userModal').style.display = 'none'; }
+
+async function deleteUserConfirm(uid){
+  if(!confirm(`Delete user ${uid}? This cannot be undone.`)) return;
+  try{
+    await apiDelete(`users/${uid}`);
+    logAudit(`Deleted user ${uid}`);
+    await loadAllData();
+  }catch(e){ alert('Error: '+e.message); }
+}
+
+async function toggleBlockUser(uid){
+  const u = allUsers[uid] || {};
+  const blocked = !!u.blocked;
+  try{
+    await apiPatch(`users/${uid}`, { blocked: !blocked });
+    logAudit(`${!blocked?'Blocked':'Unblocked'} user ${uid}`);
+    await loadAllData();
+  }catch(e){ alert('Error: '+e.message); }
+}
+
+async function openCreditModal(uid){
+  const u = allUsers[uid] || {};
+  $('creditUserId').innerText = uid;
+  $('creditValue').value = Number(u.credits) || 0;
+  $('creditModal').style.display = 'flex';
+  $('saveCreditBtn').onclick = async ()=>{
+    const v = Number($('creditValue').value);
+    try{
+      await apiPut(`users/${uid}/credits`, v);
+      logAudit(`Set credits for ${uid} => ${v}`);
+      await loadAllData();
+      closeCreditModal();
+    }catch(e){ alert('Error: '+e.message); }
+  };
+}
+function closeCreditModal(){ $('creditModal').style.display = 'none'; }
+
+async function deleteSession(uid){
+  if(!confirm(`Remove active session for ${uid}?`)) return;
+  try{
+    await apiDelete(`activeSessions/${uid}`);
+    logAudit(`Session removed for ${uid}`);
+    await loadAllData();
+  }catch(e){ alert('Error: '+e.message); }
+}
+
+/* =========================
+   BACKUPS
+   ========================= */
+
+async function doBackup(){
+  try{
+    const full = await apiGet('');
+    const ts = new Date().toISOString().replace(/[:.]/g,'-');
+    // store backup under /backups/<ts>
+    await apiPut(`backups/${ts}`, full);
+    logAudit(`Backup created: ${ts}`);
+    alert('Backup created: '+ts);
+  }catch(e){ alert('Error: '+e.message); }
+}
+async function listBackups(){
+  const b = await apiGet('backups') || {};
+  const keys = Object.keys(b).sort().reverse();
+  const el = $('backupsList');
+  if(keys.length === 0){ el.innerHTML = '<div class="small muted">No backups</div>'; return; }
+  el.innerHTML = keys.map(k=>{
+    return `<div style="padding:8px;border:1px solid #eee;margin-bottom:6px;border-radius:8px">
+      <div><strong>${k}</strong> — <span class="small muted">${Object.keys(b[k]||{}).length} nodes</span></div>
+      <div style="margin-top:6px">
+        <button class="btn" onclick='downloadBackup("${k}")'>Download</button>
+        <button class="btn" onclick='restoreBackup("${k}")'>Restore</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function downloadBackup(key){
+  const b = await apiGet(`backups/${key}`);
+  const blob = new Blob([JSON.stringify(b,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = `backup-${key}.json`; a.click();
+  URL.revokeObjectURL(url);
+}
+async function restoreBackup(key){
+  if(!confirm(`Restore backup ${key}? This will overwrite current database.`)) return;
+  try{
+    const b = await apiGet(`backups/${key}`);
+    await apiPut('', b);
+    logAudit(`Restored backup ${key}`);
+    await loadAllData();
+    alert('Restore complete');
+  }catch(e){ alert('Error: '+e.message); }
+}
+
+/* =========================
+   EXPORT / IMPORT
+   ========================= */
+
+function exportVisibleToCSV(){
+  const rows = Array.from(document.querySelectorAll('#usersTableBody tr'));
+  if(rows.length===0) return alert('No rows');
+  const cols = ['uid','email','credits','lastActive','sessionId','userAgent'];
+  const csv = [
+    cols.join(',')
+  ].concat(rows.map(tr=>{
+    const tds = tr.querySelectorAll('td');
+    if(!tds.length) return '';
+    const uid = tds[0].innerText.trim();
+    const email = tds[1].innerText.trim();
+    const credits = tds[2].innerText.trim();
+    const last = tds[3].innerText.trim();
+    const sess = tds[4].innerText.trim();
+    const ua = tds[5].innerText.trim();
+    return [uid,email,credits,last,sess,ua].map(v=>`"${v.replace(/"/g,'""')}"`).join(',');
+  })).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download='users-export.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importUsersFromJSON(){
+  const input = document.createElement('input'); input.type='file'; input.accept='.json,application/json';
+  input.onchange = async (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const text = await file.text();
+    try{
+      const obj = JSON.parse(text);
+      // If object contains top-level users node -> import to /users
+      const toPut = obj.users ? obj.users : obj;
+      // Use patch to avoid overwrite entire DB
+      await apiPatch('users', toPut);
+      logAudit(`Imported ${Object.keys(toPut).length} users`);
+      await loadAllData();
+      alert('Import complete');
+    }catch(err){ alert('Invalid JSON: '+err.message) }
+  };
+  input.click();
+}
+
+/* =========================
+   REALTIME (polling or REST streaming not used here; we use polling when toggled)
+   ========================= */
+
+function enableRealtime(){
+  if(realtime) return;
+  realtime = true;
+  $('realtimeToggleBtn').innerText = 'Realtime: ON';
+  // use a simple polling interval every 4s
+  dbListener = setInterval(()=> loadAllData().catch(()=>{}), 4000);
+  logAudit('Realtime ON (polling)');
+}
+function disableRealtime(){
+  if(!realtime) return;
+  realtime=false;
+  $('realtimeToggleBtn').innerText = 'Realtime: OFF';
+  clearInterval(dbListener);
+  dbListener = null;
+  logAudit('Realtime OFF');
+}
+
+/* =========================
+   ADMIN SIGN IN (client-only convenience)
+   ========================= */
+function openAdminLogin(){
+  $('adminLoginModal').style.display = 'flex';
+}
+function closeAdminLogin(){ $('adminLoginModal').style.display = 'none'; }
+
+function doAdminSignIn(){
+  const pw = $('adminPassword').value;
+  // WARNING: client side only. Replace with Firebase Auth in production.
+  const hard = 'supersecret123'; // if you want change later
+  if(pw === hard){
+    isAdmin = true;
+    closeAdminLogin();
+    $('loginToggleBtn').innerText = 'Signed in';
+    logAudit('Admin signed in (client-side)');
+    alert('Signed in as admin (client-side). For secure login use Firebase Auth.');
+  }else{
+    alert('Invalid password (client-side stub)');
+  }
+}
+
+/* =========================
+   BINDINGS & EVENTS
+   ========================= */
+
+document.addEventListener('click', (ev)=>{
+  // close modal when clicking outside inner box
+  if(ev.target.classList.contains('modal')) ev.target.style.display='none';
+});
+
+// tabs
+qsa('.tab').forEach(t=> t.addEventListener('click', (e)=>{
+  qsa('.tab').forEach(x=> x.classList.remove('active'));
+  t.classList.add('active');
+  const tab = t.dataset.tab;
+  qsa('.tab-content').forEach(c=> c.style.display='none');
+  const el = $(`tab-${tab}`);
+  if(el) el.style.display='block';
+}));
+
+$('refreshBtn').addEventListener('click', ()=> loadAllData());
+$('realtimeToggleBtn').addEventListener('click', ()=>{
+  if(!realtime) enableRealtime(); else disableRealtime();
+});
+
+$('searchBtn').addEventListener('click', ()=>{
+  page = 0;
+  renderUsersTable();
+});
+$('globalSearch').addEventListener('keyup', (e)=>{
+  if(e.key === 'Enter'){ page = 0; renderUsersTable(); }
+});
+
+$('filterSelect').addEventListener('change', ()=> { page = 0; renderUsersTable(); });
+
+$('addUserBtn').addEventListener('click', openAddUser);
+$('exportCsvBtn').addEventListener('click', exportVisibleToCSV);
+$('importJsonBtn').addEventListener('click', importUsersFromJSON);
+
+$('prevPage').addEventListener('click', ()=>{ if(page>0){page--; renderUsersTable();}});
+$('nextPage').addEventListener('click', ()=>{ page++; renderUsersTable(); });
+
+$('doBackupBtn').addEventListener('click', doBackup);
+$('listBackupsBtn').addEventListener('click', listBackups);
+
+$('downloadRawBtn').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(rawDatabase, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='raw-db.json'; a.click();
+  URL.revokeObjectURL(url);
+});
+$('prettyPrintBtn').addEventListener('click', ()=>{ $('rawJsonViewer').textContent = JSON.stringify(rawDatabase, null, 4); });
+
+$('adminSigninBtn').addEventListener('click', doAdminSignIn);
+$('loginToggleBtn').addEventListener('click', openAdminLogin);
+
+$('saveUserBtn').addEventListener('click', ()=>{}); // set dynamically
+
+// attach modal close behaviour for built-in modals
+function closeCreditModal(){ $('creditModal').style.display='none'; }
+function closeUserModal(){ $('userModal').style.display='none'; }
+function closeAdminLogin(){ $('adminLoginModal').style.display='none'; }
+
+function deleteUserConfirm(uid){ deleteUserConfirmImpl(uid); } // forward
+async function deleteUserConfirmImpl(uid){
+  if(!confirm('Delete user '+uid+'?')) return;
+  try{
+    await apiDelete(`users/${uid}`);
+    logAudit(`Deleted user ${uid}`);
+    await loadAllData();
+  }catch(e){ alert('Error: '+e.message) }
+}
+
+/* =========================
+   INIT
+   ========================= */
+
+async function init(){
+  // initial load
+  await loadAllData();
+
+  // small UI improvements
+  // hide tabs-content wrappers for simple selector
+  // (Already handled by tab click)
+  logAudit('Admin panel initialized');
+}
+init();
+
+/* =========================
+   Extra helpers for global exposure (optional)
+   ========================= */
+window.loadAllData = loadAllData;
+window.openEditUser = openEditUser;
+window.openCreditModal = openCreditModal;
+window.toggleBlockUser = toggleBlockUser;
+window.deleteSession = deleteSession;
+window.restoreBackup = restoreBackup;
+window.downloadBackup = downloadBackup;
+</script>
+
 </body>
 </html>
