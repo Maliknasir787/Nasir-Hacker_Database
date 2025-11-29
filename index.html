@@ -984,7 +984,7 @@
       "owner@nasir.com"
     ];
 
-    // SUPER SIMPLE SESSION CHECK - This will 100% work!
+    // IMPROVED SESSION CHECK - Less aggressive and more stable
     window.checkSession = async function() {
         if (!currentUser) return;
         
@@ -999,12 +999,20 @@
             console.log("Local:", localSessionId);
             console.log("Remote:", sessionData ? sessionData.sessionId : "No session");
             
-            if (sessionData && sessionData.sessionId !== localSessionId) {
-                console.log("🚨 DIFFERENT SESSION - LOGGING OUT");
+            // ✅ FIX: Only logout if there's actually a different active session
+            if (sessionData && sessionData.sessionId && sessionData.sessionId !== localSessionId) {
+                console.log("🚨 DIFFERENT SESSION DETECTED - LOGGING OUT");
                 localStorage.setItem('logout_reason', 'session_ended_elsewhere');
                 await signOut(auth);
                 window.location.href = "/login.html";
                 return;
+            }
+            
+            // ✅ Update last active timestamp to keep session alive
+            if (sessionData && sessionData.sessionId === localSessionId) {
+                await update(sessionRef, {
+                    lastActive: new Date().toISOString()
+                });
             }
             
             console.log("✅ Session OK");
@@ -1014,16 +1022,16 @@
         }
     }
 
-    // Check session every 2 seconds
+    // Check session every 5 seconds (less frequent)
     let sessionInterval;
     window.startSessionChecking = function() {
         // Check immediately
         window.checkSession();
         
-        // Then check every 2 seconds
+        // Then check every 5 seconds (reduced from 2 seconds)
         sessionInterval = setInterval(() => {
             window.checkSession();
-        }, 2000);
+        }, 5000);
     }
 
     window.stopSessionChecking = function() {
