@@ -633,6 +633,15 @@
             document.getElementById('errorMessage').style.display = 'none';
             document.getElementById('successMessage').style.display = 'none';
         }
+        // Add this function to check for logout reason
+function checkLogoutReason() {
+    const logoutReason = localStorage.getItem('logout_reason');
+    if (logoutReason === 'session_ended_elsewhere') {
+        showSuccess("You've been logged out because you've been logged in somewhere else 👋");
+        // Clear the logout reason
+        localStorage.removeItem('logout_reason');
+    }
+}
 
         // Make functions globally available
         window.togglePassword = function(id) {
@@ -690,70 +699,83 @@
         }
 
         window.login = function () {
-            const email = document.getElementById("loginEmail").value;
-            const password = document.getElementById("loginPassword").value;
+    const email = document.getElementById("loginEmail").value;
+    const password = document.getElementById("loginPassword").value;
+    
+    console.log("Login attempt with:", email);
+    
+    // Hide any previous messages
+    hideMessages();
+    
+    // Basic validation
+    if (!email || !password) {
+        showError("Please fill in all fields");
+        return;
+    }
+
+    // Show loading animation
+    document.getElementById("loading").style.display = "flex";
+
+    signInWithEmailAndPassword(auth, email, password)
+        .then((userCredential) => {
+            console.log("Login successful:", userCredential);
             
-            console.log("Login attempt with:", email);
+            // Invalidate all other sessions by updating the session ID
+            const user = userCredential.user;
+            const sessionRef = ref(database, `activeSessions/${user.uid}`);
+            const newSessionId = Date.now().toString();
             
-            // Hide any previous messages
-            hideMessages();
+            set(sessionRef, {
+                sessionId: newSessionId,
+                lastActive: new Date().toISOString(),
+                userAgent: navigator.userAgent
+            }).then(() => {
+                document.getElementById("loading").style.display = "none";
+                document.getElementById("successBox").style.display = "flex";
+                setTimeout(() => {
+                    window.location.href = "https://nasir-hacker-database.vercel.app";
+                }, 1500);
+            });
+        })
+        .catch((error) => {
+            document.getElementById("loading").style.display = "none";
+            console.error("Login error:", error);
             
-            // Basic validation
-            if (!email || !password) {
-                showError("Please fill in all fields");
-                return;
+            // Convert Firebase errors to user-friendly messages
+            let errorMessage = "Login failed. Please try again.";
+            if (error.code === "auth/invalid-email") {
+                errorMessage = "Invalid email address format.";
+            } else if (error.code === "auth/user-not-found") {
+                errorMessage = "Email not found. Please check your email address.";
+            } else if (error.code === "auth/wrong-password") {
+                errorMessage = "Incorrect password. Please try again.";
+            } else if (error.code === "auth/too-many-requests") {
+                errorMessage = "Too many failed attempts. Please try again later.";
+            } else if (error.code === "auth/invalid-credential") {
+                errorMessage = "Invalid credentials. Please check your email and password.";
+            } else if (error.code === "auth/network-request-failed") {
+                errorMessage = "Network error. Please check your internet connection.";
             }
-
-            // Show loading animation
-            document.getElementById("loading").style.display = "flex";
-
-            signInWithEmailAndPassword(auth, email, password)
-                .then((userCredential) => {
-                    console.log("Login successful:", userCredential);
-                    document.getElementById("loading").style.display = "none";
-                    document.getElementById("successBox").style.display = "flex";
-                    setTimeout(() => {
-                        window.location.href = "https://nasir-hacker-database.vercel.app";
-                    }, 1500);
-                })
-                .catch((error) => {
-                    document.getElementById("loading").style.display = "none";
-                    console.error("Login error:", error);
-                    
-                    // Convert Firebase errors to user-friendly messages
-                    let errorMessage = "Login failed. Please try again.";
-                    if (error.code === "auth/invalid-email") {
-                        errorMessage = "Invalid email address format.";
-                    } else if (error.code === "auth/user-not-found") {
-                        errorMessage = "Email not found. Please check your email address.";
-                    } else if (error.code === "auth/wrong-password") {
-                        errorMessage = "Incorrect password. Please try again.";
-                    } else if (error.code === "auth/too-many-requests") {
-                        errorMessage = "Too many failed attempts. Please try again later.";
-                    } else if (error.code === "auth/invalid-credential") {
-                        errorMessage = "Invalid credentials. Please check your email and password.";
-                    } else if (error.code === "auth/network-request-failed") {
-                        errorMessage = "Network error. Please check your internet connection.";
-                    }
-                    
-                    showError(errorMessage);
-                });
-        }
-
-        // Add event listeners for Enter key
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('loginEmail').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    login();
-                }
-            });
             
-            document.getElementById('loginPassword').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    login();
-                }
-            });
+            showError(errorMessage);
         });
+}
+     // Add event listeners for Enter key
+document.addEventListener('DOMContentLoaded', function() {
+    checkLogoutReason();
+    
+    document.getElementById('loginEmail').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            login();
+        }
+    });
+    
+    document.getElementById('loginPassword').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            login();
+        }
+    });
+});
         window.forgotPassword = function () {
     window.location.href = "forget.html";
         }
