@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -694,30 +695,35 @@
             .then((userCredential) => {
                 console.log("Login successful:", userCredential);
                 
-                // Invalidate all other sessions by updating the session ID
+                // Create session for this device
                 const user = userCredential.user;
                 const sessionRef = ref(database, `activeSessions/${user.uid}`);
                 const newSessionId = Date.now().toString();
                 
-                console.log("🔄 UPDATING SESSION FOR USER:", user.uid);
+                console.log("🔄 CREATING SESSION FOR USER:", user.uid);
                 console.log("🆔 NEW SESSION ID:", newSessionId);
                 
-                // Set with error handling
+                // Set session with error handling
                 set(sessionRef, {
                     sessionId: newSessionId,
                     lastActive: new Date().toISOString(),
                     userAgent: navigator.userAgent,
                     email: user.email
                 }).then(() => {
-                    console.log("✅ SESSION UPDATED SUCCESSFULLY");
+                    console.log("✅ SESSION CREATED SUCCESSFULLY");
+                    
+                    // ✅ CRITICAL FIX: Save session to localStorage BEFORE redirect
+                    localStorage.setItem(`nasir_session_${user.uid}`, newSessionId);
+                    
                     document.getElementById("loading").style.display = "none";
                     document.getElementById("successBox").style.display = "flex";
                     setTimeout(() => {
                         window.location.href = "https://nasir-hacker-database.vercel.app";
                     }, 1500);
                 }).catch((sessionError) => {
-                    console.error("❌ Session update failed:", sessionError);
-                    // Still allow login even if session update fails
+                    console.error("❌ Session creation failed:", sessionError);
+                    // Still allow login even if session creation fails
+                    localStorage.setItem(`nasir_session_${user.uid}`, newSessionId);
                     document.getElementById("loading").style.display = "none";
                     document.getElementById("successBox").style.display = "flex";
                     setTimeout(() => {
