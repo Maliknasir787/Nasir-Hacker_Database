@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en"> 
  <head> 
@@ -954,10 +955,10 @@
     }, 10000);
   </script>
 
-  <script type="module">
+<script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-    import { getDatabase, ref, set, get, update } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+    import { getDatabase, ref, set, get, update, onValue } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
@@ -977,45 +978,54 @@
     let currentUser = null;
     let userCredits = 0;
     let isUnlimited = false;
-    // Add this function to track active sessions
-window.trackActiveSession = async function(user) {
-    try {
-        const sessionRef = ref(database, `activeSessions/${user.uid}`);
-        const currentSessionId = Date.now().toString();
-        
-        // Store the current session
-        await set(sessionRef, {
-            sessionId: currentSessionId,
-            lastActive: new Date().toISOString(),
-            userAgent: navigator.userAgent
-        });
-        
-        // Store session ID in localStorage
-        localStorage.setItem(`nasir_session_${user.uid}`, currentSessionId);
-        
-        // Listen for session changes
-        onValue(sessionRef, (snapshot) => {
-            const sessionData = snapshot.val();
-            if (sessionData && sessionData.sessionId !== currentSessionId) {
-                // Session changed - log out this device
-                console.log("Session invalidated - logging out");
-                signOut(auth).then(() => {
-                    // Store logout reason before redirecting
-                    localStorage.setItem('logout_reason', 'session_ended_elsewhere');
-                    window.location.href = "/login.html";
-                });
-            }
-        });
-    } catch (error) {
-        console.error("Error tracking session:", error);
-    }
-}
 
     // List of users with unlimited credits
     const unlimitedUsers = [
       "nasirjafarmaibal@gmail.com",
       "owner@nasir.com"
     ];
+
+    // Session tracking function
+    window.trackActiveSession = async function(user) {
+        try {
+            const sessionRef = ref(database, `activeSessions/${user.uid}`);
+            const currentSessionId = Date.now().toString();
+            
+            console.log("Setting up session tracking for user:", user.uid);
+            console.log("Current session ID:", currentSessionId);
+            
+            // Store the current session
+            await set(sessionRef, {
+                sessionId: currentSessionId,
+                lastActive: new Date().toISOString(),
+                userAgent: navigator.userAgent,
+                email: user.email
+            });
+            
+            // Store session ID in localStorage
+            localStorage.setItem(`nasir_session_${user.uid}`, currentSessionId);
+            
+            // Listen for session changes
+            onValue(sessionRef, (snapshot) => {
+                const sessionData = snapshot.val();
+                console.log("Session data changed:", sessionData);
+                
+                if (sessionData && sessionData.sessionId !== currentSessionId) {
+                    // Session changed - log out this device
+                    console.log("Session invalidated - logging out. Current:", currentSessionId, "New:", sessionData.sessionId);
+                    signOut(auth).then(() => {
+                        // Store logout reason before redirecting
+                        localStorage.setItem('logout_reason', 'session_ended_elsewhere');
+                        window.location.href = "/login.html";
+                    });
+                }
+            }, (error) => {
+                console.error("Error listening to session changes:", error);
+            });
+        } catch (error) {
+            console.error("Error tracking session:", error);
+        }
+    }
 
     // Search History Functions
     window.saveSearchHistory = async function(query, result, status) {
@@ -1378,17 +1388,17 @@ window.trackActiveSession = async function(user) {
     }
 
     // Firebase Auth State Listener
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-        window.location.href = "/login.html"; 
-    } else {
-        currentUser = user;
-        updateUserInterface(user);
-        initializeUserCredits(user);
-        // Track the active session
-        window.trackActiveSession(user);
-    }
-});
+    onAuthStateChanged(auth, (user) => {
+        if (!user) {
+            window.location.href = "/login.html"; 
+        } else {
+            currentUser = user;
+            updateUserInterface(user);
+            initializeUserCredits(user);
+            // Track the active session
+            window.trackActiveSession(user);
+        }
+    });
 
     // Menu toggle functionality
     document.getElementById('menuToggle').addEventListener('click', function() {
@@ -1413,23 +1423,23 @@ window.trackActiveSession = async function(user) {
         }
     });
 
-// Logout functionality
-document.getElementById('logoutBtn').addEventListener('click', function() {
-    if (currentUser) {
-        // Clear the session from database
-        const sessionRef = ref(database, `activeSessions/${currentUser.uid}`);
-        set(sessionRef, null);
+    // Logout functionality
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+        if (currentUser) {
+            // Clear the session from database
+            const sessionRef = ref(database, `activeSessions/${currentUser.uid}`);
+            set(sessionRef, null);
+            
+            // Clear local storage
+            localStorage.removeItem(`nasir_session_${currentUser.uid}`);
+        }
         
-        // Clear local storage
-        localStorage.removeItem(`nasir_session_${currentUser.uid}`);
-    }
-    
-    signOut(auth).then(() => {
-        window.location.href = "/login.html";
-    }).catch((error) => {
-        console.error('Logout error:', error);
+        signOut(auth).then(() => {
+            window.location.href = "/login.html";
+        }).catch((error) => {
+            console.error('Logout error:', error);
+        });
     });
-});
 
     // Close dropdown when clicking outside
     document.addEventListener('click', function(event) {
@@ -1446,6 +1456,6 @@ document.getElementById('logoutBtn').addEventListener('click', function() {
             menu.classList.remove('show');
         }
     });
-  </script>
+</script>
  </body>
 </html>
