@@ -1269,14 +1269,31 @@
       color: var(--error);
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: scale(0.9);}
-      to { opacity: 1; transform: scale(1);}
+    /* Profile Settings Modal */
+    .profile-settings-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      backdrop-filter: blur(8px);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
     }
 
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(30px);}
-      to { opacity: 1; transform: translateY(0);}
+    .profile-settings-content {
+      background: rgba(30, 30, 46, 0.95);
+      border-radius: 20px;
+      width: 90%;
+      max-width: 450px;
+      max-height: 80vh;
+      overflow: hidden;
+      border: 1px solid rgba(108, 99, 255, 0.4);
+      box-shadow: var(--shadow), var(--glow);
+      animation: popupAppear 0.4s ease;
     }
 
     /* Credit Notification Popup */
@@ -1360,6 +1377,130 @@
     .credit-notification button:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 20px rgba(108, 99, 255, 0.6);
+    }
+
+    /* Push Notifications Admin Modal */
+    .push-notifications-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      backdrop-filter: blur(8px);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .push-notifications-content {
+      background: rgba(30, 30, 46, 0.95);
+      border-radius: 20px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow: hidden;
+      border: 1px solid rgba(108, 99, 255, 0.4);
+      box-shadow: var(--shadow), var(--glow);
+      animation: popupAppear 0.4s ease;
+    }
+
+    .message-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .message-item {
+      background: rgba(45, 45, 65, 0.6);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: var(--transition);
+    }
+
+    .message-item:hover {
+      background: rgba(45, 45, 65, 0.8);
+      border-color: rgba(108, 99, 255, 0.2);
+    }
+
+    .message-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .message-sender {
+      font-weight: 600;
+      color: var(--primary);
+      font-size: 14px;
+    }
+
+    .message-date {
+      color: var(--text-secondary);
+      font-size: 11px;
+    }
+
+    .message-content {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    .message-unread {
+      border-left: 4px solid var(--primary);
+    }
+
+    /* Message from Owner Modal */
+    .owner-messages-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      backdrop-filter: blur(8px);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .owner-messages-content {
+      background: rgba(30, 30, 46, 0.95);
+      border-radius: 20px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow: hidden;
+      border: 1px solid rgba(108, 99, 255, 0.4);
+      box-shadow: var(--shadow), var(--glow);
+      animation: popupAppear 0.4s ease;
+    }
+
+    .no-messages {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-secondary);
+    }
+
+    .no-messages i {
+      font-size: 48px;
+      margin-bottom: 15px;
+      opacity: 0.5;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.9);}
+      to { opacity: 1; transform: scale(1);}
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px);}
+      to { opacity: 1; transform: translateY(0);}
     }
 
     /* Mobile Responsive */
@@ -1448,6 +1589,7 @@
         <div id="creditCountDisplay" class="credit-count">0</div>
         by <span id="adminEmailText">Admin</span>
       </div>
+      <div id="creditMessageText" style="font-size: 14px; color: var(--text-secondary); margin: 15px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px;"></div>
       <button onclick="window.closeCreditNotification()">OK</button>
     </div>
   </div>
@@ -1502,6 +1644,16 @@
         <button class="menu-item" onclick="window.showProfileSettings()">
           <i class="fas fa-user-cog"></i>
           <span>Profile Settings</span>
+        </button>
+        
+        <button class="menu-item" id="pushNotificationsBtn" style="display: none;">
+          <i class="fas fa-bell"></i>
+          <span>Push Notifications</span>
+        </button>
+        
+        <button class="menu-item" id="ownerMessagesBtn">
+          <i class="fas fa-envelope"></i>
+          <span>Messages from Owner</span>
         </button>
         
         <button class="menu-item" id="changePasswordBtn">
@@ -1588,6 +1740,37 @@
     </div>
   </div>
 
+  <!-- Profile Settings Modal -->
+  <div id="profileSettingsModal" class="modal profile-settings-modal">
+    <div class="profile-settings-content">
+      <div class="modal-header">
+        <h3><i class="fas fa-user-cog"></i> Profile Settings</h3>
+        <button class="close-modal" id="closeProfileSettingsModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 14px;">Display Name</label>
+          <input type="text" id="displayNameInput" placeholder="Enter your display name" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); background: var(--dark-lighter); color: var(--text);">
+        </div>
+        
+        <div class="form-group">
+          <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 14px;">Username</label>
+          <input type="text" id="usernameInput" placeholder="Enter new username" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); background: var(--dark-lighter); color: var(--text);">
+          <small style="color: var(--text-secondary); font-size: 12px; display: block; margin-top: 5px;">Username can only contain letters, numbers, and underscores</small>
+        </div>
+        
+        <div id="profileError" style="background-color: rgba(244, 67, 54, 0.1); border: 1px solid var(--error); color: var(--error); padding: 10px 12px; border-radius: var(--border-radius); margin-top: 20px; display: none; text-align: left;">
+          <i class="fas fa-exclamation-circle"></i>
+          <span id="profileErrorText">Please check your input</span>
+        </div>
+        
+        <button id="updateProfileBtn" class="action-btn" style="width: 100%; margin-top: 20px; padding: 12px; font-size: 16px;">
+          <i class="fas fa-save"></i> Update Profile
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Change Password Modal -->
   <div id="changePasswordModal" class="modal change-password-modal">
     <div class="change-password-content">
@@ -1670,6 +1853,7 @@
         <button class="admin-tab active" onclick="window.switchAdminTab('dashboard')">Dashboard</button>
         <button class="admin-tab" onclick="window.switchAdminTab('users')">Users</button>
         <button class="admin-tab" onclick="window.switchAdminTab('credits')">Credits</button>
+        <button class="admin-tab" onclick="window.switchAdminTab('notifications')">Push Notifications</button>
         <button class="admin-tab" onclick="window.switchAdminTab('analytics')">Analytics</button>
       </div>
       
@@ -1706,6 +1890,7 @@
           <thead>
             <tr>
               <th>Email</th>
+              <th>Username</th>
               <th>Credits</th>
               <th>Last Active</th>
               <th>Status</th>
@@ -1731,10 +1916,49 @@
               <option value="unlimited">Make Unlimited</option>
             </select>
           </div>
+          <div class="form-row">
+            <input type="text" id="creditMessageInput" placeholder="Optional: Add a message for the user" style="width: 100%;">
+          </div>
           <button class="action-btn" onclick="window.addUserCredits()" style="width: 100%;">
             <i class="fas fa-plus"></i> Apply
           </button>
           <div id="creditError" style="color: var(--error); margin-top: 10px; font-size: 12px; display: none;"></div>
+        </div>
+      </div>
+      
+      <div id="adminNotificationsTab" class="admin-tab-content">
+        <div class="add-credits-form">
+          <h4 style="margin-bottom: 20px; color: var(--primary);">Send Push Notifications</h4>
+          
+          <div class="form-row">
+            <select id="notificationRecipient" style="width: 100%;">
+              <option value="all">All Users</option>
+              <option value="specific">Specific Email(s)</option>
+              <option value="multiple">Multiple Emails</option>
+            </select>
+          </div>
+          
+          <div class="form-row" id="specificEmailRow" style="display: none;">
+            <input type="email" id="specificEmailInput" placeholder="Enter user email" style="width: 100%;">
+          </div>
+          
+          <div class="form-row" id="multipleEmailsRow" style="display: none;">
+            <textarea id="multipleEmailsInput" placeholder="Enter emails separated by commas" rows="3" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); background: var(--dark-lighter); color: var(--text);"></textarea>
+          </div>
+          
+          <div class="form-row">
+            <input type="text" id="notificationTitle" placeholder="Notification Title" style="width: 100%;">
+          </div>
+          
+          <div class="form-row">
+            <textarea id="notificationMessage" placeholder="Notification Message" rows="4" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); background: var(--dark-lighter); color: var(--text);"></textarea>
+          </div>
+          
+          <button class="action-btn" onclick="window.sendPushNotification()" style="width: 100%;">
+            <i class="fas fa-paper-plane"></i> Send Notification
+          </button>
+          
+          <div id="notificationError" style="color: var(--error); margin-top: 10px; font-size: 12px; display: none;"></div>
         </div>
       </div>
       
@@ -1779,6 +2003,36 @@
         <p style="font-size: 12px; color: var(--text-secondary); text-align: center;">
           Contact admin for custom packages or unlimited access.
         </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Push Notifications Modal (for admin) -->
+  <div id="pushNotificationsModal" class="modal push-notifications-modal">
+    <div class="push-notifications-content">
+      <div class="modal-header">
+        <h3><i class="fas fa-bell"></i> Push Notifications</h3>
+        <button class="close-modal" onclick="window.closePushNotifications()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="pushNotificationsList" class="message-list">
+          <!-- Push notifications will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Owner Messages Modal -->
+  <div id="ownerMessagesModal" class="modal owner-messages-modal">
+    <div class="owner-messages-content">
+      <div class="modal-header">
+        <h3><i class="fas fa-envelope"></i> Messages from Owner</h3>
+        <button class="close-modal" onclick="window.closeOwnerMessages()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="ownerMessagesList" class="message-list">
+          <!-- Messages from owner will be loaded here -->
+        </div>
       </div>
     </div>
   </div>
@@ -1868,11 +2122,12 @@
     }
 
     // Credit Notification Functions
-    window.showCreditNotification = function(action, count, adminEmail) {
+    window.showCreditNotification = function(action, count, adminEmail, message = '') {
       const notification = document.getElementById('creditNotification');
       const actionText = document.getElementById('creditActionText');
       const countDisplay = document.getElementById('creditCountDisplay');
       const adminEmailText = document.getElementById('adminEmailText');
+      const messageText = document.getElementById('creditMessageText');
       
       if (action === 'added') {
         actionText.textContent = 'added';
@@ -1903,6 +2158,14 @@
       }
       
       adminEmailText.textContent = adminEmail || 'Admin';
+      
+      if (message && message.trim() !== '') {
+        messageText.textContent = `Message from admin: "${message}"`;
+        messageText.style.display = 'block';
+      } else {
+        messageText.style.display = 'none';
+      }
+      
       notification.style.display = 'flex';
     }
 
@@ -1999,9 +2262,8 @@
         get, 
         update, 
         onValue,
-        query,
-        orderByChild,
-        equalTo 
+        push,
+        remove
     } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
     import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-storage.js";
 
@@ -2080,7 +2342,6 @@
             console.log("Local:", localSessionId);
             console.log("Remote:", sessionData ? sessionData.sessionId : "No session");
             
-            // ✅ FIX: Only logout if there's actually a different active session
             if (sessionData && sessionData.sessionId && sessionData.sessionId !== localSessionId) {
                 console.log("🚨 DIFFERENT SESSION DETECTED - LOGGING OUT");
                 localStorage.setItem('logout_reason', 'session_ended_elsewhere');
@@ -2089,7 +2350,6 @@
                 return;
             }
             
-            // ✅ Update last active timestamp to keep session alive
             if (sessionData && sessionData.sessionId === localSessionId) {
                 await update(sessionRef, {
                     lastActive: new Date().toISOString()
@@ -2104,10 +2364,7 @@
     }
 
     window.startSessionChecking = function() {
-        // Check immediately
         window.checkSession();
-        
-        // Then check every 5 seconds (reduced from 2 seconds)
         sessionInterval = setInterval(() => {
             window.checkSession();
         }, 5000);
@@ -2116,6 +2373,107 @@
     window.stopSessionChecking = function() {
         if (sessionInterval) {
             clearInterval(sessionInterval);
+        }
+    }
+
+    // ✅ PROFILE SETTINGS FUNCTIONS
+
+    window.showProfileSettings = function() {
+        const modal = document.getElementById('profileSettingsModal');
+        const displayNameInput = document.getElementById('displayNameInput');
+        const usernameInput = document.getElementById('usernameInput');
+        const errorElement = document.getElementById('profileError');
+        
+        // Reset form
+        displayNameInput.value = currentUser.displayName || '';
+        usernameInput.value = currentUser.username || '';
+        errorElement.style.display = 'none';
+        
+        // Show modal
+        modal.style.display = 'flex';
+    }
+
+    window.closeProfileSettings = function() {
+        document.getElementById('profileSettingsModal').style.display = 'none';
+    }
+
+    window.updateProfileSettings = async function() {
+        const displayNameInput = document.getElementById('displayNameInput');
+        const usernameInput = document.getElementById('usernameInput');
+        const errorElement = document.getElementById('profileError');
+        const errorText = document.getElementById('profileErrorText');
+        
+        const displayName = displayNameInput.value.trim();
+        const username = usernameInput.value.trim();
+        
+        // Hide any previous error
+        errorElement.style.display = 'none';
+        
+        // Validate username
+        if (username) {
+            const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+            if (!usernameRegex.test(username)) {
+                errorText.textContent = 'Username must be 3-20 characters and can only contain letters, numbers, and underscores';
+                errorElement.style.display = 'block';
+                return;
+            }
+            
+            // Check if username already exists
+            const usersRef = ref(database, 'users');
+            const snapshot = await get(usersRef);
+            const users = snapshot.val() || {};
+            
+            for (const userId in users) {
+                if (users[userId].username === username && userId !== currentUser.uid) {
+                    errorText.textContent = 'Username already taken. Please choose another one.';
+                    errorElement.style.display = 'block';
+                    return;
+                }
+            }
+        }
+        
+        try {
+            // Show loading
+            const updateButton = document.getElementById('updateProfileBtn');
+            const originalText = updateButton.innerHTML;
+            updateButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+            updateButton.disabled = true;
+            
+            // Update profile in Firebase Auth
+            const updateData = {};
+            if (displayName) updateData.displayName = displayName;
+            
+            if (Object.keys(updateData).length > 0) {
+                await updateProfile(currentUser, updateData);
+            }
+            
+            // Update in database
+            const dbUpdate = {};
+            if (displayName) dbUpdate.displayName = displayName;
+            if (username) dbUpdate.username = username;
+            dbUpdate.profileUpdated = new Date().toISOString();
+            
+            await update(ref(database, `users/${currentUser.uid}`), dbUpdate);
+            
+            // Update UI
+            updateUserInterface(currentUser);
+            
+            // Show success message
+            window.showToast('Profile updated successfully!', 'success');
+            
+            // Close modal
+            window.closeProfileSettings();
+            
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            
+            // Reset button
+            const updateButton = document.getElementById('updateProfileBtn');
+            updateButton.innerHTML = originalText;
+            updateButton.disabled = false;
+            
+            errorText.textContent = 'Error updating profile: ' + error.message;
+            errorElement.style.display = 'block';
         }
     }
 
@@ -2134,16 +2492,14 @@
             
             console.log("Saving search history for:", query);
             
-            // Limit history to 50 items
             if (history.length >= 50) {
                 history = history.slice(0, 49);
             }
             
-            // Add new search to beginning of array
             const searchEntry = {
                 query: query,
                 result: result,
-                status: status, // 'found', 'not_found', 'error'
+                status: status,
                 timestamp: new Date().toISOString(),
                 id: Date.now().toString()
             };
@@ -2233,7 +2589,6 @@
     }
 
     function formatResultPreview(result) {
-        // Limit preview to first 3 lines or 150 characters
         const lines = result.split('\n').slice(0, 3);
         let preview = lines.join('\n');
         
@@ -2395,13 +2750,11 @@
 
     window.selectCreditPackage = function(credits) {
         window.showToast(`Selected ${credits} credits package. Contact admin to complete purchase.`, 'info');
-        // In a real application, you would integrate a payment gateway here
         window.closeAddCreditsModal();
     }
 
-    // ✅ PROFILE PHOTO UPLOAD - FIXED VERSION
+    // ✅ PROFILE PHOTO UPLOAD
     window.showUploadPhoto = function() {
-        // Create file input
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
@@ -2411,13 +2764,11 @@
             const file = e.target.files[0];
             if (!file) return;
             
-            // Check file size (max 5MB)
             if (file.size > 5 * 1024 * 1024) {
                 window.showToast('File too large. Max 5MB allowed.', 'error');
                 return;
             }
             
-            // Check file type
             if (!file.type.startsWith('image/')) {
                 window.showToast('Please select an image file.', 'error');
                 return;
@@ -2426,27 +2777,19 @@
             try {
                 window.showToast('Uploading profile photo...', 'info');
                 
-                // Create storage reference
                 const fileRef = storageRef(storage, `profile_photos/${currentUser.uid}/${Date.now()}_${file.name}`);
-                
-                // Upload file
                 await uploadBytes(fileRef, file);
-                
-                // Get download URL
                 const downloadURL = await getDownloadURL(fileRef);
                 
-                // Update user profile with photo URL
                 await updateProfile(currentUser, {
                     photoURL: downloadURL
                 });
                 
-                // Update in database
                 await update(ref(database, `users/${currentUser.uid}`), {
                     photoURL: downloadURL,
                     profileUpdated: new Date().toISOString()
                 });
                 
-                // Update UI
                 const userAvatar = document.getElementById('userAvatar');
                 const dropdownAvatar = document.getElementById('dropdownAvatar');
                 
@@ -2479,7 +2822,6 @@
 
     // ✅ PASSWORD CHANGE MODAL FUNCTIONS
     window.showChangePassword = function() {
-        // Reset form
         document.getElementById('currentPassword').value = '';
         document.getElementById('newPassword').value = '';
         document.getElementById('confirmPassword').value = '';
@@ -2488,18 +2830,15 @@
         document.getElementById('passwordMismatch').style.display = 'none';
         document.getElementById('passwordStrength').className = 'password-strength';
         
-        // Reset requirements
         ['reqLength', 'reqUppercase', 'reqLowercase', 'reqNumber'].forEach(id => {
             document.getElementById(id).className = 'requirement-not-met';
         });
         
-        // Show modal
         document.getElementById('changePasswordModal').style.display = 'flex';
     }
 
     window.closeChangePasswordModal = function() {
         document.getElementById('changePasswordModal').style.display = 'none';
-        // Reset form
         document.getElementById('currentPassword').value = '';
         document.getElementById('newPassword').value = '';
         document.getElementById('confirmPassword').value = '';
@@ -2513,10 +2852,8 @@
         const errorElement = document.getElementById('passwordError');
         const errorText = document.getElementById('passwordErrorText');
         
-        // Hide any previous error
         errorElement.style.display = 'none';
         
-        // Validate inputs
         if (!currentPassword) {
             errorText.textContent = 'Please enter your current password';
             errorElement.style.display = 'block';
@@ -2542,30 +2879,22 @@
         }
         
         try {
-            // Reauthenticate user
             const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
             
-            // Show loading
             const updateButton = document.getElementById('updatePasswordBtn');
             const originalText = updateButton.innerHTML;
             updateButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
             updateButton.disabled = true;
             
             await reauthenticateWithCredential(currentUser, credential);
-            
-            // Update password
             await updatePassword(currentUser, newPassword);
             
-            // Show success message
             window.showToast('Password changed successfully!', 'success');
-            
-            // Close modal
             window.closeChangePasswordModal();
             
         } catch (error) {
             console.error('Error changing password:', error);
             
-            // Reset button
             const updateButton = document.getElementById('updatePasswordBtn');
             updateButton.innerHTML = originalText;
             updateButton.disabled = false;
@@ -2594,26 +2923,22 @@
         const lowercaseReq = document.getElementById('reqLowercase');
         const numberReq = document.getElementById('reqNumber');
         
-        // Check requirements
         const hasLength = password.length >= 6;
         const hasUppercase = /[A-Z]/.test(password);
         const hasLowercase = /[a-z]/.test(password);
         const hasNumber = /[0-9]/.test(password);
         
-        // Update requirement indicators
         lengthReq.className = hasLength ? 'requirement-met' : 'requirement-not-met';
         uppercaseReq.className = hasUppercase ? 'requirement-met' : 'requirement-not-met';
         lowercaseReq.className = hasLowercase ? 'requirement-met' : 'requirement-not-met';
         numberReq.className = hasNumber ? 'requirement-met' : 'requirement-not-met';
         
-        // Calculate strength
         let strength = 0;
         if (hasLength) strength++;
         if (hasUppercase) strength++;
         if (hasLowercase) strength++;
         if (hasNumber) strength++;
         
-        // Update strength meter
         strengthDiv.className = 'password-strength';
         if (strength === 0) {
             // Do nothing
@@ -2625,7 +2950,7 @@
             strengthDiv.classList.add('strong');
         }
         
-        return strength === 4; // Return true if all requirements met
+        return strength === 4;
     }
 
     function checkPasswordMatch() {
@@ -2670,19 +2995,34 @@
     }
 
     window.switchAdminTab = function(tabName) {
-        // Remove active class from all tabs
         document.querySelectorAll('.admin-tab').forEach(tab => {
             tab.classList.remove('active');
         });
         
-        // Hide all tab contents
         document.querySelectorAll('.admin-tab-content').forEach(content => {
             content.style.display = 'none';
         });
         
-        // Activate selected tab
         document.querySelector(`.admin-tab[onclick*="${tabName}"]`).classList.add('active');
         document.getElementById(`admin${tabName.charAt(0).toUpperCase() + tabName.slice(1)}Tab`).style.display = 'block';
+        
+        if (tabName === 'notifications') {
+            document.getElementById('notificationRecipient').addEventListener('change', function() {
+                const specificEmailRow = document.getElementById('specificEmailRow');
+                const multipleEmailsRow = document.getElementById('multipleEmailsRow');
+                
+                if (this.value === 'specific') {
+                    specificEmailRow.style.display = 'flex';
+                    multipleEmailsRow.style.display = 'none';
+                } else if (this.value === 'multiple') {
+                    specificEmailRow.style.display = 'none';
+                    multipleEmailsRow.style.display = 'flex';
+                } else {
+                    specificEmailRow.style.display = 'none';
+                    multipleEmailsRow.style.display = 'none';
+                }
+            });
+        }
     }
 
     window.loadAdminStats = async function() {
@@ -2697,7 +3037,6 @@
             let totalSearches = 0;
             let successfulSearches = 0;
             
-            // Count active users today
             for (const userId in users) {
                 const user = users[userId];
                 if (user.lastActive && new Date(user.lastActive).toDateString() === today) {
@@ -2705,7 +3044,6 @@
                 }
             }
             
-            // Load search history for all users (simplified - in production you'd want better analytics)
             const historyRef = ref(database, 'searchHistory');
             const historySnapshot = await get(historyRef);
             const allHistory = historySnapshot.val() || {};
@@ -2718,7 +3056,6 @@
             
             const successRate = totalSearches > 0 ? Math.round((successfulSearches / totalSearches) * 100) : 0;
             
-            // Update UI
             document.getElementById('totalUsers').textContent = totalUsers;
             document.getElementById('activeUsers').textContent = activeToday;
             document.getElementById('totalSearches').textContent = totalSearches;
@@ -2747,6 +3084,7 @@
                 
                 row.innerHTML = `
                     <td>${user.email || 'N/A'}</td>
+                    <td>${user.username || 'N/A'}</td>
                     <td>${user.credits === -1 ? 'Unlimited' : user.credits || 0}</td>
                     <td>${user.lastActive ? new Date(user.lastActive).toLocaleDateString() : 'Never'}</td>
                     <td><span class="history-status ${user.credits === -1 ? 'status-found' : user.credits > 0 ? 'status-found' : 'status-error'}">${user.credits === -1 ? 'Unlimited' : user.credits > 0 ? 'Active' : 'No Credits'}</span></td>
@@ -2775,7 +3113,6 @@
     window.editUser = function(userId, email) {
         const newEmail = prompt('Enter new email for user:', email);
         if (newEmail && newEmail !== email) {
-            // Update user email in database
             update(ref(database, `users/${userId}`), {
                 email: newEmail
             }).then(() => {
@@ -2798,33 +3135,30 @@
         const emailInput = document.getElementById('userEmailInput');
         const amountInput = document.getElementById('creditAmountInput');
         const actionSelect = document.getElementById('creditActionSelect');
+        const messageInput = document.getElementById('creditMessageInput');
         const errorElement = document.getElementById('creditError');
         
         const email = emailInput.value.trim();
         const amount = parseInt(amountInput.value);
         const action = actionSelect.value;
+        const message = messageInput.value.trim();
         
-        // Reset error
         errorElement.style.display = 'none';
         errorElement.textContent = '';
         
-        // Validate email
         if (!email || !validateEmail(email)) {
             errorElement.textContent = 'Please enter a valid email address';
             errorElement.style.display = 'block';
             return;
         }
         
-        // Validate amount
         if (isNaN(amount) || amount === 0) {
             errorElement.textContent = 'Please enter a valid amount (non-zero)';
             errorElement.style.display = 'block';
             return;
         }
         
-        // FIX 1: Handle negative numbers for removal
         if (action === 'remove') {
-            // For remove action, we should use positive numbers and subtract
             if (amount <= 0) {
                 errorElement.textContent = 'For removing credits, enter a positive number';
                 errorElement.style.display = 'block';
@@ -2845,7 +3179,6 @@
         }
         
         try {
-            // Find user by email
             const usersRef = ref(database, 'users');
             const snapshot = await get(usersRef);
             const users = snapshot.val() || {};
@@ -2864,20 +3197,18 @@
                 return;
             }
             
-            // Process the credit update
             let finalAction = action;
             let finalAmount = amount;
             
             if (action === 'remove') {
-                // Already positive number for removal
                 finalAmount = Math.abs(amount);
             }
             
-            await window.addUserCreditsByUserId(userId, finalAmount, finalAction);
+            await window.addUserCreditsByUserId(userId, finalAmount, finalAction, message);
             
-            // Clear form
             emailInput.value = '';
             amountInput.value = '';
+            messageInput.value = '';
             
         } catch (error) {
             console.error("Error adding credits:", error);
@@ -2886,13 +3217,12 @@
         }
     }
 
-    // Email validation function
     function validateEmail(email) {
         const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return re.test(email);
     }
 
-    window.addUserCreditsByUserId = async function(userId, amount, action = 'add') {
+    window.addUserCreditsByUserId = async function(userId, amount, action = 'add', message = '') {
         try {
             const userRef = ref(database, `users/${userId}`);
             const snapshot = await get(userRef);
@@ -2913,7 +3243,6 @@
                     notificationAction = 'added';
                     break;
                 case 'remove':
-                    // FIX 1: Properly handle removal by subtracting
                     const currentRemove = userData.credits === -1 ? 0 : userData.credits || 0;
                     newCredits = Math.max(0, currentRemove - amount);
                     notificationAction = 'removed';
@@ -2939,11 +3268,11 @@
                 action: notificationAction,
                 amount: notificationAmount,
                 adminEmail: currentUser.email,
+                message: message,
                 timestamp: new Date().toISOString(),
                 viewed: false
             });
             
-            // Update user credits
             await update(userRef, {
                 credits: newCredits,
                 lastCreditUpdate: new Date().toISOString(),
@@ -2953,13 +3282,304 @@
             window.showToast(`Credits ${action === 'unlimited' ? 'set to unlimited' : action + 'ed'} successfully!`, 'success');
             window.loadUsers();
             
-            // FIX 2: Show the credit notification popup
-            // We'll show the notification popup immediately for the admin to see
-            window.showCreditNotification(notificationAction, notificationAmount, currentUser.email);
-            
         } catch (error) {
             console.error("Error updating user credits:", error);
             window.showToast('Error updating credits: ' + error.message, 'error');
+        }
+    }
+
+    // ✅ PUSH NOTIFICATIONS FUNCTIONS
+
+    window.sendPushNotification = async function() {
+        const recipientSelect = document.getElementById('notificationRecipient');
+        const specificEmailInput = document.getElementById('specificEmailInput');
+        const multipleEmailsInput = document.getElementById('multipleEmailsInput');
+        const titleInput = document.getElementById('notificationTitle');
+        const messageInput = document.getElementById('notificationMessage');
+        const errorElement = document.getElementById('notificationError');
+        
+        const recipientType = recipientSelect.value;
+        const title = titleInput.value.trim();
+        const message = messageInput.value.trim();
+        
+        errorElement.style.display = 'none';
+        errorElement.textContent = '';
+        
+        if (!title) {
+            errorElement.textContent = 'Please enter a notification title';
+            errorElement.style.display = 'block';
+            return;
+        }
+        
+        if (!message) {
+            errorElement.textContent = 'Please enter a notification message';
+            errorElement.style.display = 'block';
+            return;
+        }
+        
+        try {
+            const usersRef = ref(database, 'users');
+            const snapshot = await get(usersRef);
+            const users = snapshot.val() || {};
+            
+            let targetUserIds = [];
+            
+            if (recipientType === 'all') {
+                targetUserIds = Object.keys(users);
+            } else if (recipientType === 'specific') {
+                const email = specificEmailInput.value.trim();
+                if (!email || !validateEmail(email)) {
+                    errorElement.textContent = 'Please enter a valid email address';
+                    errorElement.style.display = 'block';
+                    return;
+                }
+                
+                for (const userId in users) {
+                    if (users[userId].email === email) {
+                        targetUserIds.push(userId);
+                        break;
+                    }
+                }
+                
+                if (targetUserIds.length === 0) {
+                    errorElement.textContent = 'User not found with this email';
+                    errorElement.style.display = 'block';
+                    return;
+                }
+            } else if (recipientType === 'multiple') {
+                const emailsText = multipleEmailsInput.value.trim();
+                if (!emailsText) {
+                    errorElement.textContent = 'Please enter email addresses';
+                    errorElement.style.display = 'block';
+                    return;
+                }
+                
+                const emails = emailsText.split(',').map(e => e.trim()).filter(e => e);
+                
+                for (const email of emails) {
+                    if (!validateEmail(email)) {
+                        errorElement.textContent = `Invalid email format: ${email}`;
+                        errorElement.style.display = 'block';
+                        return;
+                    }
+                    
+                    let found = false;
+                    for (const userId in users) {
+                        if (users[userId].email === email) {
+                            targetUserIds.push(userId);
+                            found = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!found) {
+                        errorElement.textContent = `User not found: ${email}`;
+                        errorElement.style.display = 'block';
+                        return;
+                    }
+                }
+            }
+            
+            // Send notifications to all target users
+            for (const userId of targetUserIds) {
+                const notificationRef = ref(database, `ownerMessages/${userId}/${Date.now()}`);
+                await set(notificationRef, {
+                    title: title,
+                    message: message,
+                    sender: currentUser.email,
+                    senderName: currentUser.displayName || currentUser.email.split('@')[0],
+                    timestamp: new Date().toISOString(),
+                    read: false
+                });
+            }
+            
+            // Clear form
+            titleInput.value = '';
+            messageInput.value = '';
+            specificEmailInput.value = '';
+            multipleEmailsInput.value = '';
+            
+            window.showToast(`Notification sent to ${targetUserIds.length} user(s) successfully!`, 'success');
+            
+        } catch (error) {
+            console.error("Error sending notification:", error);
+            errorElement.textContent = 'Error: ' + error.message;
+            errorElement.style.display = 'block';
+        }
+    }
+
+    window.showPushNotifications = function() {
+        if (!isAdmin) {
+            window.showToast('Access denied. Admin only.', 'error');
+            return;
+        }
+        
+        document.getElementById('pushNotificationsModal').style.display = 'flex';
+        window.loadPushNotifications();
+    }
+
+    window.closePushNotifications = function() {
+        document.getElementById('pushNotificationsModal').style.display = 'none';
+    }
+
+    window.loadPushNotifications = async function() {
+        try {
+            const notificationsRef = ref(database, 'ownerMessages');
+            const snapshot = await get(notificationsRef);
+            const allNotifications = snapshot.val() || {};
+            
+            const notificationsList = document.getElementById('pushNotificationsList');
+            notificationsList.innerHTML = '';
+            
+            let hasNotifications = false;
+            
+            for (const userId in allNotifications) {
+                const userNotifications = allNotifications[userId];
+                for (const notificationId in userNotifications) {
+                    hasNotifications = true;
+                    const notification = userNotifications[notificationId];
+                    
+                    const messageItem = document.createElement('div');
+                    messageItem.className = 'message-item';
+                    if (!notification.read) {
+                        messageItem.classList.add('message-unread');
+                    }
+                    
+                    messageItem.innerHTML = `
+                        <div class="message-header">
+                            <span class="message-sender">To: ${await getUsernameByEmail(notification.sender)}</span>
+                            <span class="message-date">${new Date(notification.timestamp).toLocaleString()}</span>
+                        </div>
+                        <div>
+                            <strong>${notification.title}</strong>
+                        </div>
+                        <div class="message-content">
+                            ${notification.message}
+                        </div>
+                    `;
+                    
+                    notificationsList.appendChild(messageItem);
+                }
+            }
+            
+            if (!hasNotifications) {
+                notificationsList.innerHTML = `
+                    <div class="no-messages">
+                        <i class="fas fa-bell-slash"></i>
+                        <p>No push notifications sent yet</p>
+                    </div>
+                `;
+            }
+            
+        } catch (error) {
+            console.error("Error loading push notifications:", error);
+            const notificationsList = document.getElementById('pushNotificationsList');
+            notificationsList.innerHTML = `
+                <div class="no-messages">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>Error loading notifications</p>
+                </div>
+            `;
+        }
+    }
+
+    async function getUsernameByEmail(email) {
+        try {
+            const usersRef = ref(database, 'users');
+            const snapshot = await get(usersRef);
+            const users = snapshot.val() || {};
+            
+            for (const userId in users) {
+                if (users[userId].email === email) {
+                    return users[userId].username || users[userId].displayName || email.split('@')[0];
+                }
+            }
+            
+            return email.split('@')[0];
+        } catch (error) {
+            return email.split('@')[0];
+        }
+    }
+
+    // ✅ OWNER MESSAGES FUNCTIONS
+
+    window.showOwnerMessages = function() {
+        document.getElementById('ownerMessagesModal').style.display = 'flex';
+        window.loadOwnerMessages();
+    }
+
+    window.closeOwnerMessages = function() {
+        document.getElementById('ownerMessagesModal').style.display = 'none';
+    }
+
+    window.loadOwnerMessages = async function() {
+        if (!currentUser) return;
+        
+        try {
+            const messagesRef = ref(database, `ownerMessages/${currentUser.uid}`);
+            const snapshot = await get(messagesRef);
+            const messages = snapshot.val() || {};
+            
+            const messagesList = document.getElementById('ownerMessagesList');
+            messagesList.innerHTML = '';
+            
+            const messageArray = [];
+            for (const messageId in messages) {
+                messageArray.push({
+                    id: messageId,
+                    ...messages[messageId]
+                });
+            }
+            
+            messageArray.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            if (messageArray.length === 0) {
+                messagesList.innerHTML = `
+                    <div class="no-messages">
+                        <i class="fas fa-envelope-open"></i>
+                        <p>No messages from owner yet</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            for (const message of messageArray) {
+                const messageItem = document.createElement('div');
+                messageItem.className = 'message-item';
+                if (!message.read) {
+                    messageItem.classList.add('message-unread');
+                    
+                    // Mark as read
+                    await update(ref(database, `ownerMessages/${currentUser.uid}/${message.id}`), {
+                        read: true
+                    });
+                }
+                
+                messageItem.innerHTML = `
+                    <div class="message-header">
+                        <span class="message-sender">From: ${message.senderName || message.sender}</span>
+                        <span class="message-date">${new Date(message.timestamp).toLocaleString()}</span>
+                    </div>
+                    <div>
+                        <strong>${message.title}</strong>
+                    </div>
+                    <div class="message-content">
+                        ${message.message}
+                    </div>
+                `;
+                
+                messagesList.appendChild(messageItem);
+            }
+            
+        } catch (error) {
+            console.error("Error loading owner messages:", error);
+            const messagesList = document.getElementById('ownerMessagesList');
+            messagesList.innerHTML = `
+                <div class="no-messages">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>Error loading messages</p>
+                </div>
+            `;
         }
     }
 
@@ -2972,7 +3592,6 @@
             const snapshot = await get(notificationsRef);
             const notifications = snapshot.val() || {};
             
-            // Get unviewed notifications
             const unviewedNotifications = [];
             for (const key in notifications) {
                 if (!notifications[key].viewed) {
@@ -2983,18 +3602,16 @@
                 }
             }
             
-            // Show the latest unviewed notification
             if (unviewedNotifications.length > 0) {
                 const latest = unviewedNotifications[0];
                 
-                // FIX 2: Show the credit notification popup
                 window.showCreditNotification(
                     latest.action, 
                     latest.amount, 
-                    latest.adminEmail
+                    latest.adminEmail,
+                    latest.message || ''
                 );
                 
-                // Mark as viewed
                 await update(ref(database, `creditNotifications/${currentUser.uid}/${latest.id}`), {
                     viewed: true
                 });
@@ -3005,48 +3622,21 @@
         }
     }
 
-    // ✅ PROFILE FUNCTIONS
-
-    window.showProfileSettings = function() {
-        const newName = prompt('Enter your display name:', 
-            document.getElementById('dropdownName').textContent);
-        
-        if (newName) {
-            updateProfile(currentUser, {
-                displayName: newName
-            }).then(() => {
-                window.showToast('Profile updated successfully!', 'success');
-                updateUserInterface(currentUser);
-                
-                // Update in database
-                update(ref(database, `users/${currentUser.uid}`), {
-                    displayName: newName,
-                    profileUpdated: new Date().toISOString()
-                });
-            }).catch(error => {
-                window.showToast('Error updating profile: ' + error.message, 'error');
-            });
-        }
-    }
-
     // ✅ USER INTERFACE FUNCTIONS
 
     function updateUserInterface(user) {
         const userName = user.displayName || user.email.split('@')[0];
         const userInitial = userName.charAt(0).toUpperCase();
         
-        // Update welcome message
         const welcomeElement = document.getElementById('welcomeMessage');
         if (welcomeElement) {
             welcomeElement.textContent = `Welcome ${userName} To Nasir Database`;
         }
         
-        // Update avatar - check if user has photoURL
         const avatarElement = document.getElementById('userAvatar');
         const dropdownAvatar = document.getElementById('dropdownAvatar');
         
         if (user.photoURL) {
-            // Use photo if available
             if (avatarElement) {
                 avatarElement.style.backgroundImage = `url('${user.photoURL}')`;
                 avatarElement.style.backgroundSize = 'cover';
@@ -3058,7 +3648,6 @@
                 dropdownAvatar.textContent = '';
             }
         } else {
-            // Use initial if no photo
             if (avatarElement) {
                 avatarElement.style.backgroundImage = '';
                 avatarElement.textContent = userInitial;
@@ -3069,16 +3658,15 @@
             }
         }
         
-        // Update dropdown info
         const dropdownEmail = document.getElementById('dropdownEmail');
         const dropdownName = document.getElementById('dropdownName');
         
         if (dropdownEmail) dropdownEmail.textContent = user.email;
         if (dropdownName) dropdownName.textContent = userName;
         
-        // Show admin button if user is admin
         if (isAdmin) {
             document.getElementById('adminPanelBtn').style.display = 'flex';
+            document.getElementById('pushNotificationsBtn').style.display = 'flex';
         }
     }
 
@@ -3092,12 +3680,10 @@
             const today = new Date().toDateString();
             const userData = snapshot.val();
             
-            // Check if user has unlimited access (admin)
             isAdmin = unlimitedUsers.includes(user.email);
             isUnlimited = isAdmin;
             
             if (!userData || userData.lastReset !== today) {
-                // First time user or new day - set credits
                 const defaultCredits = isUnlimited ? -1 : 10;
                 
                 const userDataToSave = {
@@ -3110,7 +3696,6 @@
                     displayName: user.displayName || user.email.split('@')[0]
                 };
                 
-                // Add photoURL if available
                 if (user.photoURL) {
                     userDataToSave.photoURL = user.photoURL;
                 }
@@ -3119,14 +3704,11 @@
                 
                 userCredits = defaultCredits;
             } else {
-                // Existing user, same day
                 userCredits = userData.credits;
                 isUnlimited = userData.credits === -1 || isAdmin;
             }
             
             updateCreditDisplay();
-            
-            // Check for credit notifications
             await window.checkCreditNotifications();
             
         } catch (error) {
@@ -3148,38 +3730,31 @@
       const exportButton = document.getElementById("exportButton");
       const loadingSpinner = document.getElementById("loadingSpinner");
 
-      // Hide any previous error
       window.hideError();
 
-      // Validate input
       const validation = window.validateInput(number);
       if (!validation.valid) {
         window.showError(validation.message);
         return;
       }
 
-      // Check throttle
       if (!await window.throttleRequest()) {
         return;
       }
 
-      // Check credits
       if (!isUnlimited && userCredits <= 0) {
         window.showError("No credits remaining. Please try again tomorrow.");
         return;
       }
 
-      // Show loading
       responseBox.style.display = "none";
       shareButton.style.display = "none";
       copyButton.style.display = "none";
       exportButton.style.display = "none";
       loadingSpinner.style.display = "block";
      
-      // Primary API (direct)
       const realApi = `https://legendxdata.site/Api/simdata.php?phone=${encodeURIComponent(validation.cleaned)}`;
 
-      // Helper: try direct fetch first (fast), then fall back to proxy if necessary
       async function tryDirectFetch(url, timeoutMs = 12000) {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -3193,16 +3768,13 @@
         }
       }
 
-      // Fallback proxy (AllOrigins raw)
       const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(realApi)}`;
 
       try {
         let res;
-        // 1) Try direct call
         try {
           res = await tryDirectFetch(realApi, 12000);
         } catch (directErr) {
-          // Direct failed (CORS/network/timeout) -> try proxy
           res = await tryDirectFetch(proxyUrl, 12000);
         }
 
@@ -3210,7 +3782,6 @@
           throw new Error("Network/Response error");
         }
 
-        // Try to parse JSON
         let apiData;
         const contentType = res.headers.get("content-type") || "";
 
@@ -3234,7 +3805,6 @@
           }
         }
 
-        // Handle API response
         if (apiData && apiData.success && Array.isArray(apiData.records) && apiData.records.length > 0) {
           let content = "";
           apiData.records.forEach((rec, index) => {
@@ -3252,10 +3822,8 @@
           copyButton.style.display = "inline-block";
           exportButton.style.display = "inline-block";
           
-          // Save successful search to history
           await window.saveSearchHistory(number, content, 'found');
           
-          // Only deduct credit if data was found
           if (window.useCredit) {
             await window.useCredit();
           }
@@ -3264,7 +3832,6 @@
         } else {
           responseBox.innerHTML = `<p style="color: #FFD700; font-size: 16px; font-weight: bold;">❌ Oops! Data not found.</p>`;
           responseBox.style.display = "block";
-          // Save not found search to history
           await window.saveSearchHistory(number, null, 'not_found');
           window.showToast('No data found for this number', 'warning');
         }
@@ -3272,7 +3839,6 @@
         console.error("Fetch error:", e);
         responseBox.innerHTML = `<p style="color: red; font-size: 16px; font-weight: bold;">Error fetching data. Please try again later.</p>`;
         responseBox.style.display = "block";
-        // Save error to history
         await window.saveSearchHistory(number, null, 'error');
         window.showToast('Error fetching data. Please try again.', 'error');
       } finally {
@@ -3290,7 +3856,6 @@
             updateUserInterface(user);
             await window.createSession(user);
             await initializeUserCredits(user);
-            // Start session checking
             window.startSessionChecking();
         }
     });
@@ -3312,6 +3877,16 @@
         document.getElementById('dropdownMenu').classList.remove('show');
     });
 
+    document.getElementById('pushNotificationsBtn').addEventListener('click', function() {
+        window.showPushNotifications();
+        document.getElementById('dropdownMenu').classList.remove('show');
+    });
+
+    document.getElementById('ownerMessagesBtn').addEventListener('click', function() {
+        window.showOwnerMessages();
+        document.getElementById('dropdownMenu').classList.remove('show');
+    });
+
     document.getElementById('changePasswordBtn').addEventListener('click', function() {
         window.showChangePassword();
         document.getElementById('dropdownMenu').classList.remove('show');
@@ -3321,11 +3896,14 @@
     
     document.getElementById('clearHistoryBtn').addEventListener('click', window.clearSearchHistory);
 
+    document.getElementById('closeProfileSettingsModal').addEventListener('click', window.closeProfileSettings);
+
     document.getElementById('closeChangePasswordModal').addEventListener('click', window.closeChangePasswordModal);
 
     document.getElementById('updatePasswordBtn').addEventListener('click', window.updatePassword);
 
-    // Password input event listeners
+    document.getElementById('updateProfileBtn').addEventListener('click', window.updateProfileSettings);
+
     document.getElementById('newPassword').addEventListener('input', function() {
         checkPasswordStrength(this.value);
         checkPasswordMatch();
@@ -3333,7 +3911,6 @@
 
     document.getElementById('confirmPassword').addEventListener('input', checkPasswordMatch);
 
-    // Toggle password visibility
     document.querySelectorAll('.toggle-password').forEach(button => {
         button.addEventListener('click', function() {
             const targetId = this.getAttribute('data-target');
@@ -3350,10 +3927,15 @@
         });
     });
 
-    // Close modals when clicking outside
     document.getElementById('searchHistoryModal').addEventListener('click', function(e) {
         if (e.target === this) {
             window.closeSearchHistory();
+        }
+    });
+
+    document.getElementById('profileSettingsModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            window.closeProfileSettings();
         }
     });
 
@@ -3375,17 +3957,23 @@
         }
     });
 
-    // Logout functionality
+    document.getElementById('pushNotificationsModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            window.closePushNotifications();
+        }
+    });
+
+    document.getElementById('ownerMessagesModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            window.closeOwnerMessages();
+        }
+    });
+
     document.getElementById('logoutBtn').addEventListener('click', function() {
         if (currentUser) {
-            // Clear the session from database
             const sessionRef = ref(database, `activeSessions/${currentUser.uid}`);
             set(sessionRef, null);
-            
-            // Clear local storage
             localStorage.removeItem(`nasir_session_${currentUser.uid}`);
-            
-            // Stop session checking
             window.stopSessionChecking();
         }
         
@@ -3396,7 +3984,6 @@
         });
     });
 
-    // Close dropdown when clicking outside
     document.addEventListener('click', function(event) {
         const menu = document.getElementById('dropdownMenu');
         const toggle = document.getElementById('menuToggle');
