@@ -2530,7 +2530,117 @@
       "admin@nasir.com"
     ];
 
-    // ✅ FIXED: CHECK FOR CREDIT NOTIFICATIONS AND MESSAGES ON LOGIN
+    // ✅ NEW: Track credit notification display count in localStorage
+    const CREDIT_NOTIFICATION_MAX_DISPLAYS = 2; // Show only 2 times
+    const CREDIT_NOTIFICATION_RESET_DAYS = 1; // Reset count after 1 day
+
+    // ✅ FIXED: FUNCTION TO CHECK AND SHOW CREDIT NOTIFICATIONS WITH LIMIT
+    window.checkCreditNotifications = async function() {
+        if (!currentUser) return;
+        
+        try {
+            const notificationsRef = ref(database, `creditNotifications/${currentUser.uid}`);
+            const snapshot = await get(notificationsRef);
+            const notifications = snapshot.val() || {};
+            
+            const unviewedNotifications = [];
+            for (const key in notifications) {
+                if (!notifications[key].viewed) {
+                    unviewedNotifications.push({
+                        ...notifications[key],
+                        id: key
+                    });
+                }
+            }
+            
+            // Sort by timestamp (newest first)
+            unviewedNotifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            // Show only if we haven't reached the display limit
+            if (unviewedNotifications.length > 0) {
+                const latest = unviewedNotifications[0];
+                
+                // Check if we should show this notification
+                const shouldShow = await window.shouldShowCreditNotification(latest.id, latest.timestamp);
+                
+                if (shouldShow) {
+                    console.log("📢 Showing credit notification:", latest);
+                    
+                    window.showCreditNotification(
+                        latest.action, 
+                        latest.amount, 
+                        latest.adminEmail || latest.adminName || 'Admin',
+                        latest.message || ''
+                    );
+                    
+                    // Mark as viewed
+                    await update(ref(database, `creditNotifications/${currentUser.uid}/${latest.id}`), {
+                        viewed: true
+                    });
+                    
+                    // Update credits display if needed
+                    if (latest.action === 'added' || latest.action === 'removed' || latest.action === 'set' || latest.action === 'unlimited') {
+                        // Reload user credits
+                        await initializeUserCredits(currentUser);
+                    }
+                    
+                    // Increment display count
+                    await window.incrementCreditNotificationDisplay(latest.id);
+                } else {
+                    console.log("📢 Skipping credit notification - display limit reached for:", latest.id);
+                }
+            }
+            
+        } catch (error) {
+            console.error("Error checking credit notifications:", error);
+        }
+    }
+
+    // ✅ NEW: FUNCTION TO CHECK IF WE SHOULD SHOW CREDIT NOTIFICATION
+    window.shouldShowCreditNotification = async function(notificationId, notificationTimestamp) {
+        // Get or initialize display tracking from localStorage
+        const displayKey = `credit_notification_${notificationId}_displays`;
+        const dateKey = `credit_notification_${notificationId}_date`;
+        
+        const displayCount = parseInt(localStorage.getItem(displayKey)) || 0;
+        const lastDisplayDate = localStorage.getItem(dateKey);
+        
+        // If we've already shown it enough times, don't show again
+        if (displayCount >= CREDIT_NOTIFICATION_MAX_DISPLAYS) {
+            // Check if it's been more than RESET_DAYS since last display
+            if (lastDisplayDate) {
+                const lastDate = new Date(lastDisplayDate);
+                const now = new Date();
+                const daysDiff = (now - lastDate) / (1000 * 60 * 60 * 24);
+                
+                // If it's been more than RESET_DAYS, reset the count
+                if (daysDiff >= CREDIT_NOTIFICATION_RESET_DAYS) {
+                    localStorage.setItem(displayKey, '0');
+                    localStorage.removeItem(dateKey);
+                    return true; // Show it again after reset
+                }
+            }
+            return false; // Don't show, limit reached
+        }
+        
+        return true; // Show it, haven't reached limit
+    }
+
+    // ✅ NEW: FUNCTION TO INCREMENT DISPLAY COUNT
+    window.incrementCreditNotificationDisplay = function(notificationId) {
+        const displayKey = `credit_notification_${notificationId}_displays`;
+        const dateKey = `credit_notification_${notificationId}_date`;
+        
+        const currentCount = parseInt(localStorage.getItem(displayKey)) || 0;
+        const newCount = currentCount + 1;
+        
+        localStorage.setItem(displayKey, newCount.toString());
+        localStorage.setItem(dateKey, new Date().toISOString());
+        
+        console.log(`📊 Credit notification ${notificationId} display count: ${newCount}/${CREDIT_NOTIFICATION_MAX_DISPLAYS}`);
+    }
+
+    // ✅ FIXED: CHECK FOR ALL NOTIFICATIONS ON LOGIN
     window.checkAllNotifications = async function() {
         if (!currentUser) return;
         
@@ -4206,58 +4316,6 @@
                     <p>Error loading messages</p>
                 </div>
             `;
-        }
-    }
-
-    // ✅ FIXED: CHECK FOR CREDIT NOTIFICATIONS
-    window.checkCreditNotifications = async function() {
-        if (!currentUser) return;
-        
-        try {
-            const notificationsRef = ref(database, `creditNotifications/${currentUser.uid}`);
-            const snapshot = await get(notificationsRef);
-            const notifications = snapshot.val() || {};
-            
-            const unviewedNotifications = [];
-            for (const key in notifications) {
-                if (!notifications[key].viewed) {
-                    unviewedNotifications.push({
-                        ...notifications[key],
-                        id: key
-                    });
-                }
-            }
-            
-            // Sort by timestamp (newest first)
-            unviewedNotifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            
-            // Show the latest unviewed notification
-            if (unviewedNotifications.length > 0) {
-                const latest = unviewedNotifications[0];
-                
-                console.log("📢 Showing credit notification:", latest);
-                
-                window.showCreditNotification(
-                    latest.action, 
-                    latest.amount, 
-                    latest.adminEmail || latest.adminName || 'Admin',
-                    latest.message || ''
-                );
-                
-                // Mark as viewed
-                await update(ref(database, `creditNotifications/${currentUser.uid}/${latest.id}`), {
-                    viewed: true
-                });
-                
-                // Update credits display if needed
-                if (latest.action === 'added' || latest.action === 'removed' || latest.action === 'set' || latest.action === 'unlimited') {
-                    // Reload user credits
-                    await initializeUserCredits(currentUser);
-                }
-            }
-            
-        } catch (error) {
-            console.error("Error checking credit notifications:", error);
         }
     }
 
