@@ -559,6 +559,20 @@
         .device-info i {
             margin-right: 8px;
         }
+
+        /* Country Restriction Warning */
+        .country-restriction {
+            display: none;
+            background-color: rgba(244, 67, 54, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+            padding: 12px 15px;
+            border-radius: var(--border-radius);
+            margin-top: 15px;
+            font-size: 14px;
+            text-align: center;
+            animation: fadeIn 0.3s ease;
+        }
     </style>
 </head>
 
@@ -599,6 +613,12 @@
         <div class="security-info" id="securityInfo">
             <i class="fas fa-shield-alt"></i>
             <strong>Enhanced Security Active:</strong> Login attempts are monitored and protected
+        </div>
+
+        <!-- Country Restriction Warning -->
+        <div class="country-restriction" id="countryRestriction">
+            <i class="fas fa-globe"></i>
+            <strong>Access Restricted:</strong> This service is only available in Pakistan
         </div>
 
         <!-- Login Form -->
@@ -726,7 +746,7 @@
         authDomain: "nasir-48572.firebaseapp.com",
         databaseURL: "https://nasir-48572-default-rtdb.firebaseio.com",
         projectId: "nasir-48572",
-        storageBucket: "nasir-48572.apppoint.com",
+        storageBucket: "nasir-48572.appspot.com",
         messagingSenderId: "1032758456576",
         appId: "1:1032758456576:web:eaea202eb1f313efc743e5"
     };
@@ -735,11 +755,11 @@
     const auth = getAuth(app);
     const database = getDatabase(app);
 
-    // Security Configuration
+    // Security Configuration - PAKISTAN ONLY
     const SECURITY_CONFIG = {
         maxLoginAttempts: 5,
-        lockoutDuration: 30 * 60 * 1000, // 30 minutes in milliseconds
-        allowedCountries: ['IN', 'US', 'CA', 'GB', 'AU'], // Add your allowed countries
+        lockoutDuration: 30 * 60 * 1000, // 30 minutes
+        allowedCountries: ['PK'], // PAKISTAN ONLY
         newDeviceAlert: true,
         ipRateLimit: 10, // Max requests per minute per IP
         sessionExpiry: 24 * 60 * 60 * 1000 // 24 hours
@@ -750,6 +770,7 @@
     let userDeviceId = '';
     let loginAttempts = 0;
     let isLockedOut = false;
+    let canLogin = false; // Flag to check if user is from Pakistan
 
     // Function to get user IP and location
     async function getUserIPAndLocation() {
@@ -765,15 +786,24 @@
             
             document.getElementById('ipInfo').textContent = `Location: ${userCountry} | IP: ${userIP}`;
             
-            // Check if country is allowed
-            if (!SECURITY_CONFIG.allowedCountries.includes(userCountry) && userCountry !== 'Unknown') {
-                showWarning(`Access from ${userCountry} may be restricted.`);
+            // Check if country is Pakistan
+            if (userCountry !== 'PK') {
+                document.getElementById('countryRestriction').style.display = 'block';
+                document.getElementById('loginBtn').disabled = true;
+                document.getElementById('loginBtn').innerHTML = '<i class="fas fa-ban"></i> Access Restricted';
+                showError(`Service only available in Pakistan. Your location: ${userCountry}`);
+                canLogin = false;
+            } else {
+                canLogin = true;
             }
             
         } catch (error) {
             console.log("Could not fetch IP/location:", error);
             userIP = 'unknown';
             userCountry = 'Unknown';
+            // Allow login if location detection fails (for testing)
+            canLogin = true;
+            document.getElementById('ipInfo').textContent = 'Location: Unknown';
         }
     }
 
@@ -814,20 +844,28 @@
                 const recentRequests = requests.filter(time => time > oneMinuteAgo);
                 
                 if (recentRequests.length >= SECURITY_CONFIG.ipRateLimit) {
-                    return false; // Rate limited
+                    showError("Too many requests from your IP. Please wait a moment.");
+                    return false;
                 }
                 
                 // Add new request
                 recentRequests.push(now);
                 await update(ipRateRef, {
                     requests: recentRequests,
-                    lastRequest: now
+                    lastRequest: now,
+                    country: userCountry
                 });
             } else {
-                // First request from this IP
+                // First request from this IP - only allow if from Pakistan
+                if (userCountry !== 'PK') {
+                    showError("Access restricted to Pakistan only.");
+                    return false;
+                }
+                
                 await set(ipRateRef, {
                     requests: [now],
-                    lastRequest: now
+                    lastRequest: now,
+                    country: userCountry
                 });
             }
             
@@ -1084,6 +1122,7 @@
                 clearInterval(updateInterval);
                 timer.style.display = 'none';
                 loginBtn.disabled = false;
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
             } else {
                 const minutes = Math.ceil(timeLeft / 60000);
                 text.textContent = `Account locked. Try again in ${minutes} minutes.`;
@@ -1132,6 +1171,12 @@
     }
 
     window.login = async function () {
+        // Check if user is from Pakistan
+        if (!canLogin) {
+            showError("Service only available in Pakistan.");
+            return;
+        }
+
         const email = document.getElementById("loginEmail").value.trim();
         const password = document.getElementById("loginPassword").value;
         const trustDevice = document.getElementById("trustDevice")?.checked || false;
@@ -1150,16 +1195,14 @@
         // Check rate limit
         const rateAllowed = await checkRateLimit();
         if (!rateAllowed) {
-            showError("Too many requests from your IP. Please wait a moment.");
             return;
         }
 
-        // Get user by email to check lockout status
-        // Note: In production, you'd need to query users by email
-        // For now, we'll check after authentication
-
         // Show loading animation
         document.getElementById("loading").style.display = "flex";
+        const loginBtn = document.getElementById("loginBtn");
+        loginBtn.disabled = true;
+        loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
 
         try {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -1233,16 +1276,17 @@
         } catch (error) {
             // Always hide loading screen on error
             document.getElementById("loading").style.display = "none";
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+            
             console.error("Login error:", error);
             
             let errorMessage = "Login failed. Please try again.";
             let userId = null;
             
             // Get user by email to update login attempts
-            // Note: This is simplified - in production you'd need to query users by email
             try {
                 // We'll get userId from auth or create a temporary one based on email
-                // This is a workaround - ideally you'd have a users collection indexed by email
                 const emailHash = btoa(email).replace(/[=+/]/g, '');
                 userId = `temp_${emailHash}`;
                 
