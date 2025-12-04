@@ -248,7 +248,7 @@
       backdrop-filter: blur(15px);
       border-radius: var(--border-radius);
       padding: 15px;
-      min-width: 200px;
+      min-width: 250px;
       box-shadow: var(--shadow), var(--glow);
       border: 1px solid rgba(255, 255, 255, 0.1);
       display: none;
@@ -975,7 +975,7 @@
     .admin-content {
       background: rgba(30, 30, 46, 0.95);
       border-radius: 20px;
-      max-width: 1000px;
+      max-width: 1200px;
       margin: 0 auto;
       border: 1px solid rgba(108, 99, 255, 0.4);
       box-shadow: var(--shadow), var(--glow);
@@ -986,6 +986,7 @@
       display: flex;
       background: rgba(45, 45, 65, 0.8);
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      overflow-x: auto;
     }
 
     .admin-tab {
@@ -998,6 +999,7 @@
       font-size: 14px;
       font-weight: 600;
       border-bottom: 3px solid transparent;
+      white-space: nowrap;
     }
 
     .admin-tab:hover {
@@ -1493,6 +1495,142 @@
       opacity: 0.5;
     }
 
+    /* Session History Styles */
+    .session-history-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      backdrop-filter: blur(8px);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .session-history-content {
+      background: rgba(30, 30, 46, 0.95);
+      border-radius: 20px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 80vh;
+      overflow: hidden;
+      border: 1px solid rgba(108, 99, 255, 0.4);
+      box-shadow: var(--shadow), var(--glow);
+      animation: popupAppear 0.4s ease;
+    }
+
+    .session-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .session-item {
+      background: rgba(45, 45, 65, 0.6);
+      border-radius: 12px;
+      padding: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: var(--transition);
+    }
+
+    .session-item:hover {
+      background: rgba(45, 45, 65, 0.8);
+      border-color: rgba(108, 99, 255, 0.2);
+    }
+
+    .session-time {
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .session-type {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+
+    .session-type.login {
+      background: rgba(76, 175, 80, 0.2);
+      color: #4caf50;
+    }
+
+    .session-type.logout {
+      background: rgba(244, 67, 54, 0.2);
+      color: #f44336;
+    }
+
+    .session-duration {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 5px;
+      font-style: italic;
+    }
+
+    /* Admin User History Tab */
+    .user-history-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    .user-history-table th {
+      background: rgba(108, 99, 255, 0.2);
+      color: var(--primary);
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 14px;
+      border-bottom: 2px solid rgba(108, 99, 255, 0.4);
+    }
+
+    .user-history-table td {
+      padding: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 13px;
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .user-history-table tr:hover {
+      background: rgba(108, 99, 255, 0.05);
+    }
+
+    .history-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .history-badge.found {
+      background: rgba(76, 175, 80, 0.2);
+      color: #4caf50;
+    }
+
+    .history-badge.not-found {
+      background: rgba(255, 152, 0, 0.2);
+      color: #ff9800;
+    }
+
+    .history-badge.error {
+      background: rgba(244, 67, 54, 0.2);
+      color: #f44336;
+    }
+
     @keyframes fadeIn {
       from { opacity: 0; transform: scale(0.9);}
       to { opacity: 1; transform: scale(1);}
@@ -1556,10 +1694,29 @@
         flex: 1;
         min-width: 120px;
         text-align: center;
+        padding: 12px 15px;
+        font-size: 12px;
       }
       
       .form-row {
         flex-direction: column;
+      }
+      
+      .users-table,
+      .user-history-table {
+        font-size: 11px;
+      }
+      
+      .users-table th,
+      .user-history-table th {
+        padding: 8px;
+        font-size: 11px;
+      }
+      
+      .users-table td,
+      .user-history-table td {
+        padding: 8px;
+        font-size: 11px;
       }
     }
   </style> 
@@ -1636,6 +1793,11 @@
           <span>Search History</span>
         </button>
         
+        <button class="menu-item" id="sessionHistoryBtn">
+          <i class="fas fa-clock"></i>
+          <span>Login/Logout History</span>
+        </button>
+        
         <button class="menu-item" id="adminPanelBtn" style="display: none;">
           <i class="fas fa-shield-alt"></i>
           <span>Admin Panel</span>
@@ -1654,6 +1816,7 @@
         <button class="menu-item" id="ownerMessagesBtn">
           <i class="fas fa-envelope"></i>
           <span>Messages from Owner</span>
+          <span id="messageBadge" style="background: var(--primary); color: white; padding: 2px 6px; border-radius: 50%; font-size: 10px; display: none;">!</span>
         </button>
         
         <button class="menu-item" id="changePasswordBtn">
@@ -1735,6 +1898,21 @@
         </div>
         <div class="history-list" id="historyList">
           <!-- History items will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Session History Modal -->
+  <div id="sessionHistoryModal" class="modal session-history-modal">
+    <div class="session-history-content">
+      <div class="modal-header">
+        <h3><i class="fas fa-clock"></i> Login/Logout History</h3>
+        <button class="close-modal" id="closeSessionHistoryModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="session-list" id="sessionList">
+          <!-- Session history will be loaded here -->
         </div>
       </div>
     </div>
@@ -1854,6 +2032,8 @@
         <button class="admin-tab" onclick="window.switchAdminTab('users')">Users</button>
         <button class="admin-tab" onclick="window.switchAdminTab('credits')">Credits</button>
         <button class="admin-tab" onclick="window.switchAdminTab('notifications')">Push Notifications</button>
+        <button class="admin-tab" onclick="window.switchAdminTab('searchHistory')">User Search History</button>
+        <button class="admin-tab" onclick="window.switchAdminTab('sessionHistory')">User Session History</button>
         <button class="admin-tab" onclick="window.switchAdminTab('analytics')">Analytics</button>
       </div>
       
@@ -1960,6 +2140,61 @@
           
           <div id="notificationError" style="color: var(--error); margin-top: 10px; font-size: 12px; display: none;"></div>
         </div>
+      </div>
+      
+      <div id="adminSearchHistoryTab" class="admin-tab-content">
+        <div class="form-row">
+          <input type="email" id="searchHistoryUserEmail" placeholder="Enter user email to view search history" style="width: 100%;">
+          <button class="action-btn" onclick="window.loadUserSearchHistory()">
+            <i class="fas fa-search"></i> Load History
+          </button>
+        </div>
+        
+        <div class="loading-spinner" id="userSearchHistoryLoading" style="display: none;">
+          <div class="spinner"></div>
+        </div>
+        
+        <table class="user-history-table" id="userSearchHistoryTable" style="display: none; margin-top: 20px;">
+          <thead>
+            <tr>
+              <th>Query</th>
+              <th>Status</th>
+              <th>Timestamp</th>
+              <th>Result Preview</th>
+            </tr>
+          </thead>
+          <tbody id="userSearchHistoryBody">
+            <!-- User search history will be loaded here -->
+          </tbody>
+        </table>
+      </div>
+      
+      <div id="adminSessionHistoryTab" class="admin-tab-content">
+        <div class="form-row">
+          <input type="email" id="sessionHistoryUserEmail" placeholder="Enter user email to view session history" style="width: 100%;">
+          <button class="action-btn" onclick="window.loadUserSessionHistory()">
+            <i class="fas fa-search"></i> Load Sessions
+          </button>
+        </div>
+        
+        <div class="loading-spinner" id="userSessionHistoryLoading" style="display: none;">
+          <div class="spinner"></div>
+        </div>
+        
+        <table class="user-history-table" id="userSessionHistoryTable" style="display: none; margin-top: 20px;">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Timestamp</th>
+              <th>Duration</th>
+              <th>IP Address</th>
+              <th>User Agent</th>
+            </tr>
+          </thead>
+          <tbody id="userSessionHistoryBody">
+            <!-- User session history will be loaded here -->
+          </tbody>
+        </table>
       </div>
       
       <div id="adminAnalyticsTab" class="admin-tab-content">
@@ -2259,7 +2494,10 @@
         update, 
         onValue,
         push,
-        remove
+        remove,
+        query,
+        orderByChild,
+        limitToLast
     } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
     import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-storage.js";
 
@@ -2315,21 +2553,35 @@
             const messages = snapshot.val() || {};
             
             let hasUnreadMessages = false;
+            let unreadCount = 0;
             
             for (const messageId in messages) {
                 if (!messages[messageId].read) {
                     hasUnreadMessages = true;
-                    break;
+                    unreadCount++;
                 }
             }
             
             // Update UI to show notification badge
+            const messageBadge = document.getElementById('messageBadge');
+            if (messageBadge) {
+                if (unreadCount > 0) {
+                    messageBadge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+                    messageBadge.style.display = 'inline';
+                } else {
+                    messageBadge.style.display = 'none';
+                }
+            }
+            
+            // Update button text
             const ownerMessagesBtn = document.getElementById('ownerMessagesBtn');
             if (ownerMessagesBtn) {
-                if (hasUnreadMessages) {
-                    ownerMessagesBtn.innerHTML = `<i class="fas fa-envelope"></i> <span>Messages from Owner <span style="background: var(--primary); color: white; padding: 2px 6px; border-radius: 50%; font-size: 10px;">!</span></span>`;
+                const iconSpan = '<i class="fas fa-envelope"></i>';
+                const textSpan = '<span>Messages from Owner</span>';
+                if (unreadCount > 0) {
+                    ownerMessagesBtn.innerHTML = `${iconSpan} ${textSpan} ${messageBadge.outerHTML}`;
                 } else {
-                    ownerMessagesBtn.innerHTML = `<i class="fas fa-envelope"></i> <span>Messages from Owner</span>`;
+                    ownerMessagesBtn.innerHTML = `${iconSpan} ${textSpan}`;
                 }
             }
             
@@ -2346,12 +2598,24 @@
         const sessionId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
         localStorage.setItem(`nasir_session_${user.uid}`, sessionId);
         
+        // Save login session
+        const loginSessionId = `login_${Date.now()}`;
+        const loginRef = ref(database, `userSessions/${user.uid}/${loginSessionId}`);
+        await set(loginRef, {
+            type: 'login',
+            timestamp: new Date().toISOString(),
+            ipAddress: await window.getIPAddress(),
+            userAgent: navigator.userAgent,
+            sessionId: sessionId
+        });
+        
+        // Save current session
         const sessionRef = ref(database, `activeSessions/${user.uid}`);
         await set(sessionRef, {
             sessionId: sessionId,
             userId: user.uid,
             email: user.email,
-            createdAt: new Date().toISOString(),
+            loginTime: new Date().toISOString(),
             lastActive: new Date().toISOString(),
             userAgent: navigator.userAgent,
             ipAddress: await window.getIPAddress()
@@ -2415,6 +2679,113 @@
     window.stopSessionChecking = function() {
         if (sessionInterval) {
             clearInterval(sessionInterval);
+        }
+    }
+
+    // ✅ SESSION HISTORY FUNCTIONS
+
+    window.showSessionHistory = async function() {
+        const modal = document.getElementById('sessionHistoryModal');
+        modal.style.display = 'flex';
+        await window.loadSessionHistory();
+    }
+
+    window.closeSessionHistory = function() {
+        document.getElementById('sessionHistoryModal').style.display = 'none';
+    }
+
+    window.loadSessionHistory = async function() {
+        if (!currentUser) return;
+        
+        try {
+            const sessionsRef = ref(database, `userSessions/${currentUser.uid}`);
+            const snapshot = await get(sessionsRef);
+            const sessions = snapshot.val() || {};
+            
+            const sessionList = document.getElementById('sessionList');
+            sessionList.innerHTML = '';
+            
+            const sessionArray = [];
+            for (const sessionId in sessions) {
+                sessionArray.push({
+                    id: sessionId,
+                    ...sessions[sessionId]
+                });
+            }
+            
+            // Sort by timestamp (newest first)
+            sessionArray.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            if (sessionArray.length === 0) {
+                sessionList.innerHTML = `
+                    <div class="no-history">
+                        <i class="fas fa-clock"></i>
+                        <p>No session history available</p>
+                        <p style="font-size: 12px; margin-top: 10px;">Your login/logout history will appear here</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Group sessions by date and calculate durations
+            const groupedSessions = [];
+            let currentGroup = null;
+            
+            for (const session of sessionArray) {
+                if (session.type === 'login') {
+                    currentGroup = {
+                        login: session,
+                        logout: null
+                    };
+                    groupedSessions.push(currentGroup);
+                } else if (session.type === 'logout' && currentGroup) {
+                    currentGroup.logout = session;
+                    currentGroup = null;
+                }
+            }
+            
+            // Display sessions
+            for (const group of groupedSessions) {
+                const loginTime = new Date(group.login.timestamp);
+                let durationText = 'Active';
+                
+                if (group.logout) {
+                    const logoutTime = new Date(group.logout.timestamp);
+                    const durationMs = logoutTime - loginTime;
+                    const hours = Math.floor(durationMs / (1000 * 60 * 60));
+                    const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+                    durationText = `${hours}h ${minutes}m`;
+                }
+                
+                const sessionItem = document.createElement('div');
+                sessionItem.className = 'session-item';
+                
+                sessionItem.innerHTML = `
+                    <div class="session-time">
+                        <span>${loginTime.toLocaleString()}</span>
+                        <span class="session-type login">LOGIN</span>
+                    </div>
+                    ${group.logout ? `
+                        <div class="session-time">
+                            <span>${new Date(group.logout.timestamp).toLocaleString()}</span>
+                            <span class="session-type logout">LOGOUT</span>
+                        </div>
+                    ` : ''}
+                    <div class="session-duration">Duration: ${durationText}</div>
+                `;
+                
+                sessionList.appendChild(sessionItem);
+            }
+            
+        } catch (error) {
+            console.error("Error loading session history:", error);
+            const sessionList = document.getElementById('sessionList');
+            sessionList.innerHTML = `
+                <div class="no-history">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>Error loading session history</p>
+                </div>
+            `;
         }
     }
 
@@ -3339,6 +3710,172 @@
         }
     }
 
+    // ✅ ADMIN USER SEARCH HISTORY
+    window.loadUserSearchHistory = async function() {
+        const emailInput = document.getElementById('searchHistoryUserEmail');
+        const email = emailInput.value.trim();
+        
+        if (!email || !validateEmail(email)) {
+            window.showToast('Please enter a valid email address', 'error');
+            return;
+        }
+        
+        try {
+            document.getElementById('userSearchHistoryLoading').style.display = 'block';
+            document.getElementById('userSearchHistoryTable').style.display = 'none';
+            
+            // Find user by email
+            const usersRef = ref(database, 'users');
+            const snapshot = await get(usersRef);
+            const users = snapshot.val() || {};
+            
+            let userId = null;
+            for (const uid in users) {
+                if (users[uid].email === email) {
+                    userId = uid;
+                    break;
+                }
+            }
+            
+            if (!userId) {
+                window.showToast('User not found with this email', 'error');
+                document.getElementById('userSearchHistoryLoading').style.display = 'none';
+                return;
+            }
+            
+            // Load user's search history
+            const historyRef = ref(database, `searchHistory/${userId}`);
+            const historySnapshot = await get(historyRef);
+            const history = historySnapshot.val() || [];
+            
+            const historyBody = document.getElementById('userSearchHistoryBody');
+            historyBody.innerHTML = '';
+            
+            if (history.length === 0) {
+                historyBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                            No search history found for this user
+                        </td>
+                    </tr>
+                `;
+            } else {
+                // Display last 50 searches
+                const recentHistory = history.slice(0, 50);
+                
+                recentHistory.forEach(item => {
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td>${item.query || 'N/A'}</td>
+                        <td><span class="history-badge ${item.status}">${getStatusText(item.status)}</span></td>
+                        <td>${new Date(item.timestamp).toLocaleString()}</td>
+                        <td>${item.result ? formatResultPreview(item.result) : 'No result'}</td>
+                    `;
+                    
+                    historyBody.appendChild(row);
+                });
+            }
+            
+            document.getElementById('userSearchHistoryLoading').style.display = 'none';
+            document.getElementById('userSearchHistoryTable').style.display = 'table';
+            
+        } catch (error) {
+            console.error("Error loading user search history:", error);
+            window.showToast('Error loading search history: ' + error.message, 'error');
+            document.getElementById('userSearchHistoryLoading').style.display = 'none';
+        }
+    }
+
+    // ✅ ADMIN USER SESSION HISTORY
+    window.loadUserSessionHistory = async function() {
+        const emailInput = document.getElementById('sessionHistoryUserEmail');
+        const email = emailInput.value.trim();
+        
+        if (!email || !validateEmail(email)) {
+            window.showToast('Please enter a valid email address', 'error');
+            return;
+        }
+        
+        try {
+            document.getElementById('userSessionHistoryLoading').style.display = 'block';
+            document.getElementById('userSessionHistoryTable').style.display = 'none';
+            
+            // Find user by email
+            const usersRef = ref(database, 'users');
+            const snapshot = await get(usersRef);
+            const users = snapshot.val() || {};
+            
+            let userId = null;
+            for (const uid in users) {
+                if (users[uid].email === email) {
+                    userId = uid;
+                    break;
+                }
+            }
+            
+            if (!userId) {
+                window.showToast('User not found with this email', 'error');
+                document.getElementById('userSessionHistoryLoading').style.display = 'none';
+                return;
+            }
+            
+            // Load user's session history
+            const sessionsRef = ref(database, `userSessions/${userId}`);
+            const sessionsSnapshot = await get(sessionsRef);
+            const sessions = sessionsSnapshot.val() || {};
+            
+            const sessionBody = document.getElementById('userSessionHistoryBody');
+            sessionBody.innerHTML = '';
+            
+            const sessionArray = [];
+            for (const sessionId in sessions) {
+                sessionArray.push({
+                    id: sessionId,
+                    ...sessions[sessionId]
+                });
+            }
+            
+            // Sort by timestamp (newest first)
+            sessionArray.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            if (sessionArray.length === 0) {
+                sessionBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                            No session history found for this user
+                        </td>
+                    </tr>
+                `;
+            } else {
+                // Display last 50 sessions
+                const recentSessions = sessionArray.slice(0, 50);
+                
+                recentSessions.forEach(session => {
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td><span class="session-type ${session.type}">${session.type.toUpperCase()}</span></td>
+                        <td>${new Date(session.timestamp).toLocaleString()}</td>
+                        <td>${session.duration || 'N/A'}</td>
+                        <td>${session.ipAddress || 'Unknown'}</td>
+                        <td>${session.userAgent ? session.userAgent.substring(0, 50) + '...' : 'Unknown'}</td>
+                    `;
+                    
+                    sessionBody.appendChild(row);
+                });
+            }
+            
+            document.getElementById('userSessionHistoryLoading').style.display = 'none';
+            document.getElementById('userSessionHistoryTable').style.display = 'table';
+            
+        } catch (error) {
+            console.error("Error loading user session history:", error);
+            window.showToast('Error loading session history: ' + error.message, 'error');
+            document.getElementById('userSessionHistoryLoading').style.display = 'none';
+        }
+    }
+
     // ✅ PUSH NOTIFICATIONS FUNCTIONS
 
     // ✅ FIXED: SEND PUSH NOTIFICATIONS
@@ -3980,6 +4517,11 @@
         document.getElementById('dropdownMenu').classList.remove('show');
     });
 
+    document.getElementById('sessionHistoryBtn').addEventListener('click', function() {
+        window.showSessionHistory();
+        document.getElementById('dropdownMenu').classList.remove('show');
+    });
+
     document.getElementById('adminPanelBtn').addEventListener('click', function() {
         window.showAdminPanel();
         document.getElementById('dropdownMenu').classList.remove('show');
@@ -4001,6 +4543,8 @@
     });
 
     document.getElementById('closeHistoryModal').addEventListener('click', window.closeSearchHistory);
+    
+    document.getElementById('closeSessionHistoryModal').addEventListener('click', window.closeSessionHistory);
     
     document.getElementById('clearHistoryBtn').addEventListener('click', window.clearSearchHistory);
 
@@ -4041,6 +4585,12 @@
         }
     });
 
+    document.getElementById('sessionHistoryModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            window.closeSessionHistory();
+        }
+    });
+
     document.getElementById('profileSettingsModal').addEventListener('click', function(e) {
         if (e.target === this) {
             window.closeProfileSettings();
@@ -4077,10 +4627,21 @@
         }
     });
 
-    document.getElementById('logoutBtn').addEventListener('click', function() {
+    document.getElementById('logoutBtn').addEventListener('click', async function() {
         if (currentUser) {
+            // Save logout session
+            const logoutSessionId = `logout_${Date.now()}`;
+            const logoutRef = ref(database, `userSessions/${currentUser.uid}/${logoutSessionId}`);
+            await set(logoutRef, {
+                type: 'logout',
+                timestamp: new Date().toISOString(),
+                ipAddress: await window.getIPAddress(),
+                userAgent: navigator.userAgent
+            });
+            
+            // Clear active session
             const sessionRef = ref(database, `activeSessions/${currentUser.uid}`);
-            set(sessionRef, null);
+            await set(sessionRef, null);
             localStorage.removeItem(`nasir_session_${currentUser.uid}`);
             window.stopSessionChecking();
         }
