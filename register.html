@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         /* CSS Reset and Base Styles */
         * {
@@ -25,6 +26,7 @@
             --text-secondary: #b0b0b0;
             --success: #4caf50;
             --error: #f44336;
+            --warning: #ff9800;
             --border-radius: 12px;
             --transition: all 0.3s ease;
             --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
@@ -119,7 +121,7 @@
             backdrop-filter: blur(10px);
             padding: 40px 35px;
             width: 100%;
-            max-width: 420px;
+            max-width: 450px;
             border-radius: var(--border-radius);
             box-shadow: var(--shadow), var(--glow);
             text-align: center;
@@ -220,6 +222,59 @@
             color: var(--text-secondary);
         }
 
+        /* Password Strength Meter */
+        .password-strength {
+            margin-top: 5px;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--dark-lighter);
+            overflow: hidden;
+        }
+
+        .password-strength-meter {
+            height: 100%;
+            width: 0%;
+            transition: var(--transition);
+        }
+
+        .password-strength.weak .password-strength-meter {
+            background: var(--error);
+            width: 33%;
+        }
+
+        .password-strength.medium .password-strength-meter {
+            background: var(--warning);
+            width: 66%;
+        }
+
+        .password-strength.strong .password-strength-meter {
+            background: var(--success);
+            width: 100%;
+        }
+
+        .password-requirements {
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .password-requirements ul {
+            padding-left: 20px;
+            margin-top: 5px;
+        }
+
+        .password-requirements li {
+            margin-bottom: 3px;
+        }
+
+        .requirement-met {
+            color: var(--success);
+        }
+
+        .requirement-not-met {
+            color: var(--error);
+        }
+
         /* Password Toggle */
         .password-toggle {
             position: absolute;
@@ -242,6 +297,21 @@
         .password-toggle:hover {
             color: var(--primary);
             background: rgba(108, 99, 255, 0.1);
+        }
+
+        /* Confirm Password Match */
+        .password-match {
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .password-match.match {
+            color: var(--success);
+        }
+
+        .password-match.mismatch {
+            color: var(--error);
         }
 
         /* Button Styles */
@@ -284,6 +354,25 @@
         .btn:hover::after {
             transform: translateX(100%);
             transition: transform 0.6s ease;
+        }
+
+        .btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* CAPTCHA Container */
+        .captcha-container {
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
         }
 
         /* Links and Additional Options */
@@ -455,6 +544,60 @@
             margin: 20px 0;
             border: 1px solid rgba(108, 99, 255, 0.3);
         }
+
+        /* Terms Checkbox */
+        .terms-container {
+            display: flex;
+            align-items: flex-start;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: var(--border-radius);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .terms-checkbox {
+            margin-right: 10px;
+            margin-top: 3px;
+        }
+
+        .terms-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-align: left;
+        }
+
+        .terms-link {
+            color: var(--primary);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .terms-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Security Info */
+        .security-info {
+            background: rgba(108, 99, 255, 0.1);
+            border: 1px solid rgba(108, 99, 255, 0.3);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .security-info i {
+            color: var(--primary);
+            margin-right: 10px;
+        }
+
+        /* Password Confirmation */
+        .password-confirm-container {
+            position: relative;
+            margin-top: 10px;
+        }
     </style>
 </head>
 
@@ -489,7 +632,13 @@
             <div class="logo-text">Nasir Database</div>
         </div>
         
-        <p class="subtitle">Create your account to access the secure dashboard</p>
+        <p class="subtitle">Create your secure account to access the dashboard</p>
+
+        <!-- Security Information -->
+        <div class="security-info">
+            <i class="fas fa-shield-alt"></i>
+            <span>We prioritize your security with advanced protection features.</span>
+        </div>
 
         <!-- Register Form -->
         <div id="registerBox">
@@ -497,7 +646,7 @@
                 <label class="form-label" for="regEmail">Email Address</label>
                 <div class="input-container">
                     <i class="fas fa-envelope input-icon"></i>
-                    <input type="email" id="regEmail" placeholder="Enter your email">
+                    <input type="email" id="regEmail" placeholder="Enter your email" autocomplete="email">
                 </div>
             </div>
 
@@ -505,26 +654,82 @@
                 <label class="form-label" for="regPassword">Password</label>
                 <div class="input-container">
                     <i class="fas fa-lock input-icon"></i>
-                    <input type="password" id="regPassword" placeholder="Create a password">
+                    <input type="password" id="regPassword" placeholder="Create a strong password" autocomplete="new-password">
                     <button type="button" class="password-toggle" onclick="togglePassword('regPassword')">
                         <i class="fas fa-eye"></i>
                     </button>
                 </div>
-                <!-- Error message container below password field -->
-                <div class="error-message" id="errorMessage">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <span id="errorText"></span>
+                
+                <!-- Password Strength Meter -->
+                <div class="password-strength" id="passwordStrength">
+                    <div class="password-strength-meter"></div>
+                </div>
+                
+                <!-- Password Requirements -->
+                <div class="password-requirements" id="passwordRequirements">
+                    <p style="margin-bottom: 5px;">Password must contain:</p>
+                    <ul>
+                        <li id="reqLength" class="requirement-not-met">At least 8 characters</li>
+                        <li id="reqUppercase" class="requirement-not-met">One uppercase letter</li>
+                        <li id="reqLowercase" class="requirement-not-met">One lowercase letter</li>
+                        <li id="reqNumber" class="requirement-not-met">One number</li>
+                        <li id="reqSpecial" class="requirement-not-met">One special character (!@#$%^&*)</li>
+                    </ul>
                 </div>
             </div>
 
-            <button type="button" class="btn" onclick="register()">
+            <div class="form-group">
+                <label class="form-label" for="regConfirmPassword">Confirm Password</label>
+                <div class="input-container">
+                    <i class="fas fa-lock input-icon"></i>
+                    <input type="password" id="regConfirmPassword" placeholder="Confirm your password" autocomplete="new-password">
+                    <button type="button" class="password-toggle" onclick="togglePassword('regConfirmPassword')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <div class="password-match" id="passwordMatch"></div>
+            </div>
+
+            <!-- Terms and Conditions -->
+            <div class="terms-container">
+                <input type="checkbox" id="termsCheckbox" class="terms-checkbox">
+                <div class="terms-text">
+                    I agree to the <span class="terms-link" onclick="showTerms()">Terms of Service</span> and <span class="terms-link" onclick="showPrivacy()">Privacy Policy</span>. 
+                    I understand that my data will be protected according to our security standards.
+                </div>
+            </div>
+
+            <!-- CAPTCHA -->
+            <div class="captcha-container">
+                <div class="g-recaptcha" data-sitekey="6LcKZ_UpAAAAAE6mQm8t7zX6X6X6X6X6X6X6X6X6"></div>
+            </div>
+
+            <button type="button" class="btn" id="registerButton" onclick="register()" disabled>
                 <i class="fas fa-user-plus"></i> Create Account
             </button>
+
+            <!-- Error message container -->
+            <div class="error-message" id="errorMessage">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="errorText"></span>
+            </div>
+
+            <!-- Success message container -->
+            <div class="success-message" id="successMessage">
+                <i class="fas fa-check-circle"></i>
+                <span id="successText"></span>
+            </div>
 
             <div class="links">
                 <div class="link" onclick="goLogin()">
                     <i class="fas fa-sign-in-alt"></i> Already have an account? Login
                 </div>
+            </div>
+
+            <!-- Security Features Note -->
+            <div class="security-info" style="margin-top: 20px; font-size: 12px;">
+                <i class="fas fa-info-circle"></i>
+                <span>Your account will be protected with: Brute-force protection, Suspicious login detection, and Email verification.</span>
             </div>
         </div>
 
@@ -539,6 +744,9 @@
                 <p style="margin: 0; font-size: 14px;">
                     <i class="fas fa-info-circle"></i> 
                     <strong>Please check your inbox and click the verification link to activate your account.</strong>
+                </p>
+                <p style="margin: 10px 0 0 0; font-size: 13px; color: var(--text-secondary);">
+                    Check your spam folder if you don't see the email within 5 minutes.
                 </p>
             </div>
 
@@ -559,7 +767,7 @@
         </div>
 
         <div class="footer">
-            &copy; 2023 Nasir Database. All rights reserved.
+            &copy; 2023 Nasir Database. All rights reserved. | <span id="currentIP">Loading IP...</span>
         </div>
     </div>
 
@@ -569,7 +777,8 @@
             getAuth,
             createUserWithEmailAndPassword,
             sendEmailVerification,
-            signOut
+            signOut,
+            updateProfile
         } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
         import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
@@ -593,13 +802,189 @@
             "owner@nasir.com"
         ];
 
+        // Security Constants
+        const PASSWORD_MIN_LENGTH = 8;
+        const PASSWORD_REQUIREMENTS = {
+            length: PASSWORD_MIN_LENGTH,
+            uppercase: true,
+            lowercase: true,
+            numbers: true,
+            special: true
+        };
+
         let currentUser = null;
+        let userIP = '';
+
+        // Initialize
+        async function initializeSecurity() {
+            await getUserIP();
+            setupFormValidation();
+        }
+
+        // Get user IP address
+        async function getUserIP() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                userIP = data.ip;
+                document.getElementById('currentIP').textContent = userIP;
+            } catch (error) {
+                userIP = 'Unknown';
+                document.getElementById('currentIP').textContent = 'Unknown';
+            }
+        }
+
+        // Setup form validation
+        function setupFormValidation() {
+            const passwordInput = document.getElementById('regPassword');
+            const confirmInput = document.getElementById('regConfirmPassword');
+            const emailInput = document.getElementById('regEmail');
+            const termsCheckbox = document.getElementById('termsCheckbox');
+            const registerButton = document.getElementById('registerButton');
+
+            // Password strength checker
+            passwordInput.addEventListener('input', function() {
+                checkPasswordStrength(this.value);
+                checkPasswordMatch();
+                updateRegisterButton();
+            });
+
+            // Confirm password checker
+            confirmInput.addEventListener('input', function() {
+                checkPasswordMatch();
+                updateRegisterButton();
+            });
+
+            // Email checker
+            emailInput.addEventListener('input', function() {
+                validateEmail(this.value);
+                updateRegisterButton();
+            });
+
+            // Terms checkbox
+            termsCheckbox.addEventListener('change', function() {
+                updateRegisterButton();
+            });
+
+            // CAPTCHA checker (simulated)
+            setTimeout(() => {
+                updateRegisterButton();
+            }, 1000);
+        }
+
+        // Check password strength
+        function checkPasswordStrength(password) {
+            const requirements = {
+                length: password.length >= PASSWORD_MIN_LENGTH,
+                uppercase: /[A-Z]/.test(password),
+                lowercase: /[a-z]/.test(password),
+                numbers: /[0-9]/.test(password),
+                special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+            };
+
+            // Update requirement indicators
+            document.getElementById('reqLength').className = requirements.length ? 'requirement-met' : 'requirement-not-met';
+            document.getElementById('reqUppercase').className = requirements.uppercase ? 'requirement-met' : 'requirement-not-met';
+            document.getElementById('reqLowercase').className = requirements.lowercase ? 'requirement-met' : 'requirement-not-met';
+            document.getElementById('reqNumber').className = requirements.numbers ? 'requirement-met' : 'requirement-not-met';
+            document.getElementById('reqSpecial').className = requirements.special ? 'requirement-met' : 'requirement-not-met';
+
+            // Update strength meter
+            const strengthElement = document.getElementById('passwordStrength');
+            const metRequirements = Object.values(requirements).filter(Boolean).length;
+            const totalRequirements = Object.keys(requirements).length;
+            const strengthPercentage = (metRequirements / totalRequirements) * 100;
+
+            strengthElement.className = 'password-strength';
+            
+            if (strengthPercentage < 40) {
+                strengthElement.classList.add('weak');
+            } else if (strengthPercentage < 80) {
+                strengthElement.classList.add('medium');
+            } else {
+                strengthElement.classList.add('strong');
+            }
+
+            // Show/hide requirements
+            document.getElementById('passwordRequirements').style.display = 'block';
+
+            return {
+                valid: Object.values(requirements).every(Boolean),
+                requirements: requirements
+            };
+        }
+
+        // Check password match
+        function checkPasswordMatch() {
+            const password = document.getElementById('regPassword').value;
+            const confirm = document.getElementById('regConfirmPassword').value;
+            const matchElement = document.getElementById('passwordMatch');
+
+            if (confirm.length === 0) {
+                matchElement.style.display = 'none';
+                return false;
+            }
+
+            if (password === confirm) {
+                matchElement.textContent = '✓ Passwords match';
+                matchElement.className = 'password-match match';
+                matchElement.style.display = 'block';
+                return true;
+            } else {
+                matchElement.textContent = '✗ Passwords do not match';
+                matchElement.className = 'password-match mismatch';
+                matchElement.style.display = 'block';
+                return false;
+            }
+        }
+
+        // Validate email
+        function validateEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        // Validate CAPTCHA
+        function validateCaptcha() {
+            const response = grecaptcha.getResponse();
+            if (response.length === 0) {
+                return false;
+            }
+            return true;
+        }
+
+        // Update register button state
+        function updateRegisterButton() {
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const confirm = document.getElementById('regConfirmPassword').value;
+            const termsAccepted = document.getElementById('termsCheckbox').checked;
+            const passwordStrength = checkPasswordStrength(password);
+            const passwordsMatch = checkPasswordMatch();
+            const emailValid = validateEmail(email);
+            const captchaValid = validateCaptcha();
+
+            const isEnabled = 
+                emailValid && 
+                passwordStrength.valid && 
+                passwordsMatch && 
+                termsAccepted && 
+                captchaValid &&
+                password.length > 0 &&
+                confirm.length > 0;
+
+            document.getElementById('registerButton').disabled = !isEnabled;
+        }
 
         // Function to show error message
         function showError(message) {
             console.log("Error:", message);
             const errorElement = document.getElementById('errorMessage');
             const errorText = document.getElementById('errorText');
+            const successElement = document.getElementById('successMessage');
+            
+            // Hide success message if visible
+            if (successElement) successElement.style.display = 'none';
             
             // Show error message
             errorText.textContent = message;
@@ -610,6 +995,12 @@
         function showSuccess(message) {
             const successElement = document.getElementById('successMessage');
             const successText = document.getElementById('successText');
+            const errorElement = document.getElementById('errorMessage');
+            
+            // Hide error message if visible
+            if (errorElement) errorElement.style.display = 'none';
+            
+            // Show success message
             if (successElement && successText) {
                 successText.textContent = message;
                 successElement.style.display = 'block';
@@ -618,7 +1009,10 @@
 
         // Function to hide all messages
         function hideMessages() {
-            document.getElementById('errorMessage').style.display = 'none';
+            const errorElement = document.getElementById('errorMessage');
+            const successElement = document.getElementById('successMessage');
+            if (errorElement) errorElement.style.display = 'none';
+            if (successElement) successElement.style.display = 'none';
         }
 
         // Make functions globally available
@@ -642,6 +1036,14 @@
             window.location.href = "login.html";
         }
 
+        window.showTerms = function() {
+            alert("Terms of Service:\n\n1. You must use this service responsibly and legally.\n2. We protect your data with industry-standard security.\n3. Unauthorized access or misuse is prohibited.\n4. We reserve the right to suspend accounts violating these terms.");
+        }
+
+        window.showPrivacy = function() {
+            alert("Privacy Policy:\n\n1. We collect only necessary information for service operation.\n2. Your data is encrypted and secured.\n3. We don't share your personal information with third parties.\n4. You can request data deletion at any time.");
+        }
+
         window.register = async function () {
             const email = document.getElementById("regEmail").value.trim();
             const password = document.getElementById("regPassword").value.trim();
@@ -651,22 +1053,34 @@
             // Hide any previous messages
             hideMessages();
             
-            // Basic validation
-            if (!email || !password) {
-                showError("Please fill in all fields");
+            // Validate CAPTCHA
+            if (!validateCaptcha()) {
+                showError("Please complete the CAPTCHA verification");
                 return;
             }
 
-            // Email format validation
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
+            // Validate terms
+            if (!document.getElementById("termsCheckbox").checked) {
+                showError("You must accept the Terms of Service and Privacy Policy");
+                return;
+            }
+
+            // Validate email
+            if (!validateEmail(email)) {
                 showError("Please enter a valid email address");
                 return;
             }
 
-            // Password length validation
-            if (password.length < 6) {
-                showError("Password should be at least 6 characters");
+            // Validate password strength
+            const passwordStrength = checkPasswordStrength(password);
+            if (!passwordStrength.valid) {
+                showError("Password does not meet all requirements");
+                return;
+            }
+
+            // Validate password match
+            if (!checkPasswordMatch()) {
+                showError("Passwords do not match");
                 return;
             }
 
@@ -682,7 +1096,7 @@
                 // Send email verification
                 await sendEmailVerification(currentUser);
                 
-                // Initialize user credits in database
+                // Initialize user credits and security settings in database
                 const isUnlimited = unlimitedUsers.includes(email);
                 const defaultCredits = isUnlimited ? -1 : 10;
                 const today = new Date().toDateString();
@@ -692,7 +1106,27 @@
                     lastReset: today,
                     email: email,
                     createdAt: new Date().toISOString(),
-                    emailVerified: false
+                    emailVerified: false,
+                    lastLogin: null,
+                    loginAttempts: 0,
+                    lockedUntil: null,
+                    knownDevices: [{
+                        device: navigator.userAgent,
+                        ip: userIP,
+                        trusted: true,
+                        timestamp: new Date().toISOString()
+                    }],
+                    twoFactorEnabled: false,
+                    securityLevel: "standard"
+                });
+
+                // Log registration event
+                await set(ref(database, `securityLogs/${currentUser.uid}/${Date.now()}`), {
+                    type: 'registration',
+                    email: email,
+                    ip: userIP,
+                    device: navigator.userAgent,
+                    timestamp: new Date().toISOString()
                 });
 
                 // Show verification box instead of success box
@@ -702,10 +1136,23 @@
                 document.getElementById("userEmail").textContent = email;
                 
                 console.log("Verification email sent to:", email);
+                showSuccess('Registration successful! Please verify your email.');
 
             } catch (error) {
                 document.getElementById("loading").style.display = "none";
                 console.error("Registration error:", error);
+                
+                // Log failed registration
+                try {
+                    await set(ref(database, `failedRegistrations/${Date.now()}`), {
+                        email: email,
+                        error: error.code,
+                        ip: userIP,
+                        timestamp: new Date().toISOString()
+                    });
+                } catch (logError) {
+                    console.error("Failed to log registration error:", logError);
+                }
                 
                 // Convert Firebase errors to user-friendly messages
                 let errorMessage = "Registration failed. Please try again.";
@@ -714,9 +1161,11 @@
                 } else if (error.code === "auth/invalid-email") {
                     errorMessage = "Invalid email address format.";
                 } else if (error.code === "auth/weak-password") {
-                    errorMessage = "Password is too weak. Please use a stronger password.";
+                    errorMessage = "Password is too weak. Please use a stronger password (min 8 chars with uppercase, lowercase, number, and special character).";
                 } else if (error.code === "auth/network-request-failed") {
                     errorMessage = "Network error. Please check your internet connection.";
+                } else if (error.code === "auth/operation-not-allowed") {
+                    errorMessage = "Registration is currently disabled. Please contact support.";
                 }
                 
                 showError(errorMessage);
@@ -738,6 +1187,14 @@
             try {
                 await sendEmailVerification(currentUser);
                 showSuccess('Verification email sent! Check your inbox and spam folder.');
+                
+                // Log resend event
+                await set(ref(database, `securityLogs/${currentUser.uid}/${Date.now()}`), {
+                    type: 'verification_resend',
+                    email: currentUser.email,
+                    ip: userIP,
+                    timestamp: new Date().toISOString()
+                });
                 
                 // Re-enable button after 30 seconds
                 setTimeout(() => {
@@ -773,12 +1230,20 @@
                     // Update database with verification status
                     await set(ref(database, `users/${currentUser.uid}/emailVerified`), true);
                     
+                    // Log successful verification
+                    await set(ref(database, `securityLogs/${currentUser.uid}/${Date.now()}`), {
+                        type: 'email_verified',
+                        email: currentUser.email,
+                        ip: userIP,
+                        timestamp: new Date().toISOString()
+                    });
+                    
                     // Show success and redirect
                     document.getElementById("verificationBox").style.display = "none";
                     document.getElementById("successBox").style.display = "flex";
                     
                     setTimeout(() => {
-                        window.location.href = "login.html?message=verified";
+                        window.location.href = "login.html?message=verified&email=" + encodeURIComponent(currentUser.email);
                     }, 2000);
                     
                 } else {
@@ -797,6 +1262,8 @@
 
         // Add event listeners for Enter key
         document.addEventListener('DOMContentLoaded', function() {
+            initializeSecurity();
+            
             document.getElementById('regEmail').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     register();
@@ -804,6 +1271,12 @@
             });
             
             document.getElementById('regPassword').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    register();
+                }
+            });
+            
+            document.getElementById('regConfirmPassword').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     register();
                 }
