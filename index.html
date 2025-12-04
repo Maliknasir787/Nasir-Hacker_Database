@@ -2296,6 +2296,50 @@
       "admin@nasir.com"
     ];
 
+    // ✅ FIXED: CHECK FOR CREDIT NOTIFICATIONS AND MESSAGES ON LOGIN
+    window.checkAllNotifications = async function() {
+        if (!currentUser) return;
+        
+        // Check credit notifications
+        await window.checkCreditNotifications();
+        
+        // Check for unread owner messages
+        await window.checkUnreadOwnerMessages();
+    }
+
+    // ✅ FIXED: CHECK FOR UNREAD OWNER MESSAGES
+    window.checkUnreadOwnerMessages = async function() {
+        if (!currentUser) return;
+        
+        try {
+            const messagesRef = ref(database, `ownerMessages/${currentUser.uid}`);
+            const snapshot = await get(messagesRef);
+            const messages = snapshot.val() || {};
+            
+            let hasUnreadMessages = false;
+            
+            for (const messageId in messages) {
+                if (!messages[messageId].read) {
+                    hasUnreadMessages = true;
+                    break;
+                }
+            }
+            
+            // Update UI to show notification badge
+            const ownerMessagesBtn = document.getElementById('ownerMessagesBtn');
+            if (ownerMessagesBtn) {
+                if (hasUnreadMessages) {
+                    ownerMessagesBtn.innerHTML = `<i class="fas fa-envelope"></i> <span>Messages from Owner <span style="background: var(--primary); color: white; padding: 2px 6px; border-radius: 50%; font-size: 10px;">!</span></span>`;
+                } else {
+                    ownerMessagesBtn.innerHTML = `<i class="fas fa-envelope"></i> <span>Messages from Owner</span>`;
+                }
+            }
+            
+        } catch (error) {
+            console.error("Error checking unread messages:", error);
+        }
+    }
+
     // ✅ SESSION MANAGEMENT FUNCTIONS
 
     window.createSession = async function(user) {
@@ -3007,6 +3051,7 @@
         document.getElementById(`admin${tabName.charAt(0).toUpperCase() + tabName.slice(1)}Tab`).style.display = 'block';
         
         if (tabName === 'notifications') {
+            // Initialize the notification recipient dropdown
             document.getElementById('notificationRecipient').addEventListener('change', function() {
                 const specificEmailRow = document.getElementById('specificEmailRow');
                 const multipleEmailsRow = document.getElementById('multipleEmailsRow');
@@ -3127,7 +3172,8 @@
     window.addCreditsToUser = function(userId, email) {
         const credits = prompt(`Enter credits to add to ${email} (use negative number to remove):`, '10');
         if (credits && !isNaN(credits) && parseInt(credits) !== 0) {
-            window.addUserCreditsByUserId(userId, parseInt(credits), parseInt(credits) > 0 ? 'add' : 'remove');
+            const message = prompt('Optional: Add a message for the user:', '');
+            window.addUserCreditsByUserId(userId, parseInt(credits), parseInt(credits) > 0 ? 'add' : 'remove', message || '');
         }
     }
 
@@ -3222,6 +3268,7 @@
         return re.test(email);
     }
 
+    // ✅ FIXED: ADD USER CREDITS WITH PROPER NOTIFICATION
     window.addUserCreditsByUserId = async function(userId, amount, action = 'add', message = '') {
         try {
             const userRef = ref(database, `users/${userId}`);
@@ -3262,17 +3309,23 @@
                     notificationAction = 'added';
             }
             
-            // Save credit update notification for the user
-            const notificationRef = ref(database, `creditNotifications/${userId}/${Date.now()}`);
+            // ✅ FIXED: Save credit update notification for the user
+            const notificationId = Date.now().toString();
+            const notificationRef = ref(database, `creditNotifications/${userId}/${notificationId}`);
             await set(notificationRef, {
                 action: notificationAction,
                 amount: notificationAmount,
                 adminEmail: currentUser.email,
+                adminName: currentUser.displayName || currentUser.email.split('@')[0],
                 message: message,
                 timestamp: new Date().toISOString(),
-                viewed: false
+                viewed: false,
+                id: notificationId
             });
             
+            console.log(`✅ Credit notification saved for user ${userId}: ${notificationAction} ${notificationAmount}`);
+            
+            // Update user credits
             await update(userRef, {
                 credits: newCredits,
                 lastCreditUpdate: new Date().toISOString(),
@@ -3290,6 +3343,7 @@
 
     // ✅ PUSH NOTIFICATIONS FUNCTIONS
 
+    // ✅ FIXED: SEND PUSH NOTIFICATIONS
     window.sendPushNotification = async function() {
         const recipientSelect = document.getElementById('notificationRecipient');
         const specificEmailInput = document.getElementById('specificEmailInput');
@@ -3323,9 +3377,12 @@
             const users = snapshot.val() || {};
             
             let targetUserIds = [];
+            let targetUserEmails = [];
             
             if (recipientType === 'all') {
+                // Send to all users
                 targetUserIds = Object.keys(users);
+                targetUserEmails = Object.values(users).map(u => u.email);
             } else if (recipientType === 'specific') {
                 const email = specificEmailInput.value.trim();
                 if (!email || !validateEmail(email)) {
@@ -3337,6 +3394,7 @@
                 for (const userId in users) {
                     if (users[userId].email === email) {
                         targetUserIds.push(userId);
+                        targetUserEmails.push(email);
                         break;
                     }
                 }
@@ -3367,6 +3425,7 @@
                     for (const userId in users) {
                         if (users[userId].email === email) {
                             targetUserIds.push(userId);
+                            targetUserEmails.push(email);
                             found = true;
                             break;
                         }
@@ -3381,17 +3440,29 @@
             }
             
             // Send notifications to all target users
+            const notificationPromises = [];
+            
             for (const userId of targetUserIds) {
-                const notificationRef = ref(database, `ownerMessages/${userId}/${Date.now()}`);
-                await set(notificationRef, {
-                    title: title,
-                    message: message,
-                    sender: currentUser.email,
-                    senderName: currentUser.displayName || currentUser.email.split('@')[0],
-                    timestamp: new Date().toISOString(),
-                    read: false
-                });
+                const notificationId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+                const notificationRef = ref(database, `ownerMessages/${userId}/${notificationId}`);
+                
+                notificationPromises.push(
+                    set(notificationRef, {
+                        title: title,
+                        message: message,
+                        sender: currentUser.email,
+                        senderName: currentUser.displayName || currentUser.email.split('@')[0],
+                        timestamp: new Date().toISOString(),
+                        read: false,
+                        id: notificationId
+                    })
+                );
             }
+            
+            // Wait for all notifications to be saved
+            await Promise.all(notificationPromises);
+            
+            console.log(`✅ Notifications sent to ${targetUserIds.length} user(s)`);
             
             // Clear form
             titleInput.value = '';
@@ -3431,45 +3502,65 @@
             const notificationsList = document.getElementById('pushNotificationsList');
             notificationsList.innerHTML = '';
             
-            let hasNotifications = false;
+            let notificationCount = 0;
+            let notificationsArray = [];
             
+            // Collect all notifications
             for (const userId in allNotifications) {
                 const userNotifications = allNotifications[userId];
                 for (const notificationId in userNotifications) {
-                    hasNotifications = true;
                     const notification = userNotifications[notificationId];
                     
-                    const messageItem = document.createElement('div');
-                    messageItem.className = 'message-item';
-                    if (!notification.read) {
-                        messageItem.classList.add('message-unread');
-                    }
+                    // Get username/email for display
+                    const userEmail = await getUserEmailById(userId);
                     
-                    messageItem.innerHTML = `
-                        <div class="message-header">
-                            <span class="message-sender">To: ${await getUsernameByEmail(notification.sender)}</span>
-                            <span class="message-date">${new Date(notification.timestamp).toLocaleString()}</span>
-                        </div>
-                        <div>
-                            <strong>${notification.title}</strong>
-                        </div>
-                        <div class="message-content">
-                            ${notification.message}
-                        </div>
-                    `;
+                    notificationsArray.push({
+                        ...notification,
+                        userId: userId,
+                        userEmail: userEmail,
+                        notificationId: notificationId
+                    });
                     
-                    notificationsList.appendChild(messageItem);
+                    notificationCount++;
                 }
             }
             
-            if (!hasNotifications) {
+            // Sort by timestamp (newest first)
+            notificationsArray.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            if (notificationCount === 0) {
                 notificationsList.innerHTML = `
                     <div class="no-messages">
                         <i class="fas fa-bell-slash"></i>
                         <p>No push notifications sent yet</p>
                     </div>
                 `;
+                return;
             }
+            
+            // Display notifications
+            notificationsArray.forEach(notification => {
+                const messageItem = document.createElement('div');
+                messageItem.className = 'message-item';
+                if (!notification.read) {
+                    messageItem.classList.add('message-unread');
+                }
+                
+                messageItem.innerHTML = `
+                    <div class="message-header">
+                        <span class="message-sender">To: ${notification.userEmail || 'User'}</span>
+                        <span class="message-date">${new Date(notification.timestamp).toLocaleString()}</span>
+                    </div>
+                    <div>
+                        <strong>${notification.title}</strong>
+                    </div>
+                    <div class="message-content">
+                        ${notification.message}
+                    </div>
+                `;
+                
+                notificationsList.appendChild(messageItem);
+            });
             
         } catch (error) {
             console.error("Error loading push notifications:", error);
@@ -3483,25 +3574,18 @@
         }
     }
 
-    async function getUsernameByEmail(email) {
+    async function getUserEmailById(userId) {
         try {
-            const usersRef = ref(database, 'users');
-            const snapshot = await get(usersRef);
-            const users = snapshot.val() || {};
-            
-            for (const userId in users) {
-                if (users[userId].email === email) {
-                    return users[userId].username || users[userId].displayName || email.split('@')[0];
-                }
-            }
-            
-            return email.split('@')[0];
+            const userRef = ref(database, `users/${userId}`);
+            const snapshot = await get(userRef);
+            const userData = snapshot.val();
+            return userData ? userData.email : 'Unknown User';
         } catch (error) {
-            return email.split('@')[0];
+            return 'Unknown User';
         }
     }
 
-    // ✅ OWNER MESSAGES FUNCTIONS
+    // ✅ FIXED: OWNER MESSAGES FUNCTIONS
 
     window.showOwnerMessages = function() {
         document.getElementById('ownerMessagesModal').style.display = 'flex';
@@ -3512,6 +3596,7 @@
         document.getElementById('ownerMessagesModal').style.display = 'none';
     }
 
+    // ✅ FIXED: LOAD OWNER MESSAGES PROPERLY
     window.loadOwnerMessages = async function() {
         if (!currentUser) return;
         
@@ -3531,6 +3616,7 @@
                 });
             }
             
+            // Sort by timestamp (newest first)
             messageArray.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             
             if (messageArray.length === 0) {
@@ -3538,11 +3624,13 @@
                     <div class="no-messages">
                         <i class="fas fa-envelope-open"></i>
                         <p>No messages from owner yet</p>
+                        <p style="font-size: 12px; margin-top: 10px;">The admin will send you important updates here</p>
                     </div>
                 `;
                 return;
             }
             
+            // Display messages
             for (const message of messageArray) {
                 const messageItem = document.createElement('div');
                 messageItem.className = 'message-item';
@@ -3557,11 +3645,11 @@
                 
                 messageItem.innerHTML = `
                     <div class="message-header">
-                        <span class="message-sender">From: ${message.senderName || message.sender}</span>
+                        <span class="message-sender">From: ${message.senderName || message.sender || 'Admin'}</span>
                         <span class="message-date">${new Date(message.timestamp).toLocaleString()}</span>
                     </div>
                     <div>
-                        <strong>${message.title}</strong>
+                        <strong>${message.title || 'Message from Admin'}</strong>
                     </div>
                     <div class="message-content">
                         ${message.message}
@@ -3570,6 +3658,9 @@
                 
                 messagesList.appendChild(messageItem);
             }
+            
+            // Update notification badge
+            await window.checkUnreadOwnerMessages();
             
         } catch (error) {
             console.error("Error loading owner messages:", error);
@@ -3583,7 +3674,7 @@
         }
     }
 
-    // ✅ CHECK FOR CREDIT NOTIFICATIONS
+    // ✅ FIXED: CHECK FOR CREDIT NOTIFICATIONS
     window.checkCreditNotifications = async function() {
         if (!currentUser) return;
         
@@ -3602,23 +3693,36 @@
                 }
             }
             
+            // Sort by timestamp (newest first)
+            unviewedNotifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            // Show the latest unviewed notification
             if (unviewedNotifications.length > 0) {
                 const latest = unviewedNotifications[0];
+                
+                console.log("📢 Showing credit notification:", latest);
                 
                 window.showCreditNotification(
                     latest.action, 
                     latest.amount, 
-                    latest.adminEmail,
+                    latest.adminEmail || latest.adminName || 'Admin',
                     latest.message || ''
                 );
                 
+                // Mark as viewed
                 await update(ref(database, `creditNotifications/${currentUser.uid}/${latest.id}`), {
                     viewed: true
                 });
+                
+                // Update credits display if needed
+                if (latest.action === 'added' || latest.action === 'removed' || latest.action === 'set' || latest.action === 'unlimited') {
+                    // Reload user credits
+                    await initializeUserCredits(currentUser);
+                }
             }
             
         } catch (error) {
-            console.error("Error checking notifications:", error);
+            console.error("Error checking credit notifications:", error);
         }
     }
 
@@ -3709,7 +3813,6 @@
             }
             
             updateCreditDisplay();
-            await window.checkCreditNotifications();
             
         } catch (error) {
             console.error("Error initializing credits:", error);
@@ -3846,7 +3949,7 @@
       }
     }
 
-    // ✅ FIREBASE AUTH STATE LISTENER
+    // ✅ FIXED: FIREBASE AUTH STATE LISTENER WITH NOTIFICATIONS
 
     onAuthStateChanged(auth, async (user) => {
         if (!user) {
@@ -3856,6 +3959,12 @@
             updateUserInterface(user);
             await window.createSession(user);
             await initializeUserCredits(user);
+            
+            // ✅ FIXED: Check for notifications after login
+            setTimeout(async () => {
+                await window.checkAllNotifications();
+            }, 1500); // Wait 1.5 seconds for everything to initialize
+            
             window.startSessionChecking();
         }
     });
