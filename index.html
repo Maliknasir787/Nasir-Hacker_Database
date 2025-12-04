@@ -1143,6 +1143,132 @@
       box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.2);
     }
 
+    /* Change Password Modal Styles */
+    .change-password-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      backdrop-filter: blur(8px);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .change-password-content {
+      background: rgba(30, 30, 46, 0.95);
+      border-radius: 20px;
+      width: 90%;
+      max-width: 450px;
+      max-height: 80vh;
+      overflow: hidden;
+      border: 1px solid rgba(108, 99, 255, 0.4);
+      box-shadow: var(--shadow), var(--glow);
+      animation: popupAppear 0.4s ease;
+    }
+
+    .password-form-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .password-input-group {
+      position: relative;
+      margin-bottom: 5px;
+    }
+
+    .password-input-group input {
+      width: 100%;
+      padding: 12px 40px 12px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: var(--dark-lighter);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .password-input-group input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.2);
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 4px;
+      border-radius: 4px;
+      transition: var(--transition);
+    }
+
+    .toggle-password:hover {
+      color: var(--primary);
+      background: rgba(108, 99, 255, 0.1);
+    }
+
+    .password-strength {
+      height: 4px;
+      border-radius: 2px;
+      background: var(--dark-lighter);
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .password-strength-meter {
+      height: 100%;
+      width: 0%;
+      transition: var(--transition);
+    }
+
+    .password-strength.weak .password-strength-meter {
+      background: var(--error);
+      width: 33%;
+    }
+
+    .password-strength.medium .password-strength-meter {
+      background: var(--warning);
+      width: 66%;
+    }
+
+    .password-strength.strong .password-strength-meter {
+      background: var(--success);
+      width: 100%;
+    }
+
+    .password-requirements {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .password-requirements ul {
+      padding-left: 20px;
+      margin-top: 5px;
+    }
+
+    .password-requirements li {
+      margin-bottom: 3px;
+    }
+
+    .requirement-met {
+      color: var(--success);
+    }
+
+    .requirement-not-met {
+      color: var(--error);
+    }
+
     @keyframes fadeIn {
       from { opacity: 0; transform: scale(0.9);}
       to { opacity: 1; transform: scale(1);}
@@ -1378,7 +1504,7 @@
           <span>Profile Settings</span>
         </button>
         
-        <button class="menu-item" onclick="window.showChangePassword()">
+        <button class="menu-item" id="changePasswordBtn">
           <i class="fas fa-key"></i>
           <span>Change Password</span>
         </button>
@@ -1458,6 +1584,76 @@
         <div class="history-list" id="historyList">
           <!-- History items will be loaded here -->
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div id="changePasswordModal" class="modal change-password-modal">
+    <div class="change-password-content">
+      <div class="modal-header">
+        <h3><i class="fas fa-key"></i> Change Password</h3>
+        <button class="close-modal" id="closeChangePasswordModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="password-form-group">
+          <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 14px;">Current Password</label>
+          <div class="password-input-group">
+            <input type="password" id="currentPassword" placeholder="Enter your current password" autocomplete="current-password">
+            <button type="button" class="toggle-password" data-target="currentPassword">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="password-form-group">
+          <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 14px;">New Password</label>
+          <div class="password-input-group">
+            <input type="password" id="newPassword" placeholder="Enter new password (min 6 characters)" autocomplete="new-password">
+            <button type="button" class="toggle-password" data-target="newPassword">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+          <div class="password-strength" id="passwordStrength">
+            <div class="password-strength-meter"></div>
+          </div>
+          <div class="password-requirements">
+            <p style="margin-bottom: 5px;">Password must contain:</p>
+            <ul>
+              <li id="reqLength" class="requirement-not-met">At least 6 characters</li>
+              <li id="reqUppercase" class="requirement-not-met">One uppercase letter</li>
+              <li id="reqLowercase" class="requirement-not-met">One lowercase letter</li>
+              <li id="reqNumber" class="requirement-not-met">One number</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="password-form-group">
+          <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 14px;">Confirm New Password</label>
+          <div class="password-input-group">
+            <input type="password" id="confirmPassword" placeholder="Confirm new password" autocomplete="new-password">
+            <button type="button" class="toggle-password" data-target="confirmPassword">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+          <div id="passwordMatch" style="font-size: 12px; margin-top: 5px; display: none;">
+            <i class="fas fa-check-circle" style="color: var(--success);"></i>
+            <span style="color: var(--success);">Passwords match</span>
+          </div>
+          <div id="passwordMismatch" style="font-size: 12px; margin-top: 5px; display: none;">
+            <i class="fas fa-exclamation-circle" style="color: var(--error);"></i>
+            <span style="color: var(--error);">Passwords do not match</span>
+          </div>
+        </div>
+
+        <div id="passwordError" style="background-color: rgba(244, 67, 54, 0.1); border: 1px solid var(--error); color: var(--error); padding: 10px 12px; border-radius: var(--border-radius); margin-top: 20px; display: none; text-align: left;">
+          <i class="fas fa-exclamation-circle"></i>
+          <span id="passwordErrorText">Please check your passwords</span>
+        </div>
+
+        <button id="updatePasswordBtn" class="action-btn" style="width: 100%; margin-top: 20px; padding: 12px; font-size: 16px;">
+          <i class="fas fa-save"></i> Update Password
+        </button>
       </div>
     </div>
   </div>
@@ -1683,21 +1879,27 @@
         countDisplay.textContent = '+' + count;
         countDisplay.className = 'credit-count';
         document.querySelector('.credit-notification-icon i').className = 'fas fa-plus-circle';
+        notification.classList.add('credit-added');
+        notification.classList.remove('credit-removed');
       } else if (action === 'removed') {
         actionText.textContent = 'removed';
         countDisplay.textContent = '-' + count;
         countDisplay.className = 'credit-count negative';
         document.querySelector('.credit-notification-icon i').className = 'fas fa-minus-circle';
+        notification.classList.add('credit-removed');
+        notification.classList.remove('credit-added');
       } else if (action === 'set') {
         actionText.textContent = 'set to';
         countDisplay.textContent = count;
         countDisplay.className = 'credit-count';
         document.querySelector('.credit-notification-icon i').className = 'fas fa-edit';
+        notification.classList.remove('credit-added', 'credit-removed');
       } else if (action === 'unlimited') {
         actionText.textContent = 'set to';
         countDisplay.textContent = 'Unlimited';
         countDisplay.className = 'credit-count';
         document.querySelector('.credit-notification-icon i').className = 'fas fa-infinity';
+        notification.classList.remove('credit-added', 'credit-removed');
       }
       
       adminEmailText.textContent = adminEmail || 'Admin';
@@ -2275,43 +2477,178 @@
         }, 1000);
     }
 
-    // ✅ PASSWORD CHANGE FUNCTION
+    // ✅ PASSWORD CHANGE MODAL FUNCTIONS
     window.showChangePassword = function() {
-        // Create modal for password change
-        const oldPassword = prompt('Enter your current password:');
-        if (!oldPassword) return;
+        // Reset form
+        document.getElementById('currentPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmPassword').value = '';
+        document.getElementById('passwordError').style.display = 'none';
+        document.getElementById('passwordMatch').style.display = 'none';
+        document.getElementById('passwordMismatch').style.display = 'none';
+        document.getElementById('passwordStrength').className = 'password-strength';
         
-        const newPassword = prompt('Enter new password (min 6 characters):');
-        if (!newPassword || newPassword.length < 6) {
-            window.showToast('Password must be at least 6 characters', 'error');
+        // Reset requirements
+        ['reqLength', 'reqUppercase', 'reqLowercase', 'reqNumber'].forEach(id => {
+            document.getElementById(id).className = 'requirement-not-met';
+        });
+        
+        // Show modal
+        document.getElementById('changePasswordModal').style.display = 'flex';
+    }
+
+    window.closeChangePasswordModal = function() {
+        document.getElementById('changePasswordModal').style.display = 'none';
+        // Reset form
+        document.getElementById('currentPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmPassword').value = '';
+        document.getElementById('passwordError').style.display = 'none';
+    }
+
+    window.updatePassword = async function() {
+        const currentPassword = document.getElementById('currentPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const errorElement = document.getElementById('passwordError');
+        const errorText = document.getElementById('passwordErrorText');
+        
+        // Hide any previous error
+        errorElement.style.display = 'none';
+        
+        // Validate inputs
+        if (!currentPassword) {
+            errorText.textContent = 'Please enter your current password';
+            errorElement.style.display = 'block';
             return;
         }
         
-        const confirmPassword = prompt('Confirm new password:');
+        if (!newPassword) {
+            errorText.textContent = 'Please enter a new password';
+            errorElement.style.display = 'block';
+            return;
+        }
+        
+        if (newPassword.length < 6) {
+            errorText.textContent = 'New password must be at least 6 characters long';
+            errorElement.style.display = 'block';
+            return;
+        }
+        
         if (newPassword !== confirmPassword) {
-            window.showToast('Passwords do not match', 'error');
+            errorText.textContent = 'New passwords do not match';
+            errorElement.style.display = 'block';
             return;
         }
         
-        // Reauthenticate user
-        const credential = EmailAuthProvider.credential(currentUser.email, oldPassword);
+        try {
+            // Reauthenticate user
+            const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
+            
+            // Show loading
+            const updateButton = document.getElementById('updatePasswordBtn');
+            const originalText = updateButton.innerHTML;
+            updateButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+            updateButton.disabled = true;
+            
+            await reauthenticateWithCredential(currentUser, credential);
+            
+            // Update password
+            await updatePassword(currentUser, newPassword);
+            
+            // Show success message
+            window.showToast('Password changed successfully!', 'success');
+            
+            // Close modal
+            window.closeChangePasswordModal();
+            
+        } catch (error) {
+            console.error('Error changing password:', error);
+            
+            // Reset button
+            const updateButton = document.getElementById('updatePasswordBtn');
+            updateButton.innerHTML = originalText;
+            updateButton.disabled = false;
+            
+            if (error.code === 'auth/wrong-password') {
+                errorText.textContent = 'Current password is incorrect';
+                errorElement.style.display = 'block';
+            } else if (error.code === 'auth/weak-password') {
+                errorText.textContent = 'New password is too weak. Please use a stronger password';
+                errorElement.style.display = 'block';
+            } else if (error.code === 'auth/requires-recent-login') {
+                errorText.textContent = 'Session expired. Please log in again and try changing your password';
+                errorElement.style.display = 'block';
+            } else {
+                errorText.textContent = 'Error changing password: ' + error.message;
+                errorElement.style.display = 'block';
+            }
+        }
+    }
+
+    // Password validation functions
+    function checkPasswordStrength(password) {
+        const strengthDiv = document.getElementById('passwordStrength');
+        const lengthReq = document.getElementById('reqLength');
+        const uppercaseReq = document.getElementById('reqUppercase');
+        const lowercaseReq = document.getElementById('reqLowercase');
+        const numberReq = document.getElementById('reqNumber');
         
-        reauthenticateWithCredential(currentUser, credential)
-            .then(() => {
-                // Update password
-                return updatePassword(currentUser, newPassword);
-            })
-            .then(() => {
-                window.showToast('Password changed successfully!', 'success');
-            })
-            .catch(error => {
-                console.error('Error changing password:', error);
-                if (error.code === 'auth/wrong-password') {
-                    window.showToast('Current password is incorrect', 'error');
-                } else {
-                    window.showToast('Error changing password: ' + error.message, 'error');
-                }
-            });
+        // Check requirements
+        const hasLength = password.length >= 6;
+        const hasUppercase = /[A-Z]/.test(password);
+        const hasLowercase = /[a-z]/.test(password);
+        const hasNumber = /[0-9]/.test(password);
+        
+        // Update requirement indicators
+        lengthReq.className = hasLength ? 'requirement-met' : 'requirement-not-met';
+        uppercaseReq.className = hasUppercase ? 'requirement-met' : 'requirement-not-met';
+        lowercaseReq.className = hasLowercase ? 'requirement-met' : 'requirement-not-met';
+        numberReq.className = hasNumber ? 'requirement-met' : 'requirement-not-met';
+        
+        // Calculate strength
+        let strength = 0;
+        if (hasLength) strength++;
+        if (hasUppercase) strength++;
+        if (hasLowercase) strength++;
+        if (hasNumber) strength++;
+        
+        // Update strength meter
+        strengthDiv.className = 'password-strength';
+        if (strength === 0) {
+            // Do nothing
+        } else if (strength === 1) {
+            strengthDiv.classList.add('weak');
+        } else if (strength === 2 || strength === 3) {
+            strengthDiv.classList.add('medium');
+        } else if (strength === 4) {
+            strengthDiv.classList.add('strong');
+        }
+        
+        return strength === 4; // Return true if all requirements met
+    }
+
+    function checkPasswordMatch() {
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const matchDiv = document.getElementById('passwordMatch');
+        const mismatchDiv = document.getElementById('passwordMismatch');
+        
+        if (newPassword && confirmPassword) {
+            if (newPassword === confirmPassword) {
+                matchDiv.style.display = 'block';
+                mismatchDiv.style.display = 'none';
+                return true;
+            } else {
+                matchDiv.style.display = 'none';
+                mismatchDiv.style.display = 'block';
+                return false;
+            }
+        }
+        
+        matchDiv.style.display = 'none';
+        mismatchDiv.style.display = 'none';
+        return false;
     }
 
     // ✅ ADMIN FUNCTIONS
@@ -2485,11 +2822,26 @@
             return;
         }
         
-        // Validate amount based on action
-        if (action === 'remove' && amount > 0) {
-            errorElement.textContent = 'For removing credits, enter a positive number';
-            errorElement.style.display = 'block';
-            return;
+        // FIX 1: Handle negative numbers for removal
+        if (action === 'remove') {
+            // For remove action, we should use positive numbers and subtract
+            if (amount <= 0) {
+                errorElement.textContent = 'For removing credits, enter a positive number';
+                errorElement.style.display = 'block';
+                return;
+            }
+        } else if (action === 'add') {
+            if (amount <= 0) {
+                errorElement.textContent = 'Please enter a positive number to add credits';
+                errorElement.style.display = 'block';
+                return;
+            }
+        } else if (action === 'set') {
+            if (amount < -1) {
+                errorElement.textContent = 'Use -1 for unlimited or positive number for regular credits';
+                errorElement.style.display = 'block';
+                return;
+            }
         }
         
         try {
@@ -2517,7 +2869,7 @@
             let finalAmount = amount;
             
             if (action === 'remove') {
-                finalAction = 'remove';
+                // Already positive number for removal
                 finalAmount = Math.abs(amount);
             }
             
@@ -2556,21 +2908,25 @@
             
             switch(action) {
                 case 'add':
-                    newCredits = (userData.credits === -1 ? 0 : userData.credits || 0) + amount;
+                    const currentAdd = userData.credits === -1 ? 0 : userData.credits || 0;
+                    newCredits = currentAdd + amount;
                     notificationAction = 'added';
                     break;
                 case 'remove':
-                    const current = userData.credits === -1 ? 0 : userData.credits || 0;
-                    newCredits = Math.max(0, current - amount);
+                    // FIX 1: Properly handle removal by subtracting
+                    const currentRemove = userData.credits === -1 ? 0 : userData.credits || 0;
+                    newCredits = Math.max(0, currentRemove - amount);
                     notificationAction = 'removed';
                     break;
                 case 'set':
                     newCredits = amount;
-                    notificationAction = 'set';
+                    notificationAction = amount === -1 ? 'unlimited' : 'set';
+                    notificationAmount = amount === -1 ? 'unlimited' : amount;
                     break;
                 case 'unlimited':
                     newCredits = -1;
                     notificationAction = 'unlimited';
+                    notificationAmount = 'unlimited';
                     break;
                 default:
                     newCredits = (userData.credits || 0) + amount;
@@ -2581,7 +2937,7 @@
             const notificationRef = ref(database, `creditNotifications/${userId}/${Date.now()}`);
             await set(notificationRef, {
                 action: notificationAction,
-                amount: action === 'unlimited' ? 'unlimited' : amount,
+                amount: notificationAmount,
                 adminEmail: currentUser.email,
                 timestamp: new Date().toISOString(),
                 viewed: false
@@ -2596,6 +2952,10 @@
             
             window.showToast(`Credits ${action === 'unlimited' ? 'set to unlimited' : action + 'ed'} successfully!`, 'success');
             window.loadUsers();
+            
+            // FIX 2: Show the credit notification popup
+            // We'll show the notification popup immediately for the admin to see
+            window.showCreditNotification(notificationAction, notificationAmount, currentUser.email);
             
         } catch (error) {
             console.error("Error updating user credits:", error);
@@ -2626,6 +2986,8 @@
             // Show the latest unviewed notification
             if (unviewedNotifications.length > 0) {
                 const latest = unviewedNotifications[0];
+                
+                // FIX 2: Show the credit notification popup
                 window.showCreditNotification(
                     latest.action, 
                     latest.amount, 
@@ -2950,9 +3312,43 @@
         document.getElementById('dropdownMenu').classList.remove('show');
     });
 
+    document.getElementById('changePasswordBtn').addEventListener('click', function() {
+        window.showChangePassword();
+        document.getElementById('dropdownMenu').classList.remove('show');
+    });
+
     document.getElementById('closeHistoryModal').addEventListener('click', window.closeSearchHistory);
     
     document.getElementById('clearHistoryBtn').addEventListener('click', window.clearSearchHistory);
+
+    document.getElementById('closeChangePasswordModal').addEventListener('click', window.closeChangePasswordModal);
+
+    document.getElementById('updatePasswordBtn').addEventListener('click', window.updatePassword);
+
+    // Password input event listeners
+    document.getElementById('newPassword').addEventListener('input', function() {
+        checkPasswordStrength(this.value);
+        checkPasswordMatch();
+    });
+
+    document.getElementById('confirmPassword').addEventListener('input', checkPasswordMatch);
+
+    // Toggle password visibility
+    document.querySelectorAll('.toggle-password').forEach(button => {
+        button.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-target');
+            const input = document.getElementById(targetId);
+            const icon = this.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        });
+    });
 
     // Close modals when clicking outside
     document.getElementById('searchHistoryModal').addEventListener('click', function(e) {
@@ -2970,6 +3366,12 @@
     document.getElementById('adminPanelModal').addEventListener('click', function(e) {
         if (e.target === this) {
             window.closeAdminPanel();
+        }
+    });
+
+    document.getElementById('changePasswordModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            window.closeChangePasswordModal();
         }
     });
 
