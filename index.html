@@ -2121,7 +2121,7 @@
       window.showToast("Data exported successfully!", "success");
     }
 
-    // Credit Notification Functions
+    // ✅ FIXED: CREDIT NOTIFICATION FUNCTION
     window.showCreditNotification = function(action, count, adminEmail, message = '') {
       const notification = document.getElementById('creditNotification');
       const actionText = document.getElementById('creditActionText');
@@ -2129,32 +2129,28 @@
       const adminEmailText = document.getElementById('adminEmailText');
       const messageText = document.getElementById('creditMessageText');
       
+      console.log("🎯 Showing credit notification:", { action, count, adminEmail, message });
+      
       if (action === 'added') {
         actionText.textContent = 'added';
         countDisplay.textContent = '+' + count;
         countDisplay.className = 'credit-count';
-        document.querySelector('.credit-notification-icon i').className = 'fas fa-plus-circle';
-        notification.classList.add('credit-added');
-        notification.classList.remove('credit-removed');
+        notification.className = 'credit-notification credit-added';
       } else if (action === 'removed') {
         actionText.textContent = 'removed';
         countDisplay.textContent = '-' + count;
         countDisplay.className = 'credit-count negative';
-        document.querySelector('.credit-notification-icon i').className = 'fas fa-minus-circle';
-        notification.classList.add('credit-removed');
-        notification.classList.remove('credit-added');
+        notification.className = 'credit-notification credit-removed';
       } else if (action === 'set') {
         actionText.textContent = 'set to';
-        countDisplay.textContent = count;
+        countDisplay.textContent = count === -1 ? 'Unlimited' : count;
         countDisplay.className = 'credit-count';
-        document.querySelector('.credit-notification-icon i').className = 'fas fa-edit';
-        notification.classList.remove('credit-added', 'credit-removed');
+        notification.className = 'credit-notification';
       } else if (action === 'unlimited') {
         actionText.textContent = 'set to';
         countDisplay.textContent = 'Unlimited';
         countDisplay.className = 'credit-count';
-        document.querySelector('.credit-notification-icon i').className = 'fas fa-infinity';
-        notification.classList.remove('credit-added', 'credit-removed');
+        notification.className = 'credit-notification';
       }
       
       adminEmailText.textContent = adminEmail || 'Admin';
@@ -2299,6 +2295,8 @@
     // ✅ FIXED: CHECK FOR CREDIT NOTIFICATIONS AND MESSAGES ON LOGIN
     window.checkAllNotifications = async function() {
         if (!currentUser) return;
+        
+        console.log("🔍 Checking all notifications for user:", currentUser.email);
         
         // Check credit notifications
         await window.checkCreditNotifications();
@@ -3960,10 +3958,11 @@
             await window.createSession(user);
             await initializeUserCredits(user);
             
-            // ✅ FIXED: Check for notifications after login
+            // ✅ FIXED: Check for notifications after login with better timing
             setTimeout(async () => {
+                console.log("🔄 Checking notifications after login...");
                 await window.checkAllNotifications();
-            }, 1500); // Wait 1.5 seconds for everything to initialize
+            }, 2000); // Wait 2 seconds for everything to initialize
             
             window.startSessionChecking();
         }
