@@ -770,7 +770,7 @@
     let userDeviceId = '';
     let loginAttempts = 0;
     let isLockedOut = false;
-    let canLogin = false; // Flag to check if user is from Pakistan
+    let canLogin = false;
 
     // Function to get user IP and location
     async function getUserIPAndLocation() {
@@ -827,11 +827,10 @@
         return 'device_' + Math.abs(hash).toString(36);
     }
 
-    // Function to check rate limiting
+    // SIMPLIFIED: Function to check rate limiting
     async function checkRateLimit() {
-        const ipRateRef = ref(database, `rateLimits/${userIP}`);
-        
         try {
+            const ipRateRef = ref(database, `rateLimits/${userIP}`);
             const snapshot = await get(ipRateRef);
             const now = Date.now();
             const oneMinuteAgo = now - 60000;
@@ -856,12 +855,7 @@
                     country: userCountry
                 });
             } else {
-                // First request from this IP - only allow if from Pakistan
-                if (userCountry !== 'PK') {
-                    showError("Access restricted to Pakistan only.");
-                    return false;
-                }
-                
+                // First request from this IP
                 await set(ipRateRef, {
                     requests: [now],
                     lastRequest: now,
@@ -876,12 +870,12 @@
         }
     }
 
-    // Function to check if device is trusted
+    // SIMPLIFIED: Function to check if device is trusted
     async function checkTrustedDevice(userId) {
-        const trustedDeviceRef = ref(database, `users/${userId}/trustedDevices/${userDeviceId}`);
-        
         try {
+            const trustedDeviceRef = ref(database, `users/${userId}/trustedDevices/${userDeviceId}`);
             const snapshot = await get(trustedDeviceRef);
+            
             if (snapshot.exists()) {
                 const deviceData = snapshot.val();
                 const expiryTime = deviceData.expiresAt;
@@ -897,20 +891,18 @@
         }
     }
 
-    // Function to trust current device
+    // SIMPLIFIED: Function to trust current device
     async function trustCurrentDevice(userId) {
-        const trustedDeviceRef = ref(database, `users/${userId}/trustedDevices/${userDeviceId}`);
-        const expiresAt = Date.now() + (30 * 24 * 60 * 60 * 1000); // 30 days
-        
         try {
+            const trustedDeviceRef = ref(database, `users/${userId}/trustedDevices/${userDeviceId}`);
+            const expiresAt = Date.now() + (30 * 24 * 60 * 60 * 1000);
+            
             await set(trustedDeviceRef, {
                 deviceId: userDeviceId,
                 userAgent: navigator.userAgent,
-                platform: navigator.platform,
                 trustedAt: Date.now(),
                 expiresAt: expiresAt,
-                ip: userIP,
-                country: userCountry
+                ip: userIP
             });
             return true;
         } catch (error) {
@@ -919,19 +911,17 @@
         }
     }
 
-    // Function to record login history
+    // SIMPLIFIED: Function to record login history
     async function recordLoginHistory(userId, success, reason = '') {
-        const historyRef = ref(database, `loginHistory/${userId}`);
-        const newHistoryRef = push(historyRef);
-        
         try {
+            const historyRef = ref(database, `loginHistory/${userId}`);
+            const newHistoryRef = push(historyRef);
+            
             await set(newHistoryRef, {
                 timestamp: serverTimestamp(),
                 ip: userIP,
                 country: userCountry,
                 deviceId: userDeviceId,
-                userAgent: navigator.userAgent,
-                platform: navigator.platform,
                 success: success,
                 reason: reason
             });
@@ -940,31 +930,12 @@
         }
     }
 
-    // Function to record security event
-    async function recordSecurityEvent(userId, eventType, details = {}) {
-        const eventsRef = ref(database, `securityEvents/${userId}`);
-        const newEventRef = push(eventsRef);
-        
-        try {
-            await set(newEventRef, {
-                timestamp: serverTimestamp(),
-                eventType: eventType,
-                ip: userIP,
-                country: userCountry,
-                deviceId: userDeviceId,
-                details: details
-            });
-        } catch (error) {
-            console.error("Security event recording error:", error);
-        }
-    }
-
-    // Function to update login attempts
+    // SIMPLIFIED: Function to update login attempts
     async function updateLoginAttempts(userId, increment = true) {
-        const userRef = ref(database, `users/${userId}`);
-        
         try {
+            const userRef = ref(database, `users/${userId}`);
             const snapshot = await get(userRef);
+            
             let attempts = 0;
             let lastFailed = null;
             let isLocked = false;
@@ -985,12 +956,6 @@
                 if (attempts >= SECURITY_CONFIG.maxLoginAttempts) {
                     isLocked = true;
                     lockoutUntil = Date.now() + SECURITY_CONFIG.lockoutDuration;
-                    
-                    // Record security event
-                    await recordSecurityEvent(userId, 'account_lockout', {
-                        attempts: attempts,
-                        lockoutDuration: SECURITY_CONFIG.lockoutDuration
-                    });
                 }
                 
                 await update(userRef, {
@@ -1015,12 +980,12 @@
         }
     }
 
-    // Function to check account lockout
+    // SIMPLIFIED: Function to check account lockout
     async function checkAccountLockout(userId) {
-        const userRef = ref(database, `users/${userId}`);
-        
         try {
+            const userRef = ref(database, `users/${userId}`);
             const snapshot = await get(userRef);
+            
             if (snapshot.exists()) {
                 const userData = snapshot.val();
                 const isLocked = userData.isLocked || false;
@@ -1061,7 +1026,6 @@
         
         errorText.textContent = message;
         errorElement.style.display = 'block';
-        console.error("Error:", message);
     }
 
     // Function to show success message
@@ -1072,7 +1036,6 @@
         
         successText.textContent = message;
         successElement.style.display = 'block';
-        console.log("Success:", message);
     }
 
     // Function to show warning message
@@ -1083,7 +1046,6 @@
         
         warningText.textContent = message;
         warningElement.style.display = 'block';
-        console.warn("Warning:", message);
     }
 
     // Function to hide all messages
@@ -1114,20 +1076,6 @@
         
         const loginBtn = document.getElementById('loginBtn');
         loginBtn.disabled = true;
-        
-        // Update timer every minute
-        const updateInterval = setInterval(() => {
-            timeLeft -= 60000;
-            if (timeLeft <= 0) {
-                clearInterval(updateInterval);
-                timer.style.display = 'none';
-                loginBtn.disabled = false;
-                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
-            } else {
-                const minutes = Math.ceil(timeLeft / 60000);
-                text.textContent = `Account locked. Try again in ${minutes} minutes.`;
-            }
-        }, 60000);
     }
 
     // Function to show device info
@@ -1136,7 +1084,7 @@
         deviceInfo.style.display = 'block';
     }
 
-    // Add this function to check for logout reason
+    // Check for logout reason
     function checkLogoutReason() {
         const logoutReason = localStorage.getItem('logout_reason');
         if (logoutReason === 'session_ended_elsewhere') {
@@ -1162,7 +1110,6 @@
     }
 
     window.goRegister = function () {
-        console.log("Redirecting to register page");
         window.location.href = "register.html";
     }
 
@@ -1181,20 +1128,12 @@
         const password = document.getElementById("loginPassword").value;
         const trustDevice = document.getElementById("trustDevice")?.checked || false;
         
-        console.log("Login attempt with:", email);
-        
         // Hide any previous messages
         hideMessages();
         
         // Basic validation
         if (!email || !password) {
             showError("Please fill in all fields");
-            return;
-        }
-
-        // Check rate limit
-        const rateAllowed = await checkRateLimit();
-        if (!rateAllowed) {
             return;
         }
 
@@ -1205,10 +1144,21 @@
         loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
 
         try {
+            // Check rate limit first
+            const rateAllowed = await checkRateLimit();
+            if (!rateAllowed) {
+                document.getElementById("loading").style.display = "none";
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+                return;
+            }
+
+            // Try Firebase authentication
+            console.log("Attempting Firebase login...");
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             
-            console.log("Login successful:", user);
+            console.log("✅ Login successful:", user.email);
 
             // Reset login attempts on successful login
             await updateLoginAttempts(user.uid, false);
@@ -1220,17 +1170,7 @@
             if (isNewDevice && SECURITY_CONFIG.newDeviceAlert) {
                 showDeviceInfo();
                 document.getElementById('trustDeviceContainer').style.display = 'block';
-                
-                // Record security event
-                await recordSecurityEvent(user.uid, 'new_device_login', {
-                    deviceId: userDeviceId,
-                    userAgent: navigator.userAgent,
-                    ip: userIP,
-                    country: userCountry
-                });
-                
-                // Show warning about new device
-                showWarning("New device detected. We've sent a security alert to your email.");
+                showWarning("New device detected.");
             }
             
             // Trust device if checkbox is checked
@@ -1246,24 +1186,17 @@
             const sessionRef = ref(database, `activeSessions/${user.uid}`);
             const newSessionId = Date.now().toString();
             
-            console.log("🔄 CREATING SESSION FOR USER:", user.uid);
-            console.log("🆔 NEW SESSION ID:", newSessionId);
-            
-            // Set session with error handling
             await set(sessionRef, {
                 sessionId: newSessionId,
                 lastActive: new Date().toISOString(),
                 userAgent: navigator.userAgent,
-                platform: navigator.platform,
                 deviceId: userDeviceId,
                 ip: userIP,
                 country: userCountry,
                 expiresAt: Date.now() + SECURITY_CONFIG.sessionExpiry
             });
             
-            console.log("✅ SESSION CREATED SUCCESSFULLY");
-            
-            // ✅ CRITICAL FIX: Save session to localStorage BEFORE redirect
+            // Save session to localStorage
             localStorage.setItem(`nasir_session_${user.uid}`, newSessionId);
             
             document.getElementById("loading").style.display = "none";
@@ -1274,19 +1207,18 @@
             }, 1500);
             
         } catch (error) {
-            // Always hide loading screen on error
+            // Hide loading screen
             document.getElementById("loading").style.display = "none";
             loginBtn.disabled = false;
             loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
             
-            console.error("Login error:", error);
+            console.error("❌ Login error:", error.code, error.message);
             
             let errorMessage = "Login failed. Please try again.";
             let userId = null;
             
-            // Get user by email to update login attempts
+            // Try to update login attempts for this email
             try {
-                // We'll get userId from auth or create a temporary one based on email
                 const emailHash = btoa(email).replace(/[=+/]/g, '');
                 userId = `temp_${emailHash}`;
                 
@@ -1299,14 +1231,6 @@
                 if (lockoutCheck.locked) {
                     showLockoutTimer(lockoutCheck.timeLeft);
                     showAttemptsCounter(lockoutCheck.attempts, SECURITY_CONFIG.maxLoginAttempts);
-                    
-                    // Record security event
-                    await recordSecurityEvent(userId, 'failed_login_lockout', {
-                        attempts: lockoutCheck.attempts,
-                        ip: userIP,
-                        reason: error.code
-                    });
-                    
                     return;
                 }
                 
@@ -1320,37 +1244,42 @@
             }
             
             // Convert Firebase errors to user-friendly messages
-            if (error.code === "auth/invalid-email") {
-                errorMessage = "Invalid email address format.";
-            } else if (error.code === "auth/user-not-found") {
-                errorMessage = "Email not found. Please check your email address.";
-            } else if (error.code === "auth/wrong-password") {
-                errorMessage = "Incorrect password. Please try again.";
-            } else if (error.code === "auth/too-many-requests") {
-                errorMessage = "Too many failed attempts. Please try again later.";
-            } else if (error.code === "auth/invalid-credential") {
-                errorMessage = "Invalid credentials. Please check your email and password.";
-            } else if (error.code === "auth/network-request-failed") {
-                errorMessage = "Network error. Please check your internet connection.";
-            } else if (error.code === "auth/user-disabled") {
-                errorMessage = "This account has been disabled. Please contact support.";
-            } else if (error.code === "auth/operation-not-allowed") {
-                errorMessage = "Login operation not allowed. Please contact support.";
-            } else if (error.code === "auth/requires-recent-login") {
-                errorMessage = "Please login again to perform this action.";
-            }
-            
-            // Record failed login
-            if (userId) {
-                await recordLoginHistory(userId, false, error.code);
-                await recordSecurityEvent(userId, 'failed_login', {
-                    reason: error.code,
-                    ip: userIP,
-                    attempts: loginAttempts
-                });
+            switch (error.code) {
+                case "auth/invalid-email":
+                    errorMessage = "Invalid email address format.";
+                    break;
+                case "auth/user-not-found":
+                    errorMessage = "Email not found. Please check your email address.";
+                    break;
+                case "auth/wrong-password":
+                    errorMessage = "Incorrect password. Please try again.";
+                    break;
+                case "auth/too-many-requests":
+                    errorMessage = "Too many failed attempts. Please try again later.";
+                    break;
+                case "auth/invalid-credential":
+                    errorMessage = "Invalid credentials. Please check your email and password.";
+                    break;
+                case "auth/network-request-failed":
+                    errorMessage = "Network error. Please check your internet connection.";
+                    break;
+                case "auth/user-disabled":
+                    errorMessage = "This account has been disabled. Please contact support.";
+                    break;
+                default:
+                    errorMessage = `Login failed: ${error.message}`;
             }
             
             showError(errorMessage);
+            
+            // Record failed login
+            if (userId) {
+                try {
+                    await recordLoginHistory(userId, false, error.code);
+                } catch (logError) {
+                    console.error("Failed to record login history:", logError);
+                }
+            }
         }
     }
 
@@ -1360,7 +1289,6 @@
         
         // Generate device ID
         userDeviceId = generateDeviceId();
-        console.log("Device ID:", userDeviceId);
         
         // Get user IP and location
         await getUserIPAndLocation();
