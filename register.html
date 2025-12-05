@@ -631,11 +631,11 @@
                 <!-- Password Requirements -->
                 <div class="password-requirements" id="passwordRequirements">
                     <ul>
-                        <li id="reqLength"><i class="fas fa-times"></i> At least 8 characters</li>
-                        <li id="reqUppercase"><i class="fas fa-times"></i> At least one uppercase letter</li>
-                        <li id="reqLowercase"><i class="fas fa-times"></i> At least one lowercase letter</li>
-                        <li id="reqNumber"><i class="fas fa-times"></i> At least one number</li>
-                        <li id="reqSpecial"><i class="fas fa-times"></i> At least one special character</li>
+                        <li id="reqLength"><i class="fas fa-times" style="color: var(--error);"></i> At least 8 characters</li>
+                        <li id="reqUppercase"><i class="fas fa-times" style="color: var(--error);"></i> At least one uppercase letter</li>
+                        <li id="reqLowercase"><i class="fas fa-times" style="color: var(--error);"></i> At least one lowercase letter</li>
+                        <li id="reqNumber"><i class="fas fa-times" style="color: var(--error);"></i> At least one number</li>
+                        <li id="reqSpecial"><i class="fas fa-times" style="color: var(--error);"></i> At least one special character</li>
                     </ul>
                 </div>
                 
@@ -742,7 +742,7 @@
         let userCountry = '';
         let canRegister = false;
 
-        // Function to check password strength
+        // Function to check password strength - FIXED VERSION
         function checkPasswordStrength() {
             const password = document.getElementById("regPassword").value;
             const strengthBar = document.getElementById("strengthBar");
@@ -754,6 +754,7 @@
             requirements.style.display = 'block';
             
             let score = 0;
+            let allValid = true;
             
             // Length check
             const lengthValid = password.length >= PASSWORD_CONFIG.minLength;
@@ -765,6 +766,7 @@
             } else {
                 lengthReq.innerHTML = '<i class="fas fa-times" style="color: var(--error);"></i> At least 8 characters';
                 lengthReq.classList.remove('valid');
+                allValid = false;
             }
             
             // Uppercase check
@@ -777,6 +779,7 @@
             } else {
                 uppercaseReq.innerHTML = '<i class="fas fa-times" style="color: var(--error);"></i> At least one uppercase letter';
                 uppercaseReq.classList.remove('valid');
+                allValid = false;
             }
             
             // Lowercase check
@@ -789,6 +792,7 @@
             } else {
                 lowercaseReq.innerHTML = '<i class="fas fa-times" style="color: var(--error);"></i> At least one lowercase letter';
                 lowercaseReq.classList.remove('valid');
+                allValid = false;
             }
             
             // Number check
@@ -801,6 +805,7 @@
             } else {
                 numberReq.innerHTML = '<i class="fas fa-times" style="color: var(--error);"></i> At least one number';
                 numberReq.classList.remove('valid');
+                allValid = false;
             }
             
             // Special character check
@@ -813,6 +818,7 @@
             } else {
                 specialReq.innerHTML = '<i class="fas fa-times" style="color: var(--error);"></i> At least one special character';
                 specialReq.classList.remove('valid');
+                allValid = false;
             }
             
             // Blacklist check
@@ -863,8 +869,10 @@
             const registerBtn = document.getElementById('registerBtn');
             if (score >= 4 && blacklistValid && password.length >= 8) {
                 registerBtn.disabled = false;
+                registerBtn.style.opacity = "1";
             } else {
                 registerBtn.disabled = true;
+                registerBtn.style.opacity = "0.6";
             }
             
             return strength;
@@ -924,6 +932,7 @@
                     document.getElementById('countryRestriction').style.display = 'block';
                     document.getElementById('registerBtn').disabled = true;
                     document.getElementById('registerBtn').innerHTML = '<i class="fas fa-ban"></i> Registration Restricted';
+                    document.getElementById('registerBtn').style.opacity = "0.6";
                     canRegister = false;
                 } else {
                     canRegister = true;
@@ -1113,6 +1122,7 @@
                 document.getElementById("loading").style.display = "none";
                 registerBtn.disabled = false;
                 registerBtn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+                registerBtn.style.opacity = "1";
                 
                 console.error("Registration error:", error);
                 
