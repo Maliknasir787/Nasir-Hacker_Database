@@ -2404,13 +2404,24 @@
       document.getElementById('creditNotification').style.display = 'none';
     }
 
-    // Input Validation Function
+    // Input Validation Function - UPDATED TO HANDLE BOTH PHONE AND CNIC
     window.validateInput = function(input) {
         // Remove all non-numeric characters
         const cleaned = input.replace(/\D/g, '');
         
         if (!cleaned) {
-          return { valid: false, message: "Please enter a valid number" };
+          return { valid: false, message: "Please enter a valid number or CNIC" };
+        }
+        
+        // Check if it's a CNIC (13 digits)
+        if (cleaned.length === 13) {
+          // Validate CNIC format (should be 13 digits, all numeric)
+          const cnicRegex = /^\d{13}$/;
+          if (cnicRegex.test(cleaned)) {
+            return { valid: true, cleaned: cleaned, type: 'cnic' };
+          } else {
+            return { valid: false, message: "Please enter a valid 13-digit CNIC" };
+          }
         }
         
         // Check for valid length (Pakistan numbers are usually 10-13 digits)
@@ -2423,7 +2434,7 @@
           return { valid: false, message: "Please enter a valid Pakistan number" };
         }
         
-        return { valid: true, cleaned: cleaned };
+        return { valid: true, cleaned: cleaned, type: 'phone' };
     }
 
     // Request Throttling
@@ -4414,7 +4425,7 @@
         }
     }
 
-    // ✅ MAIN FETCH DATA FUNCTION
+    // ✅ MAIN FETCH DATA FUNCTION - UPDATED FOR BOTH PHONE AND CNIC
 
     window.fetchData = async function() {
       console.log("fetchData function called!");
@@ -4449,7 +4460,8 @@
       exportButton.style.display = "none";
       loadingSpinner.style.display = "block";
      
-      const realApi = `https://legendxdata.site/Api/simdata.php?phone=${encodeURIComponent(validation.cleaned)}`;
+      // ✅ UPDATED: Handle both phone and CNIC
+      const realApi = `https://legendxdata.site/Api/simdata.php?${validation.type === 'cnic' ? 'cnic' : 'phone'}=${encodeURIComponent(validation.cleaned)}`;
 
       async function tryDirectFetch(url, timeoutMs = 12000) {
         const controller = new AbortController();
