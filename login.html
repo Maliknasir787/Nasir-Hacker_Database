@@ -573,6 +573,52 @@
             text-align: center;
             animation: fadeIn 0.3s ease;
         }
+
+        /* IP Blocked Warning */
+        .ip-blocked-warning {
+            display: none;
+            background-color: rgba(244, 67, 54, 0.2);
+            border: 2px solid var(--error);
+            color: var(--error);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin-top: 15px;
+            font-size: 14px;
+            text-align: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .ip-blocked-warning i {
+            margin-right: 8px;
+            font-size: 18px;
+        }
+
+        /* Notification Settings */
+        .notification-settings {
+            display: none;
+            background: rgba(108, 99, 255, 0.1);
+            padding: 12px 15px;
+            border-radius: var(--border-radius);
+            margin-top: 15px;
+            text-align: left;
+        }
+
+        .notification-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .notification-checkbox input[type="checkbox"] {
+            width: auto;
+        }
+
+        .notification-checkbox label {
+            color: var(--text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -612,7 +658,13 @@
         <!-- Security Info -->
         <div class="security-info" id="securityInfo">
             <i class="fas fa-shield-alt"></i>
-            <strong>Enhanced Security Active:</strong> Login attempts are monitored and protected
+            <strong>Enhanced Security Active:</strong> IP Blocking, Login Alerts, and Account Protection
+        </div>
+
+        <!-- IP Blocked Warning -->
+        <div class="ip-blocked-warning" id="ipBlockedWarning">
+            <i class="fas fa-ban"></i>
+            <strong>Access Blocked:</strong> Your IP address has been blocked due to suspicious activity.
         </div>
 
         <!-- Country Restriction Warning -->
@@ -657,6 +709,18 @@
                 <div class="device-info" id="deviceInfo">
                     <i class="fas fa-desktop"></i>
                     New device detected. We'll send a security alert.
+                </div>
+                
+                <!-- Notification Settings -->
+                <div class="notification-settings" id="notificationSettings">
+                    <div class="notification-checkbox">
+                        <input type="checkbox" id="emailNotifications" checked>
+                        <label for="emailNotifications">Send email notifications for this login</label>
+                    </div>
+                    <div class="notification-checkbox">
+                        <input type="checkbox" id="allNotifications" checked>
+                        <label for="allNotifications">Send all security notifications to my email</label>
+                    </div>
                 </div>
                 
                 <!-- Error message container -->
@@ -738,7 +802,11 @@
         update, 
         get,
         push,
-        serverTimestamp
+        serverTimestamp,
+        query,
+        orderByChild,
+        equalTo,
+        remove
     } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
     const firebaseConfig = {
@@ -755,14 +823,24 @@
     const auth = getAuth(app);
     const database = getDatabase(app);
 
-    // Security Configuration - PAKISTAN ONLY
+    // Enhanced Security Configuration
     const SECURITY_CONFIG = {
         maxLoginAttempts: 5,
         lockoutDuration: 30 * 60 * 1000, // 30 minutes
         allowedCountries: ['PK'], // PAKISTAN ONLY
         newDeviceAlert: true,
         ipRateLimit: 10, // Max requests per minute per IP
-        sessionExpiry: 24 * 60 * 60 * 1000 // 24 hours
+        sessionExpiry: 24 * 60 * 60 * 1000, // 24 hours
+        
+        // IP Blocking Configuration
+        maxFailedAttemptsPerIP: 20, // Block IP after this many failed attempts
+        ipBlockDuration: 24 * 60 * 60 * 1000, // 24 hours block
+        autoUnblockAfter: 24 * 60 * 60 * 1000, // Auto unblock after 24 hours
+        
+        // Email Notification Configuration
+        sendLoginNotifications: true,
+        adminEmail: "nasirjafarmaibal@gmail.com", // Admin email for alerts
+        notificationCooldown: 5 * 60 * 1000 // 5 minutes between similar notifications
     };
 
     let userIP = '';
@@ -770,6 +848,8 @@
     let userDeviceId = '';
     let loginAttempts = 0;
     let canLogin = false;
+    let emailNotifications = true;
+    let allNotifications = true;
 
     // Function to get user IP and location
     async function getUserIPAndLocation() {
@@ -826,6 +906,228 @@
         return 'device_' + Math.abs(hash).toString(36);
     }
 
+    // ========== IP BLOCKLISTING FUNCTIONS ==========
+
+    // Check if IP is blocked
+    async function checkIPBlocked() {
+        try {
+            const ipBlockRef = ref(database, `blockedIPs/${userIP}`);
+            const snapshot = await get(ipBlockRef);
+            
+            if (snapshot.exists()) {
+                const blockData = snapshot.val();
+                const blockUntil = blockData.blockUntil || 0;
+                const reason = blockData.reason || 'Suspicious activity';
+                
+                // Check if block has expired
+                if (blockUntil > Date.now()) {
+                    const hoursLeft = Math.ceil((blockUntil - Date.now()) / (60 * 60 * 1000));
+                    document.getElementById('ipBlockedWarning').style.display = 'block';
+                    document.getElementById('loginBtn').disabled = true;
+                    document.getElementById('loginBtn').innerHTML = '<i class="fas fa-ban"></i> IP Blocked';
+                    
+                    // Show notification settings if they want to be notified when unblocked
+                    document.getElementById('notificationSettings').style.display = 'block';
+                    
+                    showError(`Your IP has been blocked. Reason: ${reason}. Block expires in ${hoursLeft} hours.`);
+                    return true;
+                } else {
+                    // Remove expired block
+                    await remove(ipBlockRef);
+                    return false;
+                }
+            }
+            return false;
+        } catch (error) {
+            console.error("Check IP blocked error:", error);
+            return false;
+        }
+    }
+
+    // Block an IP address
+    async function blockIP(reason = 'Multiple failed login attempts') {
+        try {
+            const ipBlockRef = ref(database, `blockedIPs/${userIP}`);
+            const blockUntil = Date.now() + SECURITY_CONFIG.ipBlockDuration;
+            
+            await set(ipBlockRef, {
+                ip: userIP,
+                blockedAt: Date.now(),
+                blockUntil: blockUntil,
+                reason: reason,
+                country: userCountry,
+                userAgent: navigator.userAgent
+            });
+            
+            // Record block event
+            await recordSecurityEvent('ip_blocked', { ip: userIP, reason: reason });
+            
+            return true;
+        } catch (error) {
+            console.error("Block IP error:", error);
+            return false;
+        }
+    }
+
+    // Update IP failed attempts
+    async function updateIPFailedAttempts() {
+        try {
+            const ipAttemptsRef = ref(database, `ipAttempts/${userIP}`);
+            const snapshot = await get(ipAttemptsRef);
+            
+            let attempts = 1;
+            let firstAttempt = Date.now();
+            let lastAttempt = Date.now();
+            
+            if (snapshot.exists()) {
+                const ipData = snapshot.val();
+                attempts = (ipData.attempts || 0) + 1;
+                firstAttempt = ipData.firstAttempt || Date.now();
+                lastAttempt = Date.now();
+            }
+            
+            await update(ipAttemptsRef, {
+                attempts: attempts,
+                firstAttempt: firstAttempt,
+                lastAttempt: lastAttempt,
+                country: userCountry,
+                userAgent: navigator.userAgent
+            });
+            
+            // Check if IP should be blocked
+            if (attempts >= SECURITY_CONFIG.maxFailedAttemptsPerIP) {
+                await blockIP(`Exceeded ${SECURITY_CONFIG.maxFailedAttemptsPerIP} failed login attempts`);
+                return true; // IP is now blocked
+            }
+            
+            return false;
+        } catch (error) {
+            console.error("Update IP attempts error:", error);
+            return false;
+        }
+    }
+
+    // Reset IP attempts on successful login
+    async function resetIPAttempts() {
+        try {
+            const ipAttemptsRef = ref(database, `ipAttempts/${userIP}`);
+            await remove(ipAttemptsRef);
+        } catch (error) {
+            console.error("Reset IP attempts error:", error);
+        }
+    }
+
+    // ========== EMAIL NOTIFICATION FUNCTIONS ==========
+
+    // Send login notification email
+    async function sendLoginNotification(userId, userEmail, loginData) {
+        if (!emailNotifications && !allNotifications) return;
+        
+        try {
+            const notificationsRef = ref(database, `notifications/${userId}`);
+            const newNotificationRef = push(notificationsRef);
+            
+            const notificationData = {
+                type: 'login',
+                email: userEmail,
+                timestamp: serverTimestamp(),
+                ip: userIP,
+                country: userCountry,
+                device: userDeviceId,
+                userAgent: loginData.userAgent,
+                location: loginData.location || 'Unknown',
+                isNewDevice: loginData.isNewDevice || false,
+                status: 'pending', // pending, sent, failed
+                sentAt: null
+            };
+            
+            await set(newNotificationRef, notificationData);
+            
+            // Also send to admin if suspicious activity
+            if (loginData.isNewDevice || loginData.country !== 'PK') {
+                await sendAdminAlert(userId, userEmail, loginData);
+            }
+            
+            return true;
+        } catch (error) {
+            console.error("Create notification error:", error);
+            return false;
+        }
+    }
+
+    // Send admin alert for suspicious activity
+    async function sendAdminAlert(userId, userEmail, loginData) {
+        try {
+            const adminAlertsRef = ref(database, 'adminAlerts');
+            const newAlertRef = push(adminAlertsRef);
+            
+            const alertData = {
+                type: 'suspicious_login',
+                userId: userId,
+                userEmail: userEmail,
+                timestamp: serverTimestamp(),
+                ip: userIP,
+                country: userCountry,
+                device: userDeviceId,
+                reason: loginData.isNewDevice ? 'New device login' : 'Non-Pakistan login attempt',
+                severity: 'high',
+                status: 'pending'
+            };
+            
+            await set(newAlertRef, alertData);
+            return true;
+        } catch (error) {
+            console.error("Send admin alert error:", error);
+            return false;
+        }
+    }
+
+    // Send security alert to user
+    async function sendSecurityAlert(userId, userEmail, alertType, alertData) {
+        if (!allNotifications) return;
+        
+        try {
+            const securityAlertsRef = ref(database, `securityAlerts/${userId}`);
+            const newAlertRef = push(securityAlertsRef);
+            
+            const alert = {
+                type: alertType,
+                timestamp: serverTimestamp(),
+                email: userEmail,
+                ip: userIP,
+                country: userCountry,
+                message: alertData.message,
+                severity: alertData.severity || 'medium',
+                status: 'pending'
+            };
+            
+            await set(newAlertRef, alert);
+            return true;
+        } catch (error) {
+            console.error("Send security alert error:", error);
+            return false;
+        }
+    }
+
+    // Record security event
+    async function recordSecurityEvent(eventType, eventData) {
+        try {
+            const securityEventsRef = ref(database, 'securityEvents');
+            const newEventRef = push(securityEventsRef);
+            
+            await set(newEventRef, {
+                type: eventType,
+                timestamp: serverTimestamp(),
+                ip: userIP,
+                country: userCountry,
+                deviceId: userDeviceId,
+                data: eventData
+            });
+        } catch (error) {
+            console.error("Record security event error:", error);
+        }
+    }
+
     // Function to check rate limiting
     async function checkRateLimit() {
         try {
@@ -843,6 +1145,10 @@
                 
                 if (recentRequests.length >= SECURITY_CONFIG.ipRateLimit) {
                     showError("Too many requests from your IP. Please wait a moment.");
+                    
+                    // Record rate limit event
+                    await recordSecurityEvent('rate_limit_exceeded', { ip: userIP, requests: recentRequests.length });
+                    
                     return false;
                 }
                 
@@ -903,6 +1209,13 @@
                 expiresAt: expiresAt,
                 ip: userIP
             });
+            
+            // Send security alert for device trust
+            await sendSecurityAlert(userId, '', 'device_trusted', {
+                message: 'New device trusted',
+                severity: 'info'
+            });
+            
             return true;
         } catch (error) {
             console.error("Trust device error:", error);
@@ -980,6 +1293,14 @@
                 if (attempts >= SECURITY_CONFIG.maxLoginAttempts) {
                     isLocked = true;
                     lockoutUntil = Date.now() + SECURITY_CONFIG.lockoutDuration;
+                    
+                    // Send security alert for account lock
+                    if (allNotifications) {
+                        await sendSecurityAlert(userId, email, 'account_locked', {
+                            message: 'Account locked due to multiple failed attempts',
+                            severity: 'high'
+                        });
+                    }
                 }
                 
                 // Update user record
@@ -1166,6 +1487,13 @@
     }
 
     window.login = async function () {
+        // Get notification preferences
+        emailNotifications = document.getElementById('emailNotifications')?.checked || true;
+        allNotifications = document.getElementById('allNotifications')?.checked || true;
+        
+        // Show notification settings
+        document.getElementById('notificationSettings').style.display = 'block';
+
         // Check if user is from Pakistan
         if (!canLogin) {
             showError("Service only available in Pakistan.");
@@ -1182,6 +1510,12 @@
         // Basic validation
         if (!email || !password) {
             showError("Please fill in all fields");
+            return;
+        }
+
+        // Check if IP is blocked
+        const ipBlocked = await checkIPBlocked();
+        if (ipBlocked) {
             return;
         }
 
@@ -1219,6 +1553,9 @@
             // Reset login attempts on successful login
             await updateLoginAttempts(email, false);
             
+            // Reset IP attempts on successful login
+            await resetIPAttempts();
+            
             // Check if device is trusted
             const isTrustedDevice = await checkTrustedDevice(user.uid);
             const isNewDevice = !isTrustedDevice;
@@ -1237,6 +1574,23 @@
             
             // Record successful login
             await recordLoginHistory(user.uid, true, 'Successful login');
+            
+            // Send login notification
+            if (emailNotifications || allNotifications) {
+                await sendLoginNotification(user.uid, email, {
+                    userAgent: navigator.userAgent,
+                    location: userCountry,
+                    isNewDevice: isNewDevice,
+                    deviceId: userDeviceId
+                });
+            }
+            
+            // Record security event
+            await recordSecurityEvent('successful_login', {
+                email: email,
+                userId: user.uid,
+                isNewDevice: isNewDevice
+            });
             
             // Create session for this device
             const sessionRef = ref(database, `activeSessions/${user.uid}`);
@@ -1272,6 +1626,16 @@
             
             let errorMessage = "Login failed. Please try again.";
             
+            // Update IP failed attempts
+            const ipShouldBlock = await updateIPFailedAttempts();
+            if (ipShouldBlock) {
+                showError("Your IP has been blocked due to too many failed attempts.");
+                document.getElementById('ipBlockedWarning').style.display = 'block';
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = '<i class="fas fa-ban"></i> IP Blocked';
+                return;
+            }
+            
             // Update login attempts
             const result = await updateLoginAttempts(email, true);
             const { attempts, isLocked, lockoutUntil } = result;
@@ -1286,6 +1650,14 @@
                 const timeLeft = lockoutUntil - Date.now();
                 showLockoutTimer(timeLeft);
                 errorMessage = "Account locked due to too many failed attempts. Please try again later.";
+                
+                // Send security alert for account lock
+                if (allNotifications && result.userId) {
+                    await sendSecurityAlert(result.userId, email, 'account_locked', {
+                        message: 'Account locked due to multiple failed login attempts',
+                        severity: 'high'
+                    });
+                }
             } else {
                 // Convert Firebase errors to user-friendly messages
                 switch (error.code) {
@@ -1335,6 +1707,14 @@
                 
                 if (userId) {
                     await recordLoginHistory(userId, false, error.code);
+                    
+                    // Record security event for failed login
+                    await recordSecurityEvent('failed_login', {
+                        email: email,
+                        userId: userId,
+                        errorCode: error.code,
+                        ip: userIP
+                    });
                 }
             } catch (logError) {
                 console.error("Failed to record login history:", logError);
@@ -1363,6 +1743,27 @@
             if (e.key === 'Enter') {
                 login();
             }
+        });
+        
+        // Load notification preferences from localStorage
+        const savedEmailNotifications = localStorage.getItem('nasir_email_notifications');
+        const savedAllNotifications = localStorage.getItem('nasir_all_notifications');
+        
+        if (savedEmailNotifications !== null) {
+            document.getElementById('emailNotifications').checked = savedEmailNotifications === 'true';
+        }
+        
+        if (savedAllNotifications !== null) {
+            document.getElementById('allNotifications').checked = savedAllNotifications === 'true';
+        }
+        
+        // Save notification preferences when changed
+        document.getElementById('emailNotifications').addEventListener('change', function() {
+            localStorage.setItem('nasir_email_notifications', this.checked);
+        });
+        
+        document.getElementById('allNotifications').addEventListener('change', function() {
+            localStorage.setItem('nasir_all_notifications', this.checked);
         });
     });
 </script>
