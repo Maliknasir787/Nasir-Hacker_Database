@@ -769,7 +769,6 @@
     let userCountry = '';
     let userDeviceId = '';
     let loginAttempts = 0;
-    let isLockedOut = false;
     let canLogin = false;
 
     // Function to get user IP and location
@@ -827,7 +826,7 @@
         return 'device_' + Math.abs(hash).toString(36);
     }
 
-    // SIMPLIFIED: Function to check rate limiting
+    // Function to check rate limiting
     async function checkRateLimit() {
         try {
             const ipRateRef = ref(database, `rateLimits/${userIP}`);
@@ -870,7 +869,7 @@
         }
     }
 
-    // SIMPLIFIED: Function to check if device is trusted
+    // Function to check if device is trusted
     async function checkTrustedDevice(userId) {
         try {
             const trustedDeviceRef = ref(database, `users/${userId}/trustedDevices/${userDeviceId}`);
@@ -891,7 +890,7 @@
         }
     }
 
-    // SIMPLIFIED: Function to trust current device
+    // Function to trust current device
     async function trustCurrentDevice(userId) {
         try {
             const trustedDeviceRef = ref(database, `users/${userId}/trustedDevices/${userDeviceId}`);
@@ -911,7 +910,7 @@
         }
     }
 
-    // SIMPLIFIED: Function to record login history
+    // Function to record login history
     async function recordLoginHistory(userId, success, reason = '') {
         try {
             const historyRef = ref(database, `loginHistory/${userId}`);
@@ -930,34 +929,60 @@
         }
     }
 
-    // SIMPLIFIED: Function to update login attempts
-    async function updateLoginAttempts(userId, increment = true) {
+    // Function to update login attempts - FIXED VERSION
+    async function updateLoginAttempts(email, increment = true) {
         try {
+            // Get user by email to find their UID
+            const usersRef = ref(database, 'users');
+            const snapshot = await get(usersRef);
+            
+            let userId = null;
+            let userData = null;
+            
+            if (snapshot.exists()) {
+                const users = snapshot.val();
+                for (const [uid, data] of Object.entries(users)) {
+                    if (data.email === email) {
+                        userId = uid;
+                        userData = data;
+                        break;
+                    }
+                }
+            }
+            
+            if (!userId) {
+                // User not found in database
+                return { attempts: 1, isLocked: false, lockoutUntil: null };
+            }
+            
+            // Get current attempts
             const userRef = ref(database, `users/${userId}`);
-            const snapshot = await get(userRef);
+            const userSnapshot = await get(userRef);
             
             let attempts = 0;
             let lastFailed = null;
             let isLocked = false;
             let lockoutUntil = null;
             
-            if (snapshot.exists()) {
-                const userData = snapshot.val();
-                attempts = userData.loginAttempts || 0;
-                lastFailed = userData.lastFailedLogin || null;
-                isLocked = userData.isLocked || false;
-                lockoutUntil = userData.lockoutUntil || null;
+            if (userSnapshot.exists()) {
+                const userDbData = userSnapshot.val();
+                attempts = userDbData.loginAttempts || 0;
+                lastFailed = userDbData.lastFailedLogin || null;
+                isLocked = userDbData.isLocked || false;
+                lockoutUntil = userDbData.lockoutUntil || null;
             }
             
             if (increment) {
                 attempts++;
                 lastFailed = Date.now();
                 
+                // Check if account should be locked
                 if (attempts >= SECURITY_CONFIG.maxLoginAttempts) {
                     isLocked = true;
                     lockoutUntil = Date.now() + SECURITY_CONFIG.lockoutDuration;
                 }
                 
+                // Update user record
                 await update(userRef, {
                     loginAttempts: attempts,
                     lastFailedLogin: lastFailed,
@@ -973,24 +998,46 @@
                 });
             }
             
-            return { attempts, isLocked, lockoutUntil };
+            return { attempts, isLocked, lockoutUntil, userId };
         } catch (error) {
             console.error("Update login attempts error:", error);
             return { attempts: 0, isLocked: false, lockoutUntil: null };
         }
     }
 
-    // SIMPLIFIED: Function to check account lockout
-    async function checkAccountLockout(userId) {
+    // Function to check account lockout
+    async function checkAccountLockout(email) {
         try {
-            const userRef = ref(database, `users/${userId}`);
-            const snapshot = await get(userRef);
+            // Find user by email
+            const usersRef = ref(database, 'users');
+            const snapshot = await get(usersRef);
+            
+            let userId = null;
+            let userData = null;
             
             if (snapshot.exists()) {
-                const userData = snapshot.val();
-                const isLocked = userData.isLocked || false;
-                const lockoutUntil = userData.lockoutUntil || null;
-                const attempts = userData.loginAttempts || 0;
+                const users = snapshot.val();
+                for (const [uid, data] of Object.entries(users)) {
+                    if (data.email === email) {
+                        userId = uid;
+                        userData = data;
+                        break;
+                    }
+                }
+            }
+            
+            if (!userId || !userData) {
+                return { locked: false, timeLeft: 0, attempts: 0 };
+            }
+            
+            const userRef = ref(database, `users/${userId}`);
+            const userSnapshot = await get(userRef);
+            
+            if (userSnapshot.exists()) {
+                const userDbData = userSnapshot.val();
+                const isLocked = userDbData.isLocked || false;
+                const lockoutUntil = userDbData.lockoutUntil || null;
+                const attempts = userDbData.loginAttempts || 0;
                 
                 if (isLocked && lockoutUntil) {
                     const timeLeft = lockoutUntil - Date.now();
@@ -1076,6 +1123,7 @@
         
         const loginBtn = document.getElementById('loginBtn');
         loginBtn.disabled = true;
+        loginBtn.innerHTML = '<i class="fas fa-lock"></i> Account Locked';
     }
 
     // Function to show device info
@@ -1137,6 +1185,14 @@
             return;
         }
 
+        // Check account lockout before attempting
+        const lockoutCheck = await checkAccountLockout(email);
+        if (lockoutCheck.locked) {
+            showLockoutTimer(lockoutCheck.timeLeft);
+            showAttemptsCounter(lockoutCheck.attempts, SECURITY_CONFIG.maxLoginAttempts);
+            return;
+        }
+
         // Show loading animation
         document.getElementById("loading").style.display = "flex";
         const loginBtn = document.getElementById("loginBtn");
@@ -1161,7 +1217,7 @@
             console.log("✅ Login successful:", user.email);
 
             // Reset login attempts on successful login
-            await updateLoginAttempts(user.uid, false);
+            await updateLoginAttempts(email, false);
             
             // Check if device is trusted
             const isTrustedDevice = await checkTrustedDevice(user.uid);
@@ -1215,70 +1271,73 @@
             console.error("❌ Login error:", error.code, error.message);
             
             let errorMessage = "Login failed. Please try again.";
-            let userId = null;
             
-            // Try to update login attempts for this email
-            try {
-                const emailHash = btoa(email).replace(/[=+/]/g, '');
-                userId = `temp_${emailHash}`;
-                
-                // Update login attempts
-                const result = await updateLoginAttempts(userId, true);
-                loginAttempts = result.attempts;
-                
-                // Check if account is now locked
-                const lockoutCheck = await checkAccountLockout(userId);
-                if (lockoutCheck.locked) {
-                    showLockoutTimer(lockoutCheck.timeLeft);
-                    showAttemptsCounter(lockoutCheck.attempts, SECURITY_CONFIG.maxLoginAttempts);
-                    return;
-                }
-                
-                // Show attempts counter
-                if (loginAttempts > 0) {
-                    showAttemptsCounter(loginAttempts, SECURITY_CONFIG.maxLoginAttempts);
-                }
-                
-            } catch (dbError) {
-                console.error("Failed to update login attempts:", dbError);
+            // Update login attempts
+            const result = await updateLoginAttempts(email, true);
+            const { attempts, isLocked, lockoutUntil } = result;
+            
+            // Show attempts counter
+            if (attempts > 0) {
+                showAttemptsCounter(attempts, SECURITY_CONFIG.maxLoginAttempts);
             }
             
-            // Convert Firebase errors to user-friendly messages
-            switch (error.code) {
-                case "auth/invalid-email":
-                    errorMessage = "Invalid email address format.";
-                    break;
-                case "auth/user-not-found":
-                    errorMessage = "Email not found. Please check your email address.";
-                    break;
-                case "auth/wrong-password":
-                    errorMessage = "Incorrect password. Please try again.";
-                    break;
-                case "auth/too-many-requests":
-                    errorMessage = "Too many failed attempts. Please try again later.";
-                    break;
-                case "auth/invalid-credential":
-                    errorMessage = "Invalid credentials. Please check your email and password.";
-                    break;
-                case "auth/network-request-failed":
-                    errorMessage = "Network error. Please check your internet connection.";
-                    break;
-                case "auth/user-disabled":
-                    errorMessage = "This account has been disabled. Please contact support.";
-                    break;
-                default:
-                    errorMessage = `Login failed: ${error.message}`;
+            // Check if account is now locked
+            if (isLocked && lockoutUntil) {
+                const timeLeft = lockoutUntil - Date.now();
+                showLockoutTimer(timeLeft);
+                errorMessage = "Account locked due to too many failed attempts. Please try again later.";
+            } else {
+                // Convert Firebase errors to user-friendly messages
+                switch (error.code) {
+                    case "auth/invalid-email":
+                        errorMessage = "Invalid email address format.";
+                        break;
+                    case "auth/user-not-found":
+                        errorMessage = "Email not found. Please check your email address.";
+                        break;
+                    case "auth/wrong-password":
+                        errorMessage = "Incorrect password. Please try again.";
+                        break;
+                    case "auth/too-many-requests":
+                        errorMessage = "Too many failed attempts. Please try again later.";
+                        break;
+                    case "auth/invalid-credential":
+                        errorMessage = "Invalid credentials. Please check your email and password.";
+                        break;
+                    case "auth/network-request-failed":
+                        errorMessage = "Network error. Please check your internet connection.";
+                        break;
+                    case "auth/user-disabled":
+                        errorMessage = "This account has been disabled. Please contact support.";
+                        break;
+                    default:
+                        errorMessage = `Login failed: ${error.message}`;
+                }
             }
             
             showError(errorMessage);
             
             // Record failed login
-            if (userId) {
-                try {
-                    await recordLoginHistory(userId, false, error.code);
-                } catch (logError) {
-                    console.error("Failed to record login history:", logError);
+            try {
+                const usersRef = ref(database, 'users');
+                const snapshot = await get(usersRef);
+                let userId = null;
+                
+                if (snapshot.exists()) {
+                    const users = snapshot.val();
+                    for (const [uid, data] of Object.entries(users)) {
+                        if (data.email === email) {
+                            userId = uid;
+                            break;
+                        }
+                    }
                 }
+                
+                if (userId) {
+                    await recordLoginHistory(userId, false, error.code);
+                }
+            } catch (logError) {
+                console.error("Failed to record login history:", logError);
             }
         }
     }
