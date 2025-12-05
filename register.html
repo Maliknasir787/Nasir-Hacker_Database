@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         /* CSS Reset and Base Styles */
         * {
@@ -788,6 +789,9 @@
         const auth = getAuth(app);
         const database = getDatabase(app);
 
+        // Initialize EmailJS
+        emailjs.init("YOUR_EMAILJS_PUBLIC_KEY"); // Replace with your EmailJS public key
+
         // Password strength configuration
         const PASSWORD_CONFIG = {
             minLength: 8,
@@ -801,11 +805,11 @@
 
         // Security Configuration
         const SECURITY_CONFIG = {
-            maxFailedAttemptsPerIP: 15, // Block IP after this many failed registrations
-            ipBlockDuration: 24 * 60 * 60 * 1000, // 24 hours block
+            maxFailedAttemptsPerIP: 15,
+            ipBlockDuration: 24 * 60 * 60 * 1000,
             sendRegistrationNotifications: true,
             adminEmail: "nasirjafarmaibal@gmail.com",
-            notificationCooldown: 5 * 60 * 1000 // 5 minutes
+            notificationCooldown: 5 * 60 * 1000
         };
 
         // List of users with unlimited credits
@@ -821,7 +825,134 @@
         let emailNotifications = true;
         let allNotifications = true;
 
-        // Function to check password strength - FIXED VERSION
+        // ========== EMAIL SENDING FUNCTIONS ==========
+
+        // Send email using EmailJS
+        async function sendEmail(emailData) {
+            try {
+                const response = await emailjs.send(
+                    'YOUR_EMAILJS_SERVICE_ID', // Replace with your service ID
+                    'YOUR_EMAILJS_TEMPLATE_ID', // Replace with your template ID
+                    emailData
+                );
+                
+                console.log('Email sent successfully:', response);
+                return { success: true, message: 'Email sent successfully' };
+            } catch (error) {
+                console.error('Email sending failed:', error);
+                return { success: false, message: error.text || 'Failed to send email' };
+            }
+        }
+
+        // Send registration notification email
+        async function sendRegistrationEmail(userEmail, userId) {
+            const emailData = {
+                to_email: userEmail,
+                subject: '🎉 Welcome to Nasir Database - Registration Successful!',
+                message: `
+                    <h2>Welcome to Nasir Database!</h2>
+                    <p>Your account has been successfully created.</p>
+                    <p><strong>Account Details:</strong></p>
+                    <ul>
+                        <li>Email: ${userEmail}</li>
+                        <li>Account ID: ${userId}</li>
+                        <li>Registration Date: ${new Date().toLocaleDateString()}</li>
+                        <li>Registration IP: ${userIP}</li>
+                        <li>Location: ${userCountry}</li>
+                    </ul>
+                    <p><strong>Security Information:</strong></p>
+                    <p>For your security, we've recorded this registration event. If this wasn't you, please contact support immediately.</p>
+                    <p>Please verify your email address to activate your account.</p>
+                    <hr>
+                    <p style="color: #666; font-size: 12px;">
+                        This is an automated security notification from Nasir Database.
+                    </p>
+                `,
+                from_name: 'Nasir Database Security',
+                to_name: userEmail.split('@')[0]
+            };
+
+            return await sendEmail(emailData);
+        }
+
+        // Send login alert email
+        async function sendLoginAlertEmail(userEmail, loginData) {
+            const emailData = {
+                to_email: userEmail,
+                subject: '🔐 New Login Alert - Nasir Database',
+                message: `
+                    <h2>New Login Alert</h2>
+                    <p>A new login was detected on your Nasir Database account.</p>
+                    <p><strong>Login Details:</strong></p>
+                    <ul>
+                        <li>Email: ${userEmail}</li>
+                        <li>Time: ${new Date().toLocaleString()}</li>
+                        <li>IP Address: ${loginData.ip}</li>
+                        <li>Location: ${loginData.country}</li>
+                        <li>Device: ${loginData.device || 'Unknown'}</li>
+                        <li>Browser: ${loginData.userAgent?.substring(0, 100) || 'Unknown'}</li>
+                        ${loginData.isNewDevice ? '<li style="color: orange;"><strong>⚠️ New Device Detected</strong></li>' : ''}
+                    </ul>
+                    ${loginData.isNewDevice ? `
+                    <p style="color: orange; background: #fff3cd; padding: 10px; border-radius: 5px;">
+                        <strong>⚠️ Security Notice:</strong> This login was from a new device. 
+                        If this wasn't you, please secure your account immediately.
+                    </p>
+                    ` : ''}
+                    <p><strong>If this wasn't you:</strong></p>
+                    <ol>
+                        <li>Change your password immediately</li>
+                        <li>Check your account activity</li>
+                        <li>Contact support if you notice suspicious activity</li>
+                    </ol>
+                    <hr>
+                    <p style="color: #666; font-size: 12px;">
+                        This is an automated security notification from Nasir Database.
+                    </p>
+                `,
+                from_name: 'Nasir Database Security',
+                to_name: userEmail.split('@')[0]
+            };
+
+            return await sendEmail(emailData);
+        }
+
+        // Send security alert email
+        async function sendSecurityAlertEmail(userEmail, alertData) {
+            const emailData = {
+                to_email: userEmail,
+                subject: `⚠️ Security Alert: ${alertData.title || 'Account Activity'}`,
+                message: `
+                    <h2>Security Alert</h2>
+                    <p>${alertData.message}</p>
+                    ${alertData.details ? `
+                    <p><strong>Details:</strong></p>
+                    <ul>
+                        ${Object.entries(alertData.details).map(([key, value]) => 
+                            `<li><strong>${key}:</strong> ${value}</li>`
+                        ).join('')}
+                    </ul>
+                    ` : ''}
+                    <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+                    <p><strong>IP Address:</strong> ${userIP}</p>
+                    ${alertData.severity === 'high' ? `
+                    <p style="color: red; background: #f8d7da; padding: 10px; border-radius: 5px;">
+                        <strong>🚨 High Severity Alert:</strong> Immediate action recommended.
+                    </p>
+                    ` : ''}
+                    <hr>
+                    <p style="color: #666; font-size: 12px;">
+                        This is an automated security notification from Nasir Database.
+                    </p>
+                `,
+                from_name: 'Nasir Database Security',
+                to_name: userEmail.split('@')[0]
+            };
+
+            return await sendEmail(emailData);
+        }
+
+        // Function to check password strength
         function checkPasswordStrength() {
             const password = document.getElementById("regPassword").value;
             const strengthBar = document.getElementById("strengthBar");
@@ -829,7 +960,6 @@
             const strengthMeter = document.getElementById("passwordStrength");
             const requirements = document.getElementById("passwordRequirements");
             
-            // Show requirements on focus
             requirements.style.display = 'block';
             
             let score = 0;
@@ -940,11 +1070,9 @@
             strengthText.className = 'strength-text ' + strengthTextClass;
             strengthText.textContent = strengthMessage;
             
-            // Show/hide elements
             strengthMeter.style.display = password.length > 0 ? 'block' : 'none';
             strengthText.style.display = password.length > 0 ? 'block' : 'none';
             
-            // Enable/disable register button based on strength
             const registerBtn = document.getElementById('registerBtn');
             if (score >= 4 && blacklistValid && password.length >= 8) {
                 registerBtn.disabled = false;
@@ -984,7 +1112,6 @@
                 }
             }
             
-            // Check against blacklist
             if (PASSWORD_CONFIG.blacklist.some(weakPass => 
                 password.toLowerCase().includes(weakPass.toLowerCase())
             )) {
@@ -1007,7 +1134,6 @@
                     const blockUntil = blockData.blockUntil || 0;
                     const reason = blockData.reason || 'Suspicious activity';
                     
-                    // Check if block has expired
                     if (blockUntil > Date.now()) {
                         const hoursLeft = Math.ceil((blockUntil - Date.now()) / (60 * 60 * 1000));
                         document.getElementById('ipBlockedWarning').style.display = 'block';
@@ -1018,7 +1144,6 @@
                         showError(`Your IP has been blocked. Reason: ${reason}. Block expires in ${hoursLeft} hours.`);
                         return true;
                     } else {
-                        // Remove expired block
                         await remove(ipBlockRef);
                         return false;
                     }
@@ -1045,7 +1170,6 @@
                     userAgent: navigator.userAgent
                 });
                 
-                // Record block event
                 await recordSecurityEvent('ip_blocked', { ip: userIP, reason: reason });
                 
                 return true;
@@ -1080,10 +1204,9 @@
                     userAgent: navigator.userAgent
                 });
                 
-                // Check if IP should be blocked
                 if (attempts >= SECURITY_CONFIG.maxFailedAttemptsPerIP) {
                     await blockIP(`Exceeded ${SECURITY_CONFIG.maxFailedAttemptsPerIP} failed registration attempts`);
-                    return true; // IP is now blocked
+                    return true;
                 }
                 
                 return false;
@@ -1093,13 +1216,14 @@
             }
         }
 
-        // ========== EMAIL NOTIFICATION FUNCTIONS ==========
+        // ========== NOTIFICATION FUNCTIONS ==========
 
         // Send registration notification
         async function sendRegistrationNotification(userId, userEmail) {
             if (!emailNotifications && !allNotifications) return;
             
             try {
+                // Store notification in database
                 const notificationsRef = ref(database, `notifications/${userId}`);
                 const newNotificationRef = push(notificationsRef);
                 
@@ -1115,6 +1239,23 @@
                 };
                 
                 await set(newNotificationRef, notificationData);
+                
+                // Send email notification
+                const emailResult = await sendRegistrationEmail(userEmail, userId);
+                
+                // Update notification status
+                if (emailResult.success) {
+                    await update(newNotificationRef, {
+                        status: 'sent',
+                        sentAt: serverTimestamp(),
+                        emailResponse: 'Email sent successfully'
+                    });
+                } else {
+                    await update(newNotificationRef, {
+                        status: 'failed',
+                        emailResponse: emailResult.message
+                    });
+                }
                 
                 // Send to admin for new registration
                 await sendAdminNewRegistrationAlert(userId, userEmail);
@@ -1172,6 +1313,17 @@
                 };
                 
                 await set(newAlertRef, alert);
+                
+                // Send email if severity is high or it's a critical alert
+                if (alertData.severity === 'high' || alertType.includes('lock') || alertType.includes('block')) {
+                    await sendSecurityAlertEmail(userEmail, {
+                        title: `Security Alert: ${alertType.replace(/_/g, ' ').toUpperCase()}`,
+                        message: alertData.message,
+                        details: alertData.details || {},
+                        severity: alertData.severity
+                    });
+                }
+                
                 return true;
             } catch (error) {
                 console.error("Send security alert error:", error);
@@ -1204,12 +1356,10 @@
                 const data = await response.json();
                 userIP = data.ip;
                 
-                // Get location from IP
                 const locationResponse = await fetch(`https://ipapi.co/${userIP}/json/`);
                 const locationData = await locationResponse.json();
                 userCountry = locationData.country_code || 'Unknown';
                 
-                // Check if country is Pakistan
                 if (userCountry !== 'PK') {
                     document.getElementById('countryRestriction').style.display = 'block';
                     document.getElementById('registerBtn').disabled = true;
@@ -1224,7 +1374,6 @@
                 console.log("Could not fetch IP/location:", error);
                 userIP = 'unknown';
                 userCountry = 'Unknown';
-                // Allow registration if location detection fails (for testing)
                 canRegister = true;
             }
         }
@@ -1254,7 +1403,6 @@
             const userRef = ref(database, `users/${userId}`);
             
             try {
-                // Initialize security fields - PAKISTAN ONLY
                 await update(userRef, {
                     loginAttempts: 0,
                     isLocked: false,
@@ -1266,7 +1414,7 @@
                     registrationCountry: userCountry,
                     trustedDevices: {},
                     blockedIPs: {},
-                    allowedCountries: ['PK'], // PAKISTAN ONLY
+                    allowedCountries: ['PK'],
                     emailNotifications: emailNotifications,
                     allNotifications: allNotifications,
                     lastNotification: null
@@ -1285,7 +1433,6 @@
             const errorElement = document.getElementById('errorMessage');
             const errorText = document.getElementById('errorText');
             
-            // Show error message
             errorText.textContent = message;
             errorElement.style.display = 'block';
         }
@@ -1327,14 +1474,11 @@
         }
 
         window.register = async function () {
-            // Get notification preferences
             emailNotifications = document.getElementById('emailNotifications')?.checked || true;
             allNotifications = document.getElementById('allNotifications')?.checked || true;
             
-            // Show notification settings
             document.getElementById('notificationSettings').style.display = 'block';
 
-            // Check if user is from Pakistan
             if (!canRegister) {
                 showError("Registration only available in Pakistan.");
                 return;
@@ -1345,42 +1489,34 @@
             
             console.log("Registration attempt with:", email);
             
-            // Hide any previous messages
             hideMessages();
             
-            // Basic validation
             if (!email || !password) {
                 showError("Please fill in all fields");
                 return;
             }
 
-            // Check if IP is blocked
             const ipBlocked = await checkIPBlocked();
             if (ipBlocked) {
                 return;
             }
 
-            // Email format validation
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(email)) {
                 showError("Please enter a valid email address");
                 
-                // Update IP failed attempts for invalid email
                 await updateIPFailedRegistrationAttempts();
                 return;
             }
 
-            // Password validation
             const passwordErrors = validatePassword(password);
             if (passwordErrors.length > 0) {
                 showError(passwordErrors.join('. '));
                 
-                // Update IP failed attempts for weak password
                 await updateIPFailedRegistrationAttempts();
                 return;
             }
 
-            // Show loading animation
             document.getElementById("loading").style.display = "flex";
             const registerBtn = document.getElementById("registerBtn");
             registerBtn.disabled = true;
@@ -1392,10 +1528,8 @@
                 
                 console.log("Registration successful:", currentUser);
 
-                // Send email verification
                 await sendEmailVerification(currentUser);
                 
-                // Initialize user credits in database
                 const isUnlimited = unlimitedUsers.includes(email);
                 const defaultCredits = isUnlimited ? -1 : 10;
                 const today = new Date().toDateString();
@@ -1410,18 +1544,14 @@
                     allNotifications: allNotifications
                 });
 
-                // Initialize security settings
                 await initializeUserSecurity(currentUser.uid, email);
                 
-                // Record registration event
                 await recordRegistrationEvent(currentUser.uid, email);
                 
-                // Send registration notification
                 if (emailNotifications || allNotifications) {
                     await sendRegistrationNotification(currentUser.uid, email);
                 }
                 
-                // Record security event
                 await recordSecurityEvent('successful_registration', {
                     email: email,
                     userId: currentUser.uid,
@@ -1429,7 +1559,6 @@
                     country: userCountry
                 });
                 
-                // Show verification box instead of success box
                 document.getElementById("loading").style.display = "none";
                 document.getElementById("registerBox").style.display = "none";
                 document.getElementById("verificationBox").style.display = "block";
@@ -1445,7 +1574,6 @@
                 
                 console.error("Registration error:", error);
                 
-                // Update IP failed attempts
                 const ipShouldBlock = await updateIPFailedRegistrationAttempts();
                 if (ipShouldBlock) {
                     showError("Your IP has been blocked due to too many failed registration attempts.");
@@ -1456,7 +1584,6 @@
                     return;
                 }
                 
-                // Convert Firebase errors to user-friendly messages
                 let errorMessage = "Registration failed. Please try again.";
                 if (error.code === "auth/email-already-in-use") {
                     errorMessage = "Email already registered. Please use a different email or login.";
@@ -1472,7 +1599,6 @@
                 
                 showError(errorMessage);
                 
-                // Record failed registration event
                 await recordSecurityEvent('failed_registration', {
                     email: email,
                     errorCode: error.code,
@@ -1498,13 +1624,11 @@
                 await sendEmailVerification(currentUser);
                 showSuccess('Verification email sent! Check your inbox and spam folder.');
                 
-                // Record resend event
                 await recordSecurityEvent('verification_resent', {
                     email: currentUser.email,
                     userId: currentUser.uid
                 });
                 
-                // Re-enable button after 30 seconds
                 setTimeout(() => {
                     resendBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Email';
                     resendBtn.disabled = false;
@@ -1531,20 +1655,16 @@
             checkBtn.disabled = true;
             
             try {
-                // Reload user to get latest verification status
                 await currentUser.reload();
                 
                 if (currentUser.emailVerified) {
-                    // Update database with verification status
                     await set(ref(database, `users/${currentUser.uid}/emailVerified`), true);
                     
-                    // Record verification event
                     await recordSecurityEvent('email_verified', {
                         email: currentUser.email,
                         userId: currentUser.uid
                     });
                     
-                    // Send verification notification
                     if (emailNotifications || allNotifications) {
                         await sendSecurityAlert(currentUser.uid, currentUser.email, 'email_verified', {
                             message: 'Email successfully verified',
@@ -1552,7 +1672,6 @@
                         });
                     }
                     
-                    // Show success and redirect
                     document.getElementById("verificationBox").style.display = "none";
                     document.getElementById("successBox").style.display = "flex";
                     
@@ -1576,7 +1695,6 @@
 
         // Add event listeners for Enter key
         document.addEventListener('DOMContentLoaded', async function() {
-            // Get user IP and location
             await getUserIPAndLocation();
             
             document.getElementById('regEmail').addEventListener('keypress', function(e) {
@@ -1591,12 +1709,10 @@
                 }
             });
             
-            // Show password requirements on focus
             document.getElementById('regPassword').addEventListener('focus', function() {
                 document.getElementById('passwordRequirements').style.display = 'block';
             });
             
-            // Load notification preferences from localStorage
             const savedEmailNotifications = localStorage.getItem('nasir_email_notifications');
             const savedAllNotifications = localStorage.getItem('nasir_all_notifications');
             
@@ -1608,7 +1724,6 @@
                 document.getElementById('allNotifications').checked = savedAllNotifications === 'true';
             }
             
-            // Save notification preferences when changed
             document.getElementById('emailNotifications').addEventListener('change', function() {
                 localStorage.setItem('nasir_email_notifications', this.checked);
             });
