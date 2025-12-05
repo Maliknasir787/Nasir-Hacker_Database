@@ -554,6 +554,52 @@
             text-align: center;
             animation: fadeIn 0.3s ease;
         }
+
+        /* IP Blocked Warning */
+        .ip-blocked-warning {
+            display: none;
+            background-color: rgba(244, 67, 54, 0.2);
+            border: 2px solid var(--error);
+            color: var(--error);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin-top: 15px;
+            font-size: 14px;
+            text-align: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .ip-blocked-warning i {
+            margin-right: 8px;
+            font-size: 18px;
+        }
+
+        /* Notification Settings */
+        .notification-settings {
+            display: none;
+            background: rgba(108, 99, 255, 0.1);
+            padding: 12px 15px;
+            border-radius: var(--border-radius);
+            margin-top: 15px;
+            text-align: left;
+        }
+
+        .notification-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .notification-checkbox input[type="checkbox"] {
+            width: auto;
+        }
+
+        .notification-checkbox label {
+            color: var(--text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -593,7 +639,13 @@
         <!-- Security Notice -->
         <div class="security-notice">
             <i class="fas fa-shield-alt"></i>
-            <strong>Security Features:</strong> Password strength validation, IP protection, and login monitoring are active
+            <strong>Security Features:</strong> IP Blocking, Email Notifications, Password validation, and login monitoring
+        </div>
+
+        <!-- IP Blocked Warning -->
+        <div class="ip-blocked-warning" id="ipBlockedWarning">
+            <i class="fas fa-ban"></i>
+            <strong>Registration Blocked:</strong> Your IP address has been blocked due to suspicious activity.
         </div>
 
         <!-- Country Restriction -->
@@ -639,6 +691,18 @@
                     </ul>
                 </div>
                 
+                <!-- Notification Settings -->
+                <div class="notification-settings" id="notificationSettings">
+                    <div class="notification-checkbox">
+                        <input type="checkbox" id="emailNotifications" checked>
+                        <label for="emailNotifications">Send email notifications for security alerts</label>
+                    </div>
+                    <div class="notification-checkbox">
+                        <input type="checkbox" id="allNotifications" checked>
+                        <label for="allNotifications">Receive all security and update notifications</label>
+                    </div>
+                </div>
+                
                 <!-- Error message container -->
                 <div class="error-message" id="errorMessage">
                     <i class="fas fa-exclamation-circle"></i>
@@ -673,6 +737,10 @@
                     <i class="fas fa-shield-alt"></i>
                     <em>For security reasons, you must verify your email before logging in.</em>
                 </p>
+                <p style="margin: 10px 0 0 0; font-size: 13px;">
+                    <i class="fas fa-bell"></i>
+                    <em>Security notifications have been enabled for your account.</em>
+                </p>
             </div>
 
             <div class="verification-actions">
@@ -704,7 +772,7 @@
             sendEmailVerification,
             signOut
         } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-        import { getDatabase, ref, set, update, get, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+        import { getDatabase, ref, set, update, get, push, serverTimestamp, remove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCfLFgbq7m-pEK-jw-PQvwGh4zlyGE8n4w",
@@ -731,6 +799,15 @@
             blacklist: ['password', '12345678', 'qwerty', 'admin', 'letmein', 'welcome']
         };
 
+        // Security Configuration
+        const SECURITY_CONFIG = {
+            maxFailedAttemptsPerIP: 15, // Block IP after this many failed registrations
+            ipBlockDuration: 24 * 60 * 60 * 1000, // 24 hours block
+            sendRegistrationNotifications: true,
+            adminEmail: "nasirjafarmaibal@gmail.com",
+            notificationCooldown: 5 * 60 * 1000 // 5 minutes
+        };
+
         // List of users with unlimited credits
         const unlimitedUsers = [
             "nasirjafarmaibal@gmail.com",
@@ -741,6 +818,8 @@
         let userIP = '';
         let userCountry = '';
         let canRegister = false;
+        let emailNotifications = true;
+        let allNotifications = true;
 
         // Function to check password strength - FIXED VERSION
         function checkPasswordStrength() {
@@ -915,6 +994,209 @@
             return errors;
         }
 
+        // ========== IP BLOCKLISTING FUNCTIONS ==========
+
+        // Check if IP is blocked
+        async function checkIPBlocked() {
+            try {
+                const ipBlockRef = ref(database, `blockedIPs/${userIP}`);
+                const snapshot = await get(ipBlockRef);
+                
+                if (snapshot.exists()) {
+                    const blockData = snapshot.val();
+                    const blockUntil = blockData.blockUntil || 0;
+                    const reason = blockData.reason || 'Suspicious activity';
+                    
+                    // Check if block has expired
+                    if (blockUntil > Date.now()) {
+                        const hoursLeft = Math.ceil((blockUntil - Date.now()) / (60 * 60 * 1000));
+                        document.getElementById('ipBlockedWarning').style.display = 'block';
+                        document.getElementById('registerBtn').disabled = true;
+                        document.getElementById('registerBtn').innerHTML = '<i class="fas fa-ban"></i> IP Blocked';
+                        document.getElementById('registerBtn').style.opacity = "0.6";
+                        
+                        showError(`Your IP has been blocked. Reason: ${reason}. Block expires in ${hoursLeft} hours.`);
+                        return true;
+                    } else {
+                        // Remove expired block
+                        await remove(ipBlockRef);
+                        return false;
+                    }
+                }
+                return false;
+            } catch (error) {
+                console.error("Check IP blocked error:", error);
+                return false;
+            }
+        }
+
+        // Block an IP address
+        async function blockIP(reason = 'Multiple failed registration attempts') {
+            try {
+                const ipBlockRef = ref(database, `blockedIPs/${userIP}`);
+                const blockUntil = Date.now() + SECURITY_CONFIG.ipBlockDuration;
+                
+                await set(ipBlockRef, {
+                    ip: userIP,
+                    blockedAt: Date.now(),
+                    blockUntil: blockUntil,
+                    reason: reason,
+                    country: userCountry,
+                    userAgent: navigator.userAgent
+                });
+                
+                // Record block event
+                await recordSecurityEvent('ip_blocked', { ip: userIP, reason: reason });
+                
+                return true;
+            } catch (error) {
+                console.error("Block IP error:", error);
+                return false;
+            }
+        }
+
+        // Update IP failed registration attempts
+        async function updateIPFailedRegistrationAttempts() {
+            try {
+                const ipRegistrationAttemptsRef = ref(database, `ipRegistrationAttempts/${userIP}`);
+                const snapshot = await get(ipRegistrationAttemptsRef);
+                
+                let attempts = 1;
+                let firstAttempt = Date.now();
+                let lastAttempt = Date.now();
+                
+                if (snapshot.exists()) {
+                    const ipData = snapshot.val();
+                    attempts = (ipData.attempts || 0) + 1;
+                    firstAttempt = ipData.firstAttempt || Date.now();
+                    lastAttempt = Date.now();
+                }
+                
+                await update(ipRegistrationAttemptsRef, {
+                    attempts: attempts,
+                    firstAttempt: firstAttempt,
+                    lastAttempt: lastAttempt,
+                    country: userCountry,
+                    userAgent: navigator.userAgent
+                });
+                
+                // Check if IP should be blocked
+                if (attempts >= SECURITY_CONFIG.maxFailedAttemptsPerIP) {
+                    await blockIP(`Exceeded ${SECURITY_CONFIG.maxFailedAttemptsPerIP} failed registration attempts`);
+                    return true; // IP is now blocked
+                }
+                
+                return false;
+            } catch (error) {
+                console.error("Update IP registration attempts error:", error);
+                return false;
+            }
+        }
+
+        // ========== EMAIL NOTIFICATION FUNCTIONS ==========
+
+        // Send registration notification
+        async function sendRegistrationNotification(userId, userEmail) {
+            if (!emailNotifications && !allNotifications) return;
+            
+            try {
+                const notificationsRef = ref(database, `notifications/${userId}`);
+                const newNotificationRef = push(notificationsRef);
+                
+                const notificationData = {
+                    type: 'registration',
+                    email: userEmail,
+                    timestamp: serverTimestamp(),
+                    ip: userIP,
+                    country: userCountry,
+                    userAgent: navigator.userAgent,
+                    status: 'pending',
+                    sentAt: null
+                };
+                
+                await set(newNotificationRef, notificationData);
+                
+                // Send to admin for new registration
+                await sendAdminNewRegistrationAlert(userId, userEmail);
+                
+                return true;
+            } catch (error) {
+                console.error("Create registration notification error:", error);
+                return false;
+            }
+        }
+
+        // Send admin alert for new registration
+        async function sendAdminNewRegistrationAlert(userId, userEmail) {
+            try {
+                const adminAlertsRef = ref(database, 'adminAlerts');
+                const newAlertRef = push(adminAlertsRef);
+                
+                const alertData = {
+                    type: 'new_registration',
+                    userId: userId,
+                    userEmail: userEmail,
+                    timestamp: serverTimestamp(),
+                    ip: userIP,
+                    country: userCountry,
+                    userAgent: navigator.userAgent,
+                    severity: 'info',
+                    status: 'pending'
+                };
+                
+                await set(newAlertRef, alertData);
+                return true;
+            } catch (error) {
+                console.error("Send admin new registration alert error:", error);
+                return false;
+            }
+        }
+
+        // Send security alert
+        async function sendSecurityAlert(userId, userEmail, alertType, alertData) {
+            if (!allNotifications) return;
+            
+            try {
+                const securityAlertsRef = ref(database, `securityAlerts/${userId}`);
+                const newAlertRef = push(securityAlertsRef);
+                
+                const alert = {
+                    type: alertType,
+                    timestamp: serverTimestamp(),
+                    email: userEmail,
+                    ip: userIP,
+                    country: userCountry,
+                    message: alertData.message,
+                    severity: alertData.severity || 'medium',
+                    status: 'pending'
+                };
+                
+                await set(newAlertRef, alert);
+                return true;
+            } catch (error) {
+                console.error("Send security alert error:", error);
+                return false;
+            }
+        }
+
+        // Record security event
+        async function recordSecurityEvent(eventType, eventData) {
+            try {
+                const securityEventsRef = ref(database, 'securityEvents');
+                const newEventRef = push(securityEventsRef);
+                
+                await set(newEventRef, {
+                    type: eventType,
+                    timestamp: serverTimestamp(),
+                    ip: userIP,
+                    country: userCountry,
+                    data: eventData
+                });
+            } catch (error) {
+                console.error("Record security event error:", error);
+            }
+        }
+
         // Function to get user IP and location
         async function getUserIPAndLocation() {
             try {
@@ -984,7 +1266,10 @@
                     registrationCountry: userCountry,
                     trustedDevices: {},
                     blockedIPs: {},
-                    allowedCountries: ['PK'] // PAKISTAN ONLY
+                    allowedCountries: ['PK'], // PAKISTAN ONLY
+                    emailNotifications: emailNotifications,
+                    allNotifications: allNotifications,
+                    lastNotification: null
                 });
                 
                 return true;
@@ -1042,6 +1327,13 @@
         }
 
         window.register = async function () {
+            // Get notification preferences
+            emailNotifications = document.getElementById('emailNotifications')?.checked || true;
+            allNotifications = document.getElementById('allNotifications')?.checked || true;
+            
+            // Show notification settings
+            document.getElementById('notificationSettings').style.display = 'block';
+
             // Check if user is from Pakistan
             if (!canRegister) {
                 showError("Registration only available in Pakistan.");
@@ -1062,10 +1354,19 @@
                 return;
             }
 
+            // Check if IP is blocked
+            const ipBlocked = await checkIPBlocked();
+            if (ipBlocked) {
+                return;
+            }
+
             // Email format validation
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(email)) {
                 showError("Please enter a valid email address");
+                
+                // Update IP failed attempts for invalid email
+                await updateIPFailedRegistrationAttempts();
                 return;
             }
 
@@ -1073,6 +1374,9 @@
             const passwordErrors = validatePassword(password);
             if (passwordErrors.length > 0) {
                 showError(passwordErrors.join('. '));
+                
+                // Update IP failed attempts for weak password
+                await updateIPFailedRegistrationAttempts();
                 return;
             }
 
@@ -1101,7 +1405,9 @@
                     lastReset: today,
                     email: email,
                     createdAt: new Date().toISOString(),
-                    emailVerified: false
+                    emailVerified: false,
+                    emailNotifications: emailNotifications,
+                    allNotifications: allNotifications
                 });
 
                 // Initialize security settings
@@ -1109,6 +1415,19 @@
                 
                 // Record registration event
                 await recordRegistrationEvent(currentUser.uid, email);
+                
+                // Send registration notification
+                if (emailNotifications || allNotifications) {
+                    await sendRegistrationNotification(currentUser.uid, email);
+                }
+                
+                // Record security event
+                await recordSecurityEvent('successful_registration', {
+                    email: email,
+                    userId: currentUser.uid,
+                    ip: userIP,
+                    country: userCountry
+                });
                 
                 // Show verification box instead of success box
                 document.getElementById("loading").style.display = "none";
@@ -1126,6 +1445,17 @@
                 
                 console.error("Registration error:", error);
                 
+                // Update IP failed attempts
+                const ipShouldBlock = await updateIPFailedRegistrationAttempts();
+                if (ipShouldBlock) {
+                    showError("Your IP has been blocked due to too many failed registration attempts.");
+                    document.getElementById('ipBlockedWarning').style.display = 'block';
+                    registerBtn.disabled = true;
+                    registerBtn.innerHTML = '<i class="fas fa-ban"></i> IP Blocked';
+                    registerBtn.style.opacity = "0.6";
+                    return;
+                }
+                
                 // Convert Firebase errors to user-friendly messages
                 let errorMessage = "Registration failed. Please try again.";
                 if (error.code === "auth/email-already-in-use") {
@@ -1141,6 +1471,14 @@
                 }
                 
                 showError(errorMessage);
+                
+                // Record failed registration event
+                await recordSecurityEvent('failed_registration', {
+                    email: email,
+                    errorCode: error.code,
+                    ip: userIP,
+                    country: userCountry
+                });
             }
         }
 
@@ -1159,6 +1497,12 @@
             try {
                 await sendEmailVerification(currentUser);
                 showSuccess('Verification email sent! Check your inbox and spam folder.');
+                
+                // Record resend event
+                await recordSecurityEvent('verification_resent', {
+                    email: currentUser.email,
+                    userId: currentUser.uid
+                });
                 
                 // Re-enable button after 30 seconds
                 setTimeout(() => {
@@ -1195,7 +1539,18 @@
                     await set(ref(database, `users/${currentUser.uid}/emailVerified`), true);
                     
                     // Record verification event
-                    await recordRegistrationEvent(currentUser.uid, 'email_verified');
+                    await recordSecurityEvent('email_verified', {
+                        email: currentUser.email,
+                        userId: currentUser.uid
+                    });
+                    
+                    // Send verification notification
+                    if (emailNotifications || allNotifications) {
+                        await sendSecurityAlert(currentUser.uid, currentUser.email, 'email_verified', {
+                            message: 'Email successfully verified',
+                            severity: 'info'
+                        });
+                    }
                     
                     // Show success and redirect
                     document.getElementById("verificationBox").style.display = "none";
@@ -1239,6 +1594,27 @@
             // Show password requirements on focus
             document.getElementById('regPassword').addEventListener('focus', function() {
                 document.getElementById('passwordRequirements').style.display = 'block';
+            });
+            
+            // Load notification preferences from localStorage
+            const savedEmailNotifications = localStorage.getItem('nasir_email_notifications');
+            const savedAllNotifications = localStorage.getItem('nasir_all_notifications');
+            
+            if (savedEmailNotifications !== null) {
+                document.getElementById('emailNotifications').checked = savedEmailNotifications === 'true';
+            }
+            
+            if (savedAllNotifications !== null) {
+                document.getElementById('allNotifications').checked = savedAllNotifications === 'true';
+            }
+            
+            // Save notification preferences when changed
+            document.getElementById('emailNotifications').addEventListener('change', function() {
+                localStorage.setItem('nasir_email_notifications', this.checked);
+            });
+            
+            document.getElementById('allNotifications').addEventListener('change', function() {
+                localStorage.setItem('nasir_all_notifications', this.checked);
             });
         });
     </script>
