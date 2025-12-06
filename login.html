@@ -806,7 +806,7 @@
                 </div>
             </div>
             
-            <button class="welcome-popup-btn" onclick="closeWelcomePopup()">Continue to Dashboard</button>
+            <button class="welcome-popup-btn" id="continueToDashboardBtn">Continue to Dashboard</button>
         </div>
     </div>
 
@@ -2274,6 +2274,11 @@
         
         document.getElementById('allNotifications').addEventListener('change', function() {
             localStorage.setItem('nasir_all_notifications', this.checked);
+        });
+        
+        // Add event listener for the continue button in welcome popup
+        document.getElementById('continueToDashboardBtn').addEventListener('click', function() {
+            closeWelcomePopup();
         });
     });
 </script>
