@@ -770,7 +770,8 @@
         import { 
             getAuth,
             createUserWithEmailAndPassword,
-            sendEmailVerification
+            sendEmailVerification,
+            updateProfile
         } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
         import { getDatabase, ref, set, update, get, push, serverTimestamp, remove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
@@ -1401,8 +1402,14 @@
                 
                 console.log("Registration successful:", currentUser);
 
-                // Send email verification (simple like old code)
-                await sendEmailVerification(currentUser);
+                // 🚨🚨🚨 CRITICAL FIX: Use sendEmailVerification() function properly 🚨🚨🚨
+                // FIXED: Use the imported sendEmailVerification function with proper parameters
+                await sendEmailVerification(currentUser, {
+                    url: 'https://nasir-hacker-database.vercel.app/login.html',
+                    handleCodeInApp: true
+                });
+                
+                console.log('✅ Firebase email verification sent successfully!');
                 
                 // Initialize user credits in database
                 const isUnlimited = unlimitedUsers.includes(email);
@@ -1503,8 +1510,12 @@
             resendBtn.disabled = true;
             
             try {
-                // Simple resend like old code
-                await sendEmailVerification(currentUser);
+                // 🚨 CRITICAL FIX: Use proper sendEmailVerification function
+                await sendEmailVerification(currentUser, {
+                    url: 'https://nasir-hacker-database.vercel.app/login.html',
+                    handleCodeInApp: true
+                });
+                
                 showSuccess('Verification email sent! Check your inbox and spam folder.');
                 
                 await recordSecurityEvent('verification_resent', {
