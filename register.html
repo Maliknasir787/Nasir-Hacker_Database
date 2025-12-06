@@ -770,8 +770,7 @@
         import { 
             getAuth,
             createUserWithEmailAndPassword,
-            sendEmailVerification,
-            signOut
+            sendEmailVerification
         } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
         import { getDatabase, ref, set, update, get, push, serverTimestamp, remove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
@@ -789,7 +788,7 @@
         const auth = getAuth(app);
         const database = getDatabase(app);
 
-        // Initialize EmailJS
+        // Initialize EmailJS (only for notifications, not for verification)
         emailjs.init("YOUR_EMAILJS_PUBLIC_KEY"); // Replace with your EmailJS public key
 
         // Password strength configuration
@@ -825,9 +824,9 @@
         let emailNotifications = true;
         let allNotifications = true;
 
-        // ========== EMAIL SENDING FUNCTIONS ==========
+        // ========== EMAIL NOTIFICATION FUNCTIONS ==========
 
-        // Send email using EmailJS
+        // Send email using EmailJS (only for notifications)
         async function sendEmail(emailData) {
             try {
                 const response = await emailjs.send(
@@ -836,7 +835,7 @@
                     emailData
                 );
                 
-                console.log('Email sent successfully:', response);
+                console.log('Notification email sent:', response);
                 return { success: true, message: 'Email sent successfully' };
             } catch (error) {
                 console.error('Email sending failed:', error);
@@ -875,82 +874,7 @@
             return await sendEmail(emailData);
         }
 
-        // Send login alert email
-        async function sendLoginAlertEmail(userEmail, loginData) {
-            const emailData = {
-                to_email: userEmail,
-                subject: '🔐 New Login Alert - Nasir Database',
-                message: `
-                    <h2>New Login Alert</h2>
-                    <p>A new login was detected on your Nasir Database account.</p>
-                    <p><strong>Login Details:</strong></p>
-                    <ul>
-                        <li>Email: ${userEmail}</li>
-                        <li>Time: ${new Date().toLocaleString()}</li>
-                        <li>IP Address: ${loginData.ip}</li>
-                        <li>Location: ${loginData.country}</li>
-                        <li>Device: ${loginData.device || 'Unknown'}</li>
-                        <li>Browser: ${loginData.userAgent?.substring(0, 100) || 'Unknown'}</li>
-                        ${loginData.isNewDevice ? '<li style="color: orange;"><strong>⚠️ New Device Detected</strong></li>' : ''}
-                    </ul>
-                    ${loginData.isNewDevice ? `
-                    <p style="color: orange; background: #fff3cd; padding: 10px; border-radius: 5px;">
-                        <strong>⚠️ Security Notice:</strong> This login was from a new device. 
-                        If this wasn't you, please secure your account immediately.
-                    </p>
-                    ` : ''}
-                    <p><strong>If this wasn't you:</strong></p>
-                    <ol>
-                        <li>Change your password immediately</li>
-                        <li>Check your account activity</li>
-                        <li>Contact support if you notice suspicious activity</li>
-                    </ol>
-                    <hr>
-                    <p style="color: #666; font-size: 12px;">
-                        This is an automated security notification from Nasir Database.
-                    </p>
-                `,
-                from_name: 'Nasir Database Security',
-                to_name: userEmail.split('@')[0]
-            };
-
-            return await sendEmail(emailData);
-        }
-
-        // Send security alert email
-        async function sendSecurityAlertEmail(userEmail, alertData) {
-            const emailData = {
-                to_email: userEmail,
-                subject: `⚠️ Security Alert: ${alertData.title || 'Account Activity'}`,
-                message: `
-                    <h2>Security Alert</h2>
-                    <p>${alertData.message}</p>
-                    ${alertData.details ? `
-                    <p><strong>Details:</strong></p>
-                    <ul>
-                        ${Object.entries(alertData.details).map(([key, value]) => 
-                            `<li><strong>${key}:</strong> ${value}</li>`
-                        ).join('')}
-                    </ul>
-                    ` : ''}
-                    <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
-                    <p><strong>IP Address:</strong> ${userIP}</p>
-                    ${alertData.severity === 'high' ? `
-                    <p style="color: red; background: #f8d7da; padding: 10px; border-radius: 5px;">
-                        <strong>🚨 High Severity Alert:</strong> Immediate action recommended.
-                    </p>
-                    ` : ''}
-                    <hr>
-                    <p style="color: #666; font-size: 12px;">
-                        This is an automated security notification from Nasir Database.
-                    </p>
-                `,
-                from_name: 'Nasir Database Security',
-                to_name: userEmail.split('@')[0]
-            };
-
-            return await sendEmail(emailData);
-        }
+        // ========== PASSWORD STRENGTH FUNCTIONS ==========
 
         // Function to check password strength
         function checkPasswordStrength() {
@@ -1257,76 +1181,9 @@
                     });
                 }
                 
-                // Send to admin for new registration
-                await sendAdminNewRegistrationAlert(userId, userEmail);
-                
                 return true;
             } catch (error) {
                 console.error("Create registration notification error:", error);
-                return false;
-            }
-        }
-
-        // Send admin alert for new registration
-        async function sendAdminNewRegistrationAlert(userId, userEmail) {
-            try {
-                const adminAlertsRef = ref(database, 'adminAlerts');
-                const newAlertRef = push(adminAlertsRef);
-                
-                const alertData = {
-                    type: 'new_registration',
-                    userId: userId,
-                    userEmail: userEmail,
-                    timestamp: serverTimestamp(),
-                    ip: userIP,
-                    country: userCountry,
-                    userAgent: navigator.userAgent,
-                    severity: 'info',
-                    status: 'pending'
-                };
-                
-                await set(newAlertRef, alertData);
-                return true;
-            } catch (error) {
-                console.error("Send admin new registration alert error:", error);
-                return false;
-            }
-        }
-
-        // Send security alert
-        async function sendSecurityAlert(userId, userEmail, alertType, alertData) {
-            if (!allNotifications) return;
-            
-            try {
-                const securityAlertsRef = ref(database, `securityAlerts/${userId}`);
-                const newAlertRef = push(securityAlertsRef);
-                
-                const alert = {
-                    type: alertType,
-                    timestamp: serverTimestamp(),
-                    email: userEmail,
-                    ip: userIP,
-                    country: userCountry,
-                    message: alertData.message,
-                    severity: alertData.severity || 'medium',
-                    status: 'pending'
-                };
-                
-                await set(newAlertRef, alert);
-                
-                // Send email if severity is high or it's a critical alert
-                if (alertData.severity === 'high' || alertType.includes('lock') || alertType.includes('block')) {
-                    await sendSecurityAlertEmail(userEmail, {
-                        title: `Security Alert: ${alertType.replace(/_/g, ' ').toUpperCase()}`,
-                        message: alertData.message,
-                        details: alertData.details || {},
-                        severity: alertData.severity
-                    });
-                }
-                
-                return true;
-            } catch (error) {
-                console.error("Send security alert error:", error);
                 return false;
             }
         }
@@ -1398,8 +1255,8 @@
             }
         }
 
-        // Function to initialize security settings
-        async function initializeUserSecurity(userId, email) {
+        // Function to initialize user settings
+        async function initializeUserSettings(userId, email) {
             const userRef = ref(database, `users/${userId}`);
             
             try {
@@ -1412,17 +1269,13 @@
                     registeredAt: new Date().toISOString(),
                     registrationIP: userIP,
                     registrationCountry: userCountry,
-                    trustedDevices: {},
-                    blockedIPs: {},
-                    allowedCountries: ['PK'],
                     emailNotifications: emailNotifications,
-                    allNotifications: allNotifications,
-                    lastNotification: null
+                    allNotifications: allNotifications
                 });
                 
                 return true;
             } catch (error) {
-                console.error("Initialize security error:", error);
+                console.error("Initialize user settings error:", error);
                 return false;
             }
         }
@@ -1439,20 +1292,36 @@
 
         // Function to show success message
         function showSuccess(message) {
-            const successElement = document.getElementById('successMessage');
-            const successText = document.getElementById('successText');
-            if (successElement && successText) {
-                successText.textContent = message;
-                successElement.style.display = 'block';
+            // Create success message element if it doesn't exist
+            let successElement = document.getElementById('successMessage');
+            if (!successElement) {
+                successElement = document.createElement('div');
+                successElement.id = 'successMessage';
+                successElement.className = 'success-message';
+                successElement.innerHTML = '<i class="fas fa-check-circle"></i> <span id="successText"></span>';
+                document.querySelector('.form-group').appendChild(successElement);
             }
+            
+            document.getElementById('successText').textContent = message;
+            successElement.style.display = 'block';
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                successElement.style.display = 'none';
+            }, 5000);
         }
 
         // Function to hide all messages
         function hideMessages() {
             document.getElementById('errorMessage').style.display = 'none';
+            const successElement = document.getElementById('successMessage');
+            if (successElement) {
+                successElement.style.display = 'none';
+            }
         }
 
-        // Make functions globally available
+        // ========== GLOBAL FUNCTIONS ==========
+
         window.togglePassword = function(id) {
             const field = document.getElementById(id);
             const icon = field.parentNode.querySelector('i');
@@ -1474,10 +1343,13 @@
         }
 
         window.register = async function () {
+            // Get notification settings
             emailNotifications = document.getElementById('emailNotifications')?.checked || true;
             allNotifications = document.getElementById('allNotifications')?.checked || true;
             
-            document.getElementById('notificationSettings').style.display = 'block';
+            if (document.getElementById('notificationSettings')) {
+                document.getElementById('notificationSettings').style.display = 'block';
+            }
 
             if (!canRegister) {
                 showError("Registration only available in Pakistan.");
@@ -1523,13 +1395,16 @@
             registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
 
             try {
+                // SIMPLE REGISTRATION LIKE OLD CODE
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 currentUser = userCredential.user;
                 
                 console.log("Registration successful:", currentUser);
 
+                // Send email verification (simple like old code)
                 await sendEmailVerification(currentUser);
                 
+                // Initialize user credits in database
                 const isUnlimited = unlimitedUsers.includes(email);
                 const defaultCredits = isUnlimited ? -1 : 10;
                 const today = new Date().toDateString();
@@ -1541,17 +1416,23 @@
                     createdAt: new Date().toISOString(),
                     emailVerified: false,
                     emailNotifications: emailNotifications,
-                    allNotifications: allNotifications
+                    allNotifications: allNotifications,
+                    registrationIP: userIP,
+                    registrationCountry: userCountry
                 });
 
-                await initializeUserSecurity(currentUser.uid, email);
+                // Initialize additional settings
+                await initializeUserSettings(currentUser.uid, email);
                 
+                // Record registration event
                 await recordRegistrationEvent(currentUser.uid, email);
                 
+                // Send notification if enabled
                 if (emailNotifications || allNotifications) {
                     await sendRegistrationNotification(currentUser.uid, email);
                 }
                 
+                // Record successful registration
                 await recordSecurityEvent('successful_registration', {
                     email: email,
                     userId: currentUser.uid,
@@ -1559,6 +1440,7 @@
                     country: userCountry
                 });
                 
+                // Show verification box
                 document.getElementById("loading").style.display = "none";
                 document.getElementById("registerBox").style.display = "none";
                 document.getElementById("verificationBox").style.display = "block";
@@ -1608,7 +1490,7 @@
             }
         }
 
-        // Resend verification email
+        // Resend verification email (simple like old code)
         window.resendVerification = async function() {
             const resendBtn = document.getElementById("resendBtn");
             
@@ -1621,6 +1503,7 @@
             resendBtn.disabled = true;
             
             try {
+                // Simple resend like old code
                 await sendEmailVerification(currentUser);
                 showSuccess('Verification email sent! Check your inbox and spam folder.');
                 
@@ -1629,6 +1512,7 @@
                     userId: currentUser.uid
                 });
                 
+                // Re-enable button after 30 seconds
                 setTimeout(() => {
                     resendBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Email';
                     resendBtn.disabled = false;
@@ -1642,7 +1526,7 @@
             }
         }
 
-        // Check verification status
+        // Check verification status (simple like old code)
         window.checkVerification = async function() {
             const checkBtn = document.getElementById("checkBtn");
             
@@ -1655,23 +1539,20 @@
             checkBtn.disabled = true;
             
             try {
+                // Reload user to get latest verification status
                 await currentUser.reload();
                 
                 if (currentUser.emailVerified) {
+                    // Update database with verification status
                     await set(ref(database, `users/${currentUser.uid}/emailVerified`), true);
                     
+                    // Record verification event
                     await recordSecurityEvent('email_verified', {
                         email: currentUser.email,
                         userId: currentUser.uid
                     });
                     
-                    if (emailNotifications || allNotifications) {
-                        await sendSecurityAlert(currentUser.uid, currentUser.email, 'email_verified', {
-                            message: 'Email successfully verified',
-                            severity: 'info'
-                        });
-                    }
-                    
+                    // Show success and redirect
                     document.getElementById("verificationBox").style.display = "none";
                     document.getElementById("successBox").style.display = "flex";
                     
@@ -1693,7 +1574,9 @@
             }
         }
 
-        // Add event listeners for Enter key
+        // ========== INITIALIZATION ==========
+
+        // Add event listeners
         document.addEventListener('DOMContentLoaded', async function() {
             await getUserIPAndLocation();
             
@@ -1713,6 +1596,7 @@
                 document.getElementById('passwordRequirements').style.display = 'block';
             });
             
+            // Load notification preferences from localStorage
             const savedEmailNotifications = localStorage.getItem('nasir_email_notifications');
             const savedAllNotifications = localStorage.getItem('nasir_all_notifications');
             
@@ -1724,6 +1608,7 @@
                 document.getElementById('allNotifications').checked = savedAllNotifications === 'true';
             }
             
+            // Save notification preferences
             document.getElementById('emailNotifications').addEventListener('change', function() {
                 localStorage.setItem('nasir_email_notifications', this.checked);
             });
