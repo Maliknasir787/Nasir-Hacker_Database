@@ -40,17 +40,19 @@
             color: var(--text);
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start; /* Changed from center to flex-start */
             min-height: 100vh;
             margin: 0;
             position: relative;
-            overflow: hidden;
             line-height: 1.6;
+            padding: 20px; /* Added padding for mobile */
+            overflow-x: hidden; /* Prevent horizontal scroll */
+            overflow-y: auto; /* Enable vertical scrolling */
         }
 
         /* Background Animation */
         .bg-animation {
-            position: absolute;
+            position: fixed; /* Changed from absolute to fixed */
             top: 0;
             left: 0;
             width: 100%;
@@ -118,7 +120,7 @@
         .container {
             position: relative;
             z-index: 10;
-            background: rgba(30, 30, 46, 0.8);
+            background: rgba(30, 30, 46, 0.9); /* Slightly more opaque */
             backdrop-filter: blur(10px);
             padding: 40px 35px;
             width: 100%;
@@ -128,6 +130,7 @@
             text-align: center;
             border: 1px solid rgba(255, 255, 255, 0.1);
             transition: var(--transition);
+            margin: 40px auto; /* Added margin for spacing */
         }
 
         .container:hover {
@@ -421,13 +424,21 @@
             margin-top: 30px;
             font-size: 12px;
             color: var(--text-secondary);
+            line-height: 1.5;
         }
 
         /* Responsive Design */
         @media (max-width: 480px) {
+            body {
+                padding: 15px;
+                align-items: flex-start;
+                overflow-y: auto;
+            }
+            
             .container {
                 padding: 30px 25px;
-                margin: 20px;
+                margin: 20px auto;
+                max-width: 100%;
             }
             
             .logo-text {
@@ -438,6 +449,26 @@
                 flex-direction: column;
                 gap: 10px;
                 align-items: center;
+            }
+            
+            .footer {
+                font-size: 11px;
+            }
+        }
+
+        @media (max-width: 350px) {
+            .container {
+                padding: 25px 20px;
+            }
+            
+            .logo {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .logo-icon {
+                margin-right: 0;
+                margin-bottom: 10px;
             }
         }
 
