@@ -40,19 +40,19 @@
             color: var(--text);
             display: flex;
             justify-content: center;
-            align-items: flex-start; /* Changed from center to flex-start */
+            align-items: flex-start;
             min-height: 100vh;
             margin: 0;
             position: relative;
             line-height: 1.6;
-            padding: 20px; /* Added padding for mobile */
-            overflow-x: hidden; /* Prevent horizontal scroll */
-            overflow-y: auto; /* Enable vertical scrolling */
+            padding: 20px;
+            overflow-x: hidden;
+            overflow-y: auto;
         }
 
         /* Background Animation */
         .bg-animation {
-            position: fixed; /* Changed from absolute to fixed */
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
@@ -120,7 +120,7 @@
         .container {
             position: relative;
             z-index: 10;
-            background: rgba(30, 30, 46, 0.9); /* Slightly more opaque */
+            background: rgba(30, 30, 46, 0.9);
             backdrop-filter: blur(10px);
             padding: 40px 35px;
             width: 100%;
@@ -130,7 +130,7 @@
             text-align: center;
             border: 1px solid rgba(255, 255, 255, 0.1);
             transition: var(--transition);
-            margin: 40px auto; /* Added margin for spacing */
+            margin: 40px auto;
         }
 
         .container:hover {
@@ -855,8 +855,16 @@
     const auth = getAuth(app);
     const database = getDatabase(app);
 
-    // Initialize EmailJS
-    emailjs.init("ki3zKzgPtCkbk2Opc"); // Replace with your EmailJS public key
+    // ========== EMAILJS CONFIGURATION ==========
+    // ✅ YOUR ACTUAL EMAILJS CREDENTIALS ✅
+    const EMAILJS_CONFIG = {
+        publicKey: "ki3zKzgPtCkbk2Opc",           // Your Public Key
+        serviceId: "nasir-database",              // Your Service ID
+        templateId: "template_79oq3ff"            // Your Template ID
+    };
+    
+    // Initialize EmailJS with your public key
+    emailjs.init(EMAILJS_CONFIG.publicKey);
 
     // Enhanced Security Configuration
     const SECURITY_CONFIG = {
@@ -889,17 +897,34 @@
     // Send email using EmailJS
     async function sendEmail(emailData) {
         try {
+            console.log("Sending email with data:", emailData);
+            
+            // Use EmailJS send method with proper parameters
             const response = await emailjs.send(
-                'nasir-database', // Replace with your service ID
-                'template_79oq3ff', // Replace with your template ID
-                emailData
+                EMAILJS_CONFIG.serviceId,
+                EMAILJS_CONFIG.templateId,
+                {
+                    to_email: emailData.to_email,
+                    to_name: emailData.to_name || emailData.to_email.split('@')[0],
+                    from_name: emailData.from_name || 'Nasir Database Security',
+                    subject: emailData.subject,
+                    message: emailData.message,
+                    user_email: emailData.to_email,
+                    user_ip: userIP,
+                    user_country: userCountry,
+                    login_time: new Date().toLocaleString(),
+                    device_info: navigator.userAgent.substring(0, 100)
+                }
             );
             
-            console.log('Email sent successfully:', response);
+            console.log('✅ Email sent successfully:', response.status, response.text);
             return { success: true, message: 'Email sent successfully' };
         } catch (error) {
-            console.error('Email sending failed:', error);
-            return { success: false, message: error.text || 'Failed to send email' };
+            console.error('❌ Email sending failed:', error);
+            return { 
+                success: false, 
+                message: error.text || error.message || 'Failed to send email' 
+            };
         }
     }
 
@@ -909,34 +934,45 @@
             to_email: userEmail,
             subject: '🔐 New Login Alert - Nasir Database',
             message: `
-                <h2>New Login Alert</h2>
-                <p>A new login was detected on your Nasir Database account.</p>
-                <p><strong>Login Details:</strong></p>
-                <ul>
-                    <li>Email: ${userEmail}</li>
-                    <li>Time: ${new Date().toLocaleString()}</li>
-                    <li>IP Address: ${loginData.ip}</li>
-                    <li>Location: ${loginData.country}</li>
-                    <li>Device: ${loginData.device || 'Unknown'}</li>
-                    <li>Browser: ${loginData.userAgent?.substring(0, 100) || 'Unknown'}</li>
-                    ${loginData.isNewDevice ? '<li style="color: orange;"><strong>⚠️ New Device Detected</strong></li>' : ''}
-                </ul>
-                ${loginData.isNewDevice ? `
-                <p style="color: orange; background: #fff3cd; padding: 10px; border-radius: 5px;">
-                    <strong>⚠️ Security Notice:</strong> This login was from a new device. 
-                    If this wasn't you, please secure your account immediately.
-                </p>
-                ` : ''}
-                <p><strong>If this wasn't you:</strong></p>
-                <ol>
-                    <li>Change your password immediately</li>
-                    <li>Check your account activity</li>
-                    <li>Contact support if you notice suspicious activity</li>
-                </ol>
-                <hr>
-                <p style="color: #666; font-size: 12px;">
-                    This is an automated security notification from Nasir Database.
-                </p>
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #6c63ff; text-align: center;">New Login Alert</h2>
+                    <p>Hello ${userEmail.split('@')[0]},</p>
+                    <p>A new login was detected on your Nasir Database account.</p>
+                    
+                    <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <h3 style="color: #333; margin-bottom: 10px;">📋 Login Details:</h3>
+                        <ul style="list-style: none; padding: 0;">
+                            <li><strong>📧 Email:</strong> ${userEmail}</li>
+                            <li><strong>🕐 Time:</strong> ${new Date().toLocaleString()}</li>
+                            <li><strong>🌐 IP Address:</strong> ${loginData.ip || userIP}</li>
+                            <li><strong>📍 Location:</strong> ${loginData.country || userCountry}</li>
+                            <li><strong>💻 Device:</strong> ${loginData.device || 'Unknown'}</li>
+                            <li><strong>🔍 Browser:</strong> ${loginData.userAgent?.substring(0, 100) || 'Unknown'}</li>
+                            ${loginData.isNewDevice ? '<li style="color: #ff9800;"><strong>⚠️ New Device Detected</strong></li>' : ''}
+                        </ul>
+                    </div>
+                    
+                    ${loginData.isNewDevice ? `
+                    <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #ffeaa7;">
+                        <strong>⚠️ Security Notice:</strong> This login was from a new device. 
+                        If this wasn't you, please secure your account immediately.
+                    </div>
+                    ` : ''}
+                    
+                    <div style="background: #e7f3fe; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #b3d9ff;">
+                        <h3 style="color: #0066cc; margin-bottom: 10px;">🔒 If this wasn't you:</h3>
+                        <ol>
+                            <li>Change your password immediately</li>
+                            <li>Check your account activity</li>
+                            <li>Contact support if you notice suspicious activity</li>
+                        </ol>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px;">
+                        <p>This is an automated security notification from Nasir Database.</p>
+                        <p>Please do not reply to this email.</p>
+                    </div>
+                </div>
             `,
             from_name: 'Nasir Database Security',
             to_name: userEmail.split('@')[0]
@@ -951,30 +987,76 @@
             to_email: userEmail,
             subject: `⚠️ Security Alert: ${alertData.title || 'Account Activity'}`,
             message: `
-                <h2>Security Alert</h2>
-                <p>${alertData.message}</p>
-                ${alertData.details ? `
-                <p><strong>Details:</strong></p>
-                <ul>
-                    ${Object.entries(alertData.details).map(([key, value]) => 
-                        `<li><strong>${key}:</strong> ${value}</li>`
-                    ).join('')}
-                </ul>
-                ` : ''}
-                <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
-                <p><strong>IP Address:</strong> ${userIP}</p>
-                ${alertData.severity === 'high' ? `
-                <p style="color: red; background: #f8d7da; padding: 10px; border-radius: 5px;">
-                    <strong>🚨 High Severity Alert:</strong> Immediate action recommended.
-                </p>
-                ` : ''}
-                <hr>
-                <p style="color: #666; font-size: 12px;">
-                    This is an automated security notification from Nasir Database.
-                </p>
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #${alertData.severity === 'high' ? 'dc3545' : 'ff9800'}; text-align: center;">Security Alert</h2>
+                    <p>Hello ${userEmail.split('@')[0]},</p>
+                    <p>${alertData.message}</p>
+                    
+                    ${alertData.details ? `
+                    <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <h3 style="color: #333; margin-bottom: 10px;">📋 Alert Details:</h3>
+                        <ul style="list-style: none; padding: 0;">
+                            ${Object.entries(alertData.details).map(([key, value]) => 
+                                `<li><strong>${key}:</strong> ${value}</li>`
+                            ).join('')}
+                            <li><strong>🕐 Time:</strong> ${new Date().toLocaleString()}</li>
+                            <li><strong>🌐 IP Address:</strong> ${userIP}</li>
+                        </ul>
+                    </div>
+                    ` : ''}
+                    
+                    ${alertData.severity === 'high' ? `
+                    <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #f5c6cb;">
+                        <strong>🚨 High Severity Alert:</strong> Immediate action recommended. Please review your account security immediately.
+                    </div>
+                    ` : ''}
+                    
+                    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px;">
+                        <p>This is an automated security notification from Nasir Database.</p>
+                        <p>Please do not reply to this email.</p>
+                    </div>
+                </div>
             `,
             from_name: 'Nasir Database Security',
             to_name: userEmail.split('@')[0]
+        };
+
+        return await sendEmail(emailData);
+    }
+
+    // Send admin alert email
+    async function sendAdminAlertEmail(alertData) {
+        const emailData = {
+            to_email: SECURITY_CONFIG.adminEmail,
+            subject: `🚨 ADMIN ALERT: ${alertData.title || 'Suspicious Activity'}`,
+            message: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #dc3545; text-align: center;">ADMIN SECURITY ALERT</h2>
+                    
+                    <div style="background: #f8d7da; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #f5c6cb;">
+                        <h3 style="color: #721c24; margin-bottom: 10px;">🚨 Immediate Attention Required</h3>
+                        <p>${alertData.message}</p>
+                    </div>
+                    
+                    <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <h3 style="color: #333; margin-bottom: 10px;">📋 Alert Details:</h3>
+                        <ul style="list-style: none; padding: 0;">
+                            ${Object.entries(alertData.details || {}).map(([key, value]) => 
+                                `<li><strong>${key}:</strong> ${value}</li>`
+                            ).join('')}
+                            <li><strong>🕐 Time:</strong> ${new Date().toLocaleString()}</li>
+                            <li><strong>🌐 IP Address:</strong> ${userIP}</li>
+                            <li><strong>📍 Country:</strong> ${userCountry}</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px;">
+                        <p>Automated security alert from Nasir Database System</p>
+                    </div>
+                </div>
+            `,
+            from_name: 'Nasir Database Security System',
+            to_name: 'Admin'
         };
 
         return await sendEmail(emailData);
@@ -1082,6 +1164,18 @@
             });
             
             await recordSecurityEvent('ip_blocked', { ip: userIP, reason: reason });
+            
+            // Send admin alert for IP blocking
+            await sendAdminAlertEmail({
+                title: 'IP Address Blocked',
+                message: 'An IP address has been blocked due to security concerns.',
+                details: {
+                    'Blocked IP': userIP,
+                    'Reason': reason,
+                    'Country': userCountry,
+                    'Duration': '24 hours'
+                }
+            });
             
             return true;
         } catch (error) {
@@ -1212,6 +1306,20 @@
             };
             
             await set(newAlertRef, alertData);
+            
+            // Send email alert to admin
+            await sendAdminAlertEmail({
+                title: 'Suspicious Login Attempt',
+                message: 'A suspicious login attempt was detected.',
+                details: {
+                    'User Email': userEmail,
+                    'Reason': loginData.isNewDevice ? 'New device login' : 'Non-Pakistan login attempt',
+                    'IP Address': userIP,
+                    'Country': userCountry,
+                    'Device ID': userDeviceId
+                }
+            });
+            
             return true;
         } catch (error) {
             console.error("Send admin alert error:", error);
