@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         /* CSS Reset and Base Styles */
         * {
@@ -44,13 +43,13 @@
             min-height: 100vh;
             margin: 0;
             position: relative;
-            overflow: hidden;
             line-height: 1.6;
+            padding: 20px; /* Added padding for mobile */
         }
 
         /* Background Animation */
         .bg-animation {
-            position: absolute;
+            position: fixed; /* Changed from absolute to fixed */
             top: 0;
             left: 0;
             width: 100%;
@@ -118,7 +117,7 @@
         .container {
             position: relative;
             z-index: 10;
-            background: rgba(30, 30, 46, 0.8);
+            background: rgba(30, 30, 46, 0.9);
             backdrop-filter: blur(10px);
             padding: 40px 35px;
             width: 100%;
@@ -128,6 +127,7 @@
             text-align: center;
             border: 1px solid rgba(255, 255, 255, 0.1);
             transition: var(--transition);
+            margin: 20px 0; /* Added margin for spacing */
         }
 
         .container:hover {
@@ -386,11 +386,17 @@
         @media (max-width: 480px) {
             .container {
                 padding: 30px 25px;
-                margin: 20px;
+                margin: 10px;
             }
             
             .logo-text {
                 font-size: 20px;
+            }
+            
+            body {
+                padding: 10px;
+                align-items: flex-start; /* Changed from center to flex-start */
+                min-height: auto; /* Removed fixed min-height */
             }
         }
 
@@ -511,6 +517,7 @@
             gap: 10px;
             justify-content: center;
             margin-top: 20px;
+            flex-wrap: wrap; /* Added for mobile responsiveness */
         }
 
         .verification-actions .btn {
@@ -771,7 +778,7 @@
             getAuth,
             createUserWithEmailAndPassword,
             sendEmailVerification,
-            updateProfile
+            signOut
         } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
         import { getDatabase, ref, set, update, get, push, serverTimestamp, remove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
@@ -788,9 +795,6 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const database = getDatabase(app);
-
-        // Initialize EmailJS (only for notifications, not for verification)
-        emailjs.init("YOUR_EMAILJS_PUBLIC_KEY"); // Replace with your EmailJS public key
 
         // Password strength configuration
         const PASSWORD_CONFIG = {
@@ -825,57 +829,46 @@
         let emailNotifications = true;
         let allNotifications = true;
 
-        // ========== EMAIL NOTIFICATION FUNCTIONS ==========
+        // ========== FIREBASE EMAIL VERIFICATION ==========
 
-        // Send email using EmailJS (only for notifications)
-        async function sendEmail(emailData) {
+        // Function to send Firebase email verification
+        async function sendFirebaseEmailVerification(user) {
             try {
-                const response = await emailjs.send(
-                    'YOUR_EMAILJS_SERVICE_ID', // Replace with your service ID
-                    'YOUR_EMAILJS_TEMPLATE_ID', // Replace with your template ID
-                    emailData
-                );
+                await sendEmailVerification(user);
+                console.log("Firebase verification email sent to:", user.email);
                 
-                console.log('Notification email sent:', response);
-                return { success: true, message: 'Email sent successfully' };
+                // Store verification sent timestamp
+                const verificationRef = ref(database, `users/${user.uid}/verification`);
+                await set(verificationRef, {
+                    sentAt: serverTimestamp(),
+                    email: user.email
+                });
+                
+                return { success: true, message: 'Verification email sent successfully' };
             } catch (error) {
-                console.error('Email sending failed:', error);
-                return { success: false, message: error.text || 'Failed to send email' };
+                console.error("Firebase email verification error:", error);
+                return { success: false, message: error.message || 'Failed to send verification email' };
             }
         }
 
-        // Send registration notification email
-        async function sendRegistrationEmail(userEmail, userId) {
-            const emailData = {
-                to_email: userEmail,
-                subject: '🎉 Welcome to Nasir Database - Registration Successful!',
-                message: `
-                    <h2>Welcome to Nasir Database!</h2>
-                    <p>Your account has been successfully created.</p>
-                    <p><strong>Account Details:</strong></p>
-                    <ul>
-                        <li>Email: ${userEmail}</li>
-                        <li>Account ID: ${userId}</li>
-                        <li>Registration Date: ${new Date().toLocaleDateString()}</li>
-                        <li>Registration IP: ${userIP}</li>
-                        <li>Location: ${userCountry}</li>
-                    </ul>
-                    <p><strong>Security Information:</strong></p>
-                    <p>For your security, we've recorded this registration event. If this wasn't you, please contact support immediately.</p>
-                    <p>Please verify your email address to activate your account.</p>
-                    <hr>
-                    <p style="color: #666; font-size: 12px;">
-                        This is an automated security notification from Nasir Database.
-                    </p>
-                `,
-                from_name: 'Nasir Database Security',
-                to_name: userEmail.split('@')[0]
-            };
-
-            return await sendEmail(emailData);
+        // Function to resend Firebase verification
+        async function resendFirebaseVerification(user) {
+            try {
+                await sendEmailVerification(user);
+                
+                // Update verification timestamp
+                const verificationRef = ref(database, `users/${user.uid}/verification`);
+                await update(verificationRef, {
+                    resentAt: serverTimestamp(),
+                    resendCount: firebase.database.ServerValue.increment(1)
+                });
+                
+                return { success: true, message: 'Verification email resent' };
+            } catch (error) {
+                console.error("Resend verification error:", error);
+                return { success: false, message: error.message };
+            }
         }
-
-        // ========== PASSWORD STRENGTH FUNCTIONS ==========
 
         // Function to check password strength
         function checkPasswordStrength() {
@@ -1141,72 +1134,6 @@
             }
         }
 
-        // ========== NOTIFICATION FUNCTIONS ==========
-
-        // Send registration notification
-        async function sendRegistrationNotification(userId, userEmail) {
-            if (!emailNotifications && !allNotifications) return;
-            
-            try {
-                // Store notification in database
-                const notificationsRef = ref(database, `notifications/${userId}`);
-                const newNotificationRef = push(notificationsRef);
-                
-                const notificationData = {
-                    type: 'registration',
-                    email: userEmail,
-                    timestamp: serverTimestamp(),
-                    ip: userIP,
-                    country: userCountry,
-                    userAgent: navigator.userAgent,
-                    status: 'pending',
-                    sentAt: null
-                };
-                
-                await set(newNotificationRef, notificationData);
-                
-                // Send email notification
-                const emailResult = await sendRegistrationEmail(userEmail, userId);
-                
-                // Update notification status
-                if (emailResult.success) {
-                    await update(newNotificationRef, {
-                        status: 'sent',
-                        sentAt: serverTimestamp(),
-                        emailResponse: 'Email sent successfully'
-                    });
-                } else {
-                    await update(newNotificationRef, {
-                        status: 'failed',
-                        emailResponse: emailResult.message
-                    });
-                }
-                
-                return true;
-            } catch (error) {
-                console.error("Create registration notification error:", error);
-                return false;
-            }
-        }
-
-        // Record security event
-        async function recordSecurityEvent(eventType, eventData) {
-            try {
-                const securityEventsRef = ref(database, 'securityEvents');
-                const newEventRef = push(securityEventsRef);
-                
-                await set(newEventRef, {
-                    type: eventType,
-                    timestamp: serverTimestamp(),
-                    ip: userIP,
-                    country: userCountry,
-                    data: eventData
-                });
-            } catch (error) {
-                console.error("Record security event error:", error);
-            }
-        }
-
         // Function to get user IP and location
         async function getUserIPAndLocation() {
             try {
@@ -1256,8 +1183,8 @@
             }
         }
 
-        // Function to initialize user settings
-        async function initializeUserSettings(userId, email) {
+        // Function to initialize security settings
+        async function initializeUserSecurity(userId, email) {
             const userRef = ref(database, `users/${userId}`);
             
             try {
@@ -1270,13 +1197,17 @@
                     registeredAt: new Date().toISOString(),
                     registrationIP: userIP,
                     registrationCountry: userCountry,
+                    trustedDevices: {},
+                    blockedIPs: {},
+                    allowedCountries: ['PK'],
                     emailNotifications: emailNotifications,
-                    allNotifications: allNotifications
+                    allNotifications: allNotifications,
+                    lastNotification: null
                 });
                 
                 return true;
             } catch (error) {
-                console.error("Initialize user settings error:", error);
+                console.error("Initialize security error:", error);
                 return false;
             }
         }
@@ -1291,38 +1222,12 @@
             errorElement.style.display = 'block';
         }
 
-        // Function to show success message
-        function showSuccess(message) {
-            // Create success message element if it doesn't exist
-            let successElement = document.getElementById('successMessage');
-            if (!successElement) {
-                successElement = document.createElement('div');
-                successElement.id = 'successMessage';
-                successElement.className = 'success-message';
-                successElement.innerHTML = '<i class="fas fa-check-circle"></i> <span id="successText"></span>';
-                document.querySelector('.form-group').appendChild(successElement);
-            }
-            
-            document.getElementById('successText').textContent = message;
-            successElement.style.display = 'block';
-            
-            // Hide after 5 seconds
-            setTimeout(() => {
-                successElement.style.display = 'none';
-            }, 5000);
-        }
-
         // Function to hide all messages
         function hideMessages() {
             document.getElementById('errorMessage').style.display = 'none';
-            const successElement = document.getElementById('successMessage');
-            if (successElement) {
-                successElement.style.display = 'none';
-            }
         }
 
-        // ========== GLOBAL FUNCTIONS ==========
-
+        // Make functions globally available
         window.togglePassword = function(id) {
             const field = document.getElementById(id);
             const icon = field.parentNode.querySelector('i');
@@ -1344,13 +1249,10 @@
         }
 
         window.register = async function () {
-            // Get notification settings
             emailNotifications = document.getElementById('emailNotifications')?.checked || true;
             allNotifications = document.getElementById('allNotifications')?.checked || true;
             
-            if (document.getElementById('notificationSettings')) {
-                document.getElementById('notificationSettings').style.display = 'block';
-            }
+            document.getElementById('notificationSettings').style.display = 'block';
 
             if (!canRegister) {
                 showError("Registration only available in Pakistan.");
@@ -1396,22 +1298,18 @@
             registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
 
             try {
-                // SIMPLE REGISTRATION LIKE OLD CODE
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 currentUser = userCredential.user;
                 
                 console.log("Registration successful:", currentUser);
 
-                // 🚨🚨🚨 CRITICAL FIX: Use sendEmailVerification() function properly 🚨🚨🚨
-                // FIXED: Use the imported sendEmailVerification function with proper parameters
-                await sendEmailVerification(currentUser, {
-                    url: 'https://nasir-hacker-database.vercel.app/login.html',
-                    handleCodeInApp: true
-                });
+                // Send Firebase email verification
+                const verificationResult = await sendFirebaseEmailVerification(currentUser);
                 
-                console.log('✅ Firebase email verification sent successfully!');
+                if (!verificationResult.success) {
+                    console.warn("Verification email might not have been sent:", verificationResult.message);
+                }
                 
-                // Initialize user credits in database
                 const isUnlimited = unlimitedUsers.includes(email);
                 const defaultCredits = isUnlimited ? -1 : 10;
                 const today = new Date().toDateString();
@@ -1424,36 +1322,18 @@
                     emailVerified: false,
                     emailNotifications: emailNotifications,
                     allNotifications: allNotifications,
-                    registrationIP: userIP,
-                    registrationCountry: userCountry
+                    verificationSent: verificationResult.success
                 });
 
-                // Initialize additional settings
-                await initializeUserSettings(currentUser.uid, email);
-                
-                // Record registration event
+                await initializeUserSecurity(currentUser.uid, email);
                 await recordRegistrationEvent(currentUser.uid, email);
                 
-                // Send notification if enabled
-                if (emailNotifications || allNotifications) {
-                    await sendRegistrationNotification(currentUser.uid, email);
-                }
-                
-                // Record successful registration
-                await recordSecurityEvent('successful_registration', {
-                    email: email,
-                    userId: currentUser.uid,
-                    ip: userIP,
-                    country: userCountry
-                });
-                
-                // Show verification box
                 document.getElementById("loading").style.display = "none";
                 document.getElementById("registerBox").style.display = "none";
                 document.getElementById("verificationBox").style.display = "block";
                 document.getElementById("userEmail").textContent = email;
                 
-                console.log("Verification email sent to:", email);
+                console.log("Firebase verification email sent to:", email);
 
             } catch (error) {
                 document.getElementById("loading").style.display = "none";
@@ -1487,17 +1367,10 @@
                 }
                 
                 showError(errorMessage);
-                
-                await recordSecurityEvent('failed_registration', {
-                    email: email,
-                    errorCode: error.code,
-                    ip: userIP,
-                    country: userCountry
-                });
             }
         }
 
-        // Resend verification email (simple like old code)
+        // Resend verification email using Firebase
         window.resendVerification = async function() {
             const resendBtn = document.getElementById("resendBtn");
             
@@ -1510,20 +1383,24 @@
             resendBtn.disabled = true;
             
             try {
-                // 🚨 CRITICAL FIX: Use proper sendEmailVerification function
-                await sendEmailVerification(currentUser, {
-                    url: 'https://nasir-hacker-database.vercel.app/login.html',
-                    handleCodeInApp: true
-                });
+                await resendFirebaseVerification(currentUser);
                 
-                showSuccess('Verification email sent! Check your inbox and spam folder.');
+                // Update UI to show success
+                const successElement = document.createElement('div');
+                successElement.className = 'success-message';
+                successElement.innerHTML = '<i class="fas fa-check-circle"></i> Verification email sent! Check your inbox and spam folder.';
+                successElement.style.display = 'block';
                 
-                await recordSecurityEvent('verification_resent', {
-                    email: currentUser.email,
-                    userId: currentUser.uid
-                });
+                const verificationBox = document.getElementById('verificationBox');
+                verificationBox.insertBefore(successElement, verificationBox.querySelector('.info-box'));
                 
-                // Re-enable button after 30 seconds
+                // Remove success message after 5 seconds
+                setTimeout(() => {
+                    if (successElement.parentNode) {
+                        successElement.remove();
+                    }
+                }, 5000);
+                
                 setTimeout(() => {
                     resendBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Email';
                     resendBtn.disabled = false;
@@ -1537,7 +1414,7 @@
             }
         }
 
-        // Check verification status (simple like old code)
+        // Check verification status
         window.checkVerification = async function() {
             const checkBtn = document.getElementById("checkBtn");
             
@@ -1550,20 +1427,11 @@
             checkBtn.disabled = true;
             
             try {
-                // Reload user to get latest verification status
                 await currentUser.reload();
                 
                 if (currentUser.emailVerified) {
-                    // Update database with verification status
                     await set(ref(database, `users/${currentUser.uid}/emailVerified`), true);
                     
-                    // Record verification event
-                    await recordSecurityEvent('email_verified', {
-                        email: currentUser.email,
-                        userId: currentUser.uid
-                    });
-                    
-                    // Show success and redirect
                     document.getElementById("verificationBox").style.display = "none";
                     document.getElementById("successBox").style.display = "flex";
                     
@@ -1585,9 +1453,7 @@
             }
         }
 
-        // ========== INITIALIZATION ==========
-
-        // Add event listeners
+        // Add event listeners for Enter key
         document.addEventListener('DOMContentLoaded', async function() {
             await getUserIPAndLocation();
             
@@ -1607,7 +1473,6 @@
                 document.getElementById('passwordRequirements').style.display = 'block';
             });
             
-            // Load notification preferences from localStorage
             const savedEmailNotifications = localStorage.getItem('nasir_email_notifications');
             const savedAllNotifications = localStorage.getItem('nasir_all_notifications');
             
@@ -1619,7 +1484,6 @@
                 document.getElementById('allNotifications').checked = savedAllNotifications === 'true';
             }
             
-            // Save notification preferences
             document.getElementById('emailNotifications').addEventListener('change', function() {
                 localStorage.setItem('nasir_email_notifications', this.checked);
             });
