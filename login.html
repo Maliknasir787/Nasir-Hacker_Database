@@ -856,7 +856,7 @@
     const database = getDatabase(app);
 
     // Initialize EmailJS
-    emailjs.init("YOUR_EMAILJS_PUBLIC_KEY"); // Replace with your EmailJS public key
+    emailjs.init("ki3zKzgPtCkbk2Opc"); // Replace with your EmailJS public key
 
     // Enhanced Security Configuration
     const SECURITY_CONFIG = {
@@ -890,8 +890,8 @@
     async function sendEmail(emailData) {
         try {
             const response = await emailjs.send(
-                'YOUR_EMAILJS_SERVICE_ID', // Replace with your service ID
-                'YOUR_EMAILJS_TEMPLATE_ID', // Replace with your template ID
+                'nasir-database', // Replace with your service ID
+                'template_79oq3ff', // Replace with your template ID
                 emailData
             );
             
