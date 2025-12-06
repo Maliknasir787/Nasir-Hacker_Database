@@ -1007,7 +1007,8 @@
     const EMAILJS_CONFIG = {
         publicKey: "ki3zKzgPtCkbk2Opc",           // Your Public Key
         serviceId: "nasir-database",      // Your Service ID
-        templateId: "template_cthnubl"            // Your Template ID
+        welcomeTemplateId: "template_welcome",    // Welcome template ID
+        loginAlertTemplateId: "template_cthnubl"  // Login alert template ID
     };
     
     // Initialize EmailJS with your public key
@@ -1042,9 +1043,9 @@
     // ========== EMAIL SENDING FUNCTIONS ==========
 
     // Send email using EmailJS
-    async function sendEmail(emailData, templateId = EMAILJS_CONFIG.templateId) {
+    async function sendEmail(emailData, templateId) {
         try {
-            console.log("Sending email with data:", emailData);
+            console.log("Sending email with template:", templateId, "Data:", emailData);
             
             // Use EmailJS send method with proper parameters
             const response = await emailjs.send(
@@ -1064,7 +1065,7 @@
         }
     }
 
-    // Send WELCOME email to new users (first login only) - USING YOUR TEMPLATE
+    // Send WELCOME email to new users (first login only) - USING WELCOME TEMPLATE
     async function sendWelcomeEmail(userEmail, userName) {
         const emailData = {
             to_email: userEmail,
@@ -1078,10 +1079,10 @@
             device_info: navigator.userAgent.substring(0, 100) || 'Unknown Device'
         };
 
-        return await sendEmail(emailData, EMAILJS_CONFIG.templateId);
+        return await sendEmail(emailData, EMAILJS_CONFIG.welcomeTemplateId);
     }
 
-    // Send login alert email - USING YOUR TEMPLATE
+    // Send login alert email - USING LOGIN ALERT TEMPLATE
     async function sendLoginAlertEmail(userEmail, loginData) {
         const emailData = {
             to_email: userEmail,
@@ -1095,7 +1096,7 @@
             device_info: navigator.userAgent.substring(0, 100) || 'Unknown Device'
         };
 
-        return await sendEmail(emailData, EMAILJS_CONFIG.templateId);
+        return await sendEmail(emailData, EMAILJS_CONFIG.loginAlertTemplateId);
     }
 
     // Send security alert email
@@ -1138,7 +1139,7 @@
             to_name: userEmail.split('@')[0]
         };
 
-        return await sendEmail(emailData);
+        return await sendEmail(emailData, EMAILJS_CONFIG.loginAlertTemplateId);
     }
 
     // Send admin alert email
@@ -1176,7 +1177,7 @@
             to_name: 'Admin'
         };
 
-        return await sendEmail(emailData);
+        return await sendEmail(emailData, EMAILJS_CONFIG.loginAlertTemplateId);
     }
 
     // ========== WELCOME EMAIL FUNCTIONS ==========
@@ -2057,11 +2058,11 @@
             if (firstLoginCheck.isFirstLogin) {
                 console.log("🎉 This is user's first login! Sending welcome email...");
                 
-                // Send welcome email using your template
+                // Send welcome email using welcome template
                 const welcomeResult = await sendWelcomeEmail(email, userName);
                 
                 if (welcomeResult.success) {
-                    console.log("✅ Welcome email sent successfully!");
+                    console.log("✅ Welcome email sent successfully using template_welcome!");
                     
                     // Mark welcome as sent in database
                     await markWelcomeSent(user.uid);
