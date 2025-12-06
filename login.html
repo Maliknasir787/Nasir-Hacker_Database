@@ -651,6 +651,117 @@
             font-size: 13px;
             cursor: pointer;
         }
+
+        /* Welcome Popup */
+        .welcome-popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .welcome-popup-content {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 40px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            border: 1px solid rgba(108, 99, 255, 0.3);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(108, 99, 255, 0.1);
+            position: relative;
+            animation: popupFadeIn 0.5s ease-out;
+        }
+
+        @keyframes popupFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .welcome-icon {
+            font-size: 70px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #6c63ff, #ff6584);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .welcome-popup h2 {
+            font-size: 32px;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #6c63ff, #ff6584);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .welcome-popup p {
+            color: var(--text-secondary);
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .welcome-features {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .welcome-feature {
+            background: rgba(108, 99, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(108, 99, 255, 0.2);
+        }
+
+        .welcome-feature i {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #6c63ff;
+        }
+
+        .welcome-feature h4 {
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .welcome-feature p {
+            font-size: 12px;
+            margin: 0;
+            color: #b0b0b0;
+        }
+
+        .welcome-popup-btn {
+            background: linear-gradient(135deg, #6c63ff, #5a52d5);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(108, 99, 255, 0.4);
+        }
+
+        .welcome-popup-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(108, 99, 255, 0.6);
+        }
     </style>
 </head>
 
@@ -661,6 +772,42 @@
         <div class="bg-circle"></div>
         <div class="bg-circle"></div>
         <div class="bg-circle"></div>
+    </div>
+
+    <!-- Welcome Popup -->
+    <div class="welcome-popup" id="welcomePopup">
+        <div class="welcome-popup-content">
+            <div class="welcome-icon">
+                <i class="fas fa-star"></i>
+            </div>
+            <h2>Welcome to Nasir Database! 🎉</h2>
+            <p>Your account has been successfully activated. Check your email for a special welcome message!</p>
+            
+            <div class="welcome-features">
+                <div class="welcome-feature">
+                    <i class="fas fa-shield-alt"></i>
+                    <h4>Enhanced Security</h4>
+                    <p>24/7 protection</p>
+                </div>
+                <div class="welcome-feature">
+                    <i class="fas fa-bolt"></i>
+                    <h4>Fast Performance</h4>
+                    <p>Lightning fast access</p>
+                </div>
+                <div class="welcome-feature">
+                    <i class="fas fa-chart-line"></i>
+                    <h4>Advanced Analytics</h4>
+                    <p>Real-time insights</p>
+                </div>
+                <div class="welcome-feature">
+                    <i class="fas fa-headset"></i>
+                    <h4>24/7 Support</h4>
+                    <p>Always here to help</p>
+                </div>
+            </div>
+            
+            <button class="welcome-popup-btn" onclick="closeWelcomePopup()">Continue to Dashboard</button>
+        </div>
     </div>
 
     <!-- Main Container -->
@@ -860,7 +1007,7 @@
     const EMAILJS_CONFIG = {
         publicKey: "ki3zKzgPtCkbk2Opc",           // Your Public Key
         serviceId: "nasir-database",      // Your Service ID
-        templateId: "template_py5f3gc"            // Your Template ID
+        templateId: "template_cthnubl"            // Your Template ID
     };
     
     // Initialize EmailJS with your public key
@@ -903,18 +1050,7 @@
             const response = await emailjs.send(
                 EMAILJS_CONFIG.serviceId,
                 templateId,
-                {
-                    to_email: emailData.to_email,
-                    to_name: emailData.to_name || emailData.to_email.split('@')[0],
-                    from_name: emailData.from_name || 'Nasir Database Security',
-                    subject: emailData.subject,
-                    message: emailData.message,
-                    user_email: emailData.to_email,
-                    user_ip: userIP,
-                    user_country: userCountry,
-                    login_time: new Date().toLocaleString(),
-                    device_info: navigator.userAgent.substring(0, 100)
-                }
+                emailData
             );
             
             console.log('✅ Email sent successfully:', response.status, response.text);
@@ -928,162 +1064,38 @@
         }
     }
 
-    // Send WELCOME email to new users (first login only)
+    // Send WELCOME email to new users (first login only) - USING YOUR TEMPLATE
     async function sendWelcomeEmail(userEmail, userName) {
         const emailData = {
             to_email: userEmail,
+            to_name: userName || userEmail.split('@')[0],
+            from_name: 'Nasir Database Security',
             subject: '🎉 Welcome to Nasir Database - Your Journey Begins!',
-            message: `
-                <div style="font-family: 'Arial', sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px; border-radius: 20px; text-align: center;">
-                    
-                    <!-- Header with Confetti Effect -->
-                    <div style="position: relative; padding: 30px 0;">
-                        <div style="font-size: 60px; margin-bottom: 20px;">🎉</div>
-                        <h1 style="font-size: 36px; margin: 0; font-weight: 700;">WELCOME ABOARD!</h1>
-                        <p style="font-size: 18px; opacity: 0.9; margin-top: 10px;">${userName}, You're Now Part of Nasir Database Family</p>
-                    </div>
-                    
-                    <!-- Welcome Message -->
-                    <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); padding: 30px; border-radius: 15px; margin: 30px 0;">
-                        <h2 style="font-size: 28px; margin-top: 0;">Hello ${userName}! 👋</h2>
-                        <p style="font-size: 16px; line-height: 1.6;">
-                            A warm welcome to <strong>Nasir Database</strong>! We're thrilled to have you with us. 
-                            Your account is now active and ready to explore all the powerful features we offer.
-                        </p>
-                        
-                        <div style="display: inline-block; background: white; color: #667eea; padding: 10px 20px; border-radius: 50px; font-weight: bold; margin: 20px 0; font-size: 18px;">
-                            🚀 Account Successfully Activated!
-                        </div>
-                    </div>
-                    
-                    <!-- Getting Started Box -->
-                    <div style="background: white; color: #333; padding: 25px; border-radius: 15px; margin: 25px 0; text-align: left;">
-                        <h3 style="color: #667eea; margin-top: 0;">📚 Quick Start Guide</h3>
-                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 20px;">
-                            <div style="text-align: center;">
-                                <div style="font-size: 30px; margin-bottom: 10px;">🔐</div>
-                                <h4 style="margin: 0; color: #667eea;">Secure Login</h4>
-                                <p style="font-size: 14px;">Your account is protected with advanced security</p>
-                            </div>
-                            <div style="text-align: center;">
-                                <div style="font-size: 30px; margin-bottom: 10px;">📊</div>
-                                <h4 style="margin: 0; color: #667eea;">Dashboard Access</h4>
-                                <p style="font-size: 14px;">Access powerful tools and analytics</p>
-                            </div>
-                            <div style="text-align: center;">
-                                <div style="font-size: 30px; margin-bottom: 10px;">🔔</div>
-                                <h4 style="margin: 0; color: #667eea;">Real-time Alerts</h4>
-                                <p style="font-size: 14px;">Get instant notifications</p>
-                            </div>
-                            <div style="text-align: center;">
-                                <div style="font-size: 30px; margin-bottom: 10px;">🛡️</div>
-                                <h4 style="margin: 0; color: #667eea;">24/7 Security</h4>
-                                <p style="font-size: 14px;">Your data is always protected</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Next Steps -->
-                    <div style="background: rgba(255, 255, 255, 0.15); padding: 25px; border-radius: 15px; margin: 25px 0;">
-                        <h3 style="margin-top: 0;">🎯 Your Next Steps</h3>
-                        <ol style="text-align: left; padding-left: 20px;">
-                            <li style="margin-bottom: 10px;"><strong>Complete your profile</strong> - Add more details</li>
-                            <li style="margin-bottom: 10px;"><strong>Explore the dashboard</strong> - Discover all features</li>
-                            <li style="margin-bottom: 10px;"><strong>Set up 2FA</strong> - Extra security layer</li>
-                            <li style="margin-bottom: 10px;"><strong>Check notifications</strong> - Stay updated</li>
-                        </ol>
-                    </div>
-                    
-                    <!-- Special Offer -->
-                    <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 20px; border-radius: 15px; margin: 25px 0;">
-                        <h3 style="margin: 0;">🎁 Special Welcome Gift!</h3>
-                        <p style="font-size: 18px; margin: 10px 0;">
-                            As a welcome gesture, you'll receive <strong>exclusive tips and resources</strong> 
-                            via email in the coming days to help you get the most out of Nasir Database!
-                        </p>
-                    </div>
-                    
-                    <!-- Support Section -->
-                    <div style="margin-top: 30px; padding-top: 20px; border-top: 2px dashed rgba(255, 255, 255, 0.3);">
-                        <p style="margin: 5px 0; font-size: 14px; opacity: 0.8;">
-                            Need help? Our support team is just an email away at 
-                            <a href="mailto:support@nasirdatabase.com" style="color: white; text-decoration: underline;">support@nasirdatabase.com</a>
-                        </p>
-                        <p style="margin: 5px 0; font-size: 14px; opacity: 0.8;">
-                            Login time: ${new Date().toLocaleString()}
-                        </p>
-                    </div>
-                    
-                    <!-- Footer -->
-                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.2);">
-                        <p style="font-size: 12px; opacity: 0.7; margin: 5px 0;">
-                            This is an automated welcome email from Nasir Database.
-                        </p>
-                        <p style="font-size: 12px; opacity: 0.7; margin: 5px 0;">
-                            © ${new Date().getFullYear()} Nasir Database. Empowering your digital journey.
-                        </p>
-                    </div>
-                    
-                </div>
-            `,
-            from_name: 'Nasir Database Team',
-            to_name: userName
+            user_email: userEmail,
+            user_ip: userIP || 'Unknown',
+            user_country: userCountry || 'Unknown',
+            login_time: new Date().toLocaleString(),
+            device_info: navigator.userAgent.substring(0, 100) || 'Unknown Device'
         };
 
-        return await sendEmail(emailData);
+        return await sendEmail(emailData, EMAILJS_CONFIG.templateId);
     }
 
-    // Send login alert email
+    // Send login alert email - USING YOUR TEMPLATE
     async function sendLoginAlertEmail(userEmail, loginData) {
         const emailData = {
             to_email: userEmail,
-            subject: '🔐 New Login Alert - Nasir Database',
-            message: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #6c63ff; text-align: center;">New Login Alert</h2>
-                    <p>Hello ${userEmail.split('@')[0]},</p>
-                    <p>A new login was detected on your Nasir Database account.</p>
-                    
-                    <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                        <h3 style="color: #333; margin-bottom: 10px;">📋 Login Details:</h3>
-                        <ul style="list-style: none; padding: 0;">
-                            <li><strong>📧 Email:</strong> ${userEmail}</li>
-                            <li><strong>🕐 Time:</strong> ${new Date().toLocaleString()}</li>
-                            <li><strong>🌐 IP Address:</strong> ${loginData.ip || userIP}</li>
-                            <li><strong>📍 Location:</strong> ${loginData.country || userCountry}</li>
-                            <li><strong>💻 Device:</strong> ${loginData.device || 'Unknown'}</li>
-                            <li><strong>🔍 Browser:</strong> ${loginData.userAgent?.substring(0, 100) || 'Unknown'}</li>
-                            ${loginData.isNewDevice ? '<li style="color: #ff9800;"><strong>⚠️ New Device Detected</strong></li>' : ''}
-                        </ul>
-                    </div>
-                    
-                    ${loginData.isNewDevice ? `
-                    <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #ffeaa7;">
-                        <strong>⚠️ Security Notice:</strong> This login was from a new device. 
-                        If this wasn't you, please secure your account immediately.
-                    </div>
-                    ` : ''}
-                    
-                    <div style="background: #e7f3fe; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #b3d9ff;">
-                        <h3 style="color: #0066cc; margin-bottom: 10px;">🔒 If this wasn't you:</h3>
-                        <ol>
-                            <li>Change your password immediately</li>
-                            <li>Check your account activity</li>
-                            <li>Contact support if you notice suspicious activity</li>
-                        </ol>
-                    </div>
-                    
-                    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px;">
-                        <p>This is an automated security notification from Nasir Database.</p>
-                        <p>Please do not reply to this email.</p>
-                    </div>
-                </div>
-            `,
+            to_name: userEmail.split('@')[0],
             from_name: 'Nasir Database Security',
-            to_name: userEmail.split('@')[0]
+            subject: '🔐 New Login Alert - Nasir Database',
+            user_email: userEmail,
+            user_ip: loginData.ip || userIP || 'Unknown',
+            user_country: loginData.country || userCountry || 'Unknown',
+            login_time: new Date().toLocaleString(),
+            device_info: navigator.userAgent.substring(0, 100) || 'Unknown Device'
         };
 
-        return await sendEmail(emailData);
+        return await sendEmail(emailData, EMAILJS_CONFIG.templateId);
     }
 
     // Send security alert email
@@ -1916,6 +1928,17 @@
         deviceInfo.style.display = 'block';
     }
 
+    // Function to show welcome popup
+    function showWelcomePopup() {
+        document.getElementById('welcomePopup').style.display = 'flex';
+    }
+
+    // Function to close welcome popup
+    function closeWelcomePopup() {
+        document.getElementById('welcomePopup').style.display = 'none';
+        window.location.href = "https://nasir-hacker-database.vercel.app";
+    }
+
     // Check for logout reason
     function checkLogoutReason() {
         const logoutReason = localStorage.getItem('logout_reason');
@@ -2034,7 +2057,7 @@
             if (firstLoginCheck.isFirstLogin) {
                 console.log("🎉 This is user's first login! Sending welcome email...");
                 
-                // Send welcome email
+                // Send welcome email using your template
                 const welcomeResult = await sendWelcomeEmail(email, userName);
                 
                 if (welcomeResult.success) {
@@ -2043,32 +2066,35 @@
                     // Mark welcome as sent in database
                     await markWelcomeSent(user.uid);
                     
-                    // Also send regular login notification
-                    if (emailNotifications || allNotifications) {
-                        await sendLoginNotification(user.uid, email, {
-                            userAgent: navigator.userAgent,
-                            location: userCountry,
-                            isNewDevice: isNewDevice,
-                            deviceId: userDeviceId,
-                            ip: userIP,
-                            country: userCountry
-                        });
-                    }
+                    // Show welcome popup instead of alert
+                    setTimeout(() => {
+                        document.getElementById("loading").style.display = "none";
+                        document.getElementById("successBox").style.display = "flex";
+                        
+                        // Show popup after 1.5 seconds
+                        setTimeout(() => {
+                            showWelcomePopup();
+                        }, 1500);
+                        
+                    }, 1000);
                 } else {
                     console.error("❌ Failed to send welcome email:", welcomeResult.message);
                     
-                    // Still send regular login notification if welcome fails
-                    if (emailNotifications || allNotifications) {
-                        await sendLoginNotification(user.uid, email, {
-                            userAgent: navigator.userAgent,
-                            location: userCountry,
-                            isNewDevice: isNewDevice,
-                            deviceId: userDeviceId,
-                            ip: userIP,
-                            country: userCountry
-                        });
-                    }
+                    // Still show success but with different message
+                    setTimeout(() => {
+                        document.getElementById("loading").style.display = "none";
+                        document.getElementById("successBox").style.display = "flex";
+                        
+                        // Show popup even if email failed
+                        setTimeout(() => {
+                            showWelcomePopup();
+                        }, 1500);
+                        
+                    }, 1000);
                 }
+                
+                // Don't send regular login notification for first login
+                // Only welcome email is sent
             } else {
                 // Regular login (not first time)
                 if (emailNotifications || allNotifications) {
@@ -2081,6 +2107,14 @@
                         country: userCountry
                     });
                 }
+                
+                // Regular login success
+                document.getElementById("loading").style.display = "none";
+                document.getElementById("successBox").style.display = "flex";
+                
+                setTimeout(() => {
+                    window.location.href = "https://nasir-hacker-database.vercel.app";
+                }, 1500);
             }
             
             await recordSecurityEvent('successful_login', {
@@ -2104,21 +2138,6 @@
             });
             
             localStorage.setItem(`nasir_session_${user.uid}`, newSessionId);
-            
-            document.getElementById("loading").style.display = "none";
-            document.getElementById("successBox").style.display = "flex";
-            
-            // Show special message for first login
-            if (firstLoginCheck.isFirstLogin) {
-                setTimeout(() => {
-                    alert("🎉 Welcome to Nasir Database! Check your email for a special welcome message!");
-                    window.location.href = "https://nasir-hacker-database.vercel.app";
-                }, 1500);
-            } else {
-                setTimeout(() => {
-                    window.location.href = "https://nasir-hacker-database.vercel.app";
-                }, 1500);
-            }
             
         } catch (error) {
             document.getElementById("loading").style.display = "none";
